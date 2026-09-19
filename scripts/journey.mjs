@@ -52,6 +52,8 @@ t = await text();
 assert("2 Trials lists a result count", /\d+ trials found/.test(t));
 assert("2 Trials keeps the demonstration study apart from registry results", t.includes("Demo study, kept apart") && t.includes("From the public registry"));
 assert("2 Trials never says the person qualifies", !/you qualify|you are eligible/i.test(t));
+assert("2 Trials cards state recruitment status, site status and record date",
+  /recruiting/i.test(t) && /site status (not )?published/.test(t) && /record updated \d{4}-\d{2}/.test(t));
 assert("2 Trials cards carry a provisional label", /Potential option|Questions remain|Things to review/.test(t));
 await page.selectOption('select[name="phase"]', "PHASE2");
 await page.waitForURL(/phase=PHASE2/);
@@ -64,6 +66,12 @@ await go(realHref);
 t = await text();
 assert("3 Detail has the three tabs", ["Overview", "Eligibility", "What to Expect"].every((label) => t.includes(label)));
 assert("3 Detail shows OpenAlex background research, labelled as not evidence", t.includes("OpenAlex") && t.includes("not evidence"));
+await page.fill('input[name="ask"]', "What is the wifi password?");
+await page.click('button:has-text("Ask")');
+await page.waitForURL(/ask=/);
+t = await text();
+assert("3 Asking something the record does not cover gets an honest no", t.includes("record does not say") && t.includes("Save this question for the study team"));
+assert("3 The answer says how it was found", t.includes("No language model was involved"));
 await shot("detail-real");
 await go(`${realHref}?tab=expect`);
 assert("3 A real record refuses to estimate a time commitment", (await text()).includes("time commitment is not published"));
@@ -73,6 +81,11 @@ assert("3 The fictional study is labelled fictional", (await text()).includes("F
 await page.locator('button:has-text("Save Trial")').click();
 await page.waitForSelector('a:has-text("Prepare an inquiry")');
 assert("3 Saving swaps the primary action to preparing an inquiry", true);
+await go("/trial/TP-FIX-001?ask=" + encodeURIComponent("Do I get paid for taking part?"));
+t = await text();
+assert("3 Asking something the record covers quotes it word for word",
+  t.includes("Payment accrues per visit and does not depend on completing the entire study") && t.includes("quoted word for word"));
+await shot("detail-ask");
 await go("/trial/TP-FIX-001?tab=eligibility");
 t = await text();
 assert("3 Eligibility is marked provisional", t.includes("provisional"));
@@ -141,7 +154,21 @@ assert("11 Missing information is listed to request", t.includes("Missing inform
 assert("11 A saved site answer is pre-filled and flagged for review", t.includes("You are the author"));
 assert("11 A Reply action stays in reach", (await page.locator('a:has-text("Reply to Maria")').count()) === 1);
 await shot("team-review");
-await page.locator("li", { hasText: "Is parking covered" }).locator('button:has-text("Send this answer")').click();
+const parking = () => page.locator("li", { hasText: "Is parking covered" });
+await parking().locator('select[name="assignee"]').selectOption("finance");
+await parking().locator('button:has-text("Assign")').click();
+await page.waitForSelector("text=Owner: Site finance office");
+assert("11 A question can be assigned an owner", (await parking().innerText()).includes("Assigned"));
+
+await parking().locator('button:has-text("Save draft")').click();
+await page.waitForSelector("text=A saved draft");
+assert("11 A draft is saved with its own state", (await parking().innerText()).includes("Draft answer"));
+const peek = await context.newPage();
+await peek.goto(inquiryUrl, { waitUntil: "networkidle" });
+assert("11 A draft is never visible to the participant", !(await peek.locator("#main").innerText()).includes("validated at the Harborview garage"));
+await peek.close();
+
+await parking().locator('button:has-text("Send this answer")').click();
 await page.waitForSelector("text=Sent by R. Alvarez", { timeout: 20000 });
 assert("11 The reply is attributed to the person who sent it", true);
 
@@ -158,6 +185,21 @@ assert("9 The thread shows the full answer and its author", t.includes("validate
 assert("9 All four choices are offered, including declining and asking for help",
   ["I have agreed to take part", "I need more time", "Please help me contact the study team", "I am not interested"].every((l) => t.includes(l)));
 await shot("thread");
+await page.click('button:has-text("I still have a question")');
+await page.waitForSelector("text=Reopened");
+assert("9 The participant can reopen an answered question", true);
+await go("/coordinator");
+await page.locator('#main a[href^="/coordinator/"]').first().click();
+await page.waitForURL(/\/coordinator\/[0-9a-f-]{36}/);
+await page.waitForLoadState("networkidle");
+assert("11 The team sees it reopened, with the earlier answer kept as history",
+  (await text()).includes("Reopened") && (await text()).includes("Earlier answer"));
+await page.locator("li", { hasText: "Is parking covered" }).locator('button:has-text("Send this answer")').click();
+await page.waitForSelector("text=Sent by R. Alvarez", { timeout: 20000 });
+await page.goto(inquiryUrl, { waitUntil: "networkidle" });
+await page.click('button:has-text("This answers it")');
+await page.waitForSelector("text=You marked this resolved");
+assert("9 The participant can mark an answer resolved", true);
 await go("/inbox");
 assert("9 Opening the thread marks it read", (await text()).includes("Unread (0)"));
 await go("/questions?tab=answered");

@@ -5,6 +5,7 @@ import {
 import { Avatar, Callout, Card, DataRow } from "@/components/ui";
 import { requestNow } from "@/lib/clock";
 import { getGrantByToken, getParticipant, getPersonalNote, listQuestions } from "@/lib/repo";
+import { isAnswered } from "@/lib/questions";
 
 export const dynamic = "force-dynamic";
 
@@ -45,7 +46,7 @@ export default async function HandoffPage({ params }: { params: Promise<{ token:
   const facts = participant.clinicalFacts.filter((fact) => allowed.has(`fact:${fact.key}`));
   const note = allowed.has("age") ? getPersonalNote(participant.id) : null;
   const questions = allowed.has("questions")
-    ? listQuestions({ participantId: participant.id }).filter((q) => !q.answer) : [];
+    ? listQuestions({ participantId: participant.id }).filter((q) => !isAnswered(q)) : [];
 
   const sections: { id: string; icon: ReactNode; title: string; sub: string; body: ReactNode }[] = [];
 

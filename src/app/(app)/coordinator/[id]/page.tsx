@@ -4,9 +4,10 @@ import type { ReactNode } from "react";
 import { Callout, Card, DataRow, FictionBanner, Pill, ScreenHeader, SectionHeading, StickyAction } from "@/components/ui";
 import { assessTrial } from "@/lib/assess";
 import { getFictionalFixture } from "@/lib/db";
-import { getGrant, getInquiry, getParticipant, getTrial, isGrantActive, listQuestions } from "@/lib/repo";
-import { coordinatorAcknowledgeAction, coordinatorAnswerAction, coordinatorRequestInfoAction } from "@/app/actions";
+import { getGrant, getInquiry, getParticipant, getQuestionDraft, getTrial, isGrantActive, listQuestions } from "@/lib/repo";
+import { coordinatorAcknowledgeAction, coordinatorAnswerAction, coordinatorAssignAction, coordinatorRequestInfoAction } from "@/app/actions";
 import type { CriterionAssessment } from "@/lib/types";
+import { isAnswered, QUESTION_STATE_LABEL, SITE_STAFF } from "@/lib/questions";
 
 export const dynamic = "force-dynamic";
 
@@ -141,54 +142,85 @@ export default async function CoordinatorInquiryPage({ params }: { params: Promi
 
       <section id="reply" className="scroll-mt-6">
         <SectionHeading hint="You write or edit every answer before it is sent. Nothing is sent automatically.">
-          Questions to answer ({questions.filter((q) => !q.answer).length} open)
+          Questions to answer ({questions.filter((q) => !isAnswered(q)).length} open)
         </SectionHeading>
         <ul className="space-y-3">
           {questions.length === 0 ? <Card as="li" className="p-4 text-[13px] text-ink-soft">This person did not attach any questions.</Card> : null}
           {questions.map((question) => {
             const suggestion = canned.find((entry) => entry.matches.some((keyword) => question.text.toLowerCase().includes(keyword)));
+            const draft = getQuestionDraft(question.id);
+            const answered = isAnswered(question);
+            const reopened = !answered && Boolean(question.answer);
             return (
               <Card as="li" key={question.id} className="p-4">
-                <p className="text-[13.5px] font-bold text-ink">{question.text}</p>
+                <div className="flex items-start justify-between gap-3">
+                  <p className="text-[13.5px] font-bold text-ink">{question.text}</p>
+                  <Pill tone={answered ? "mint" : question.state === "open" ? "peach" : "iris"}>
+                    {reopened && question.state === "open" ? "Reopened" : QUESTION_STATE_LABEL[question.state]}
+                  </Pill>
+                </div>
                 <p className="text-[11.5px] text-ink-faint">
                   {question.category}{question.category === "clinical" ? ": route to an investigator or qualified staff member" : ""}
+                  {question.assignedTo ? `. Owner: ${SITE_STAFF.find((staff) => staff.id === question.assignedTo)?.label ?? question.assignedTo}` : ". No owner yet"}
                 </p>
+
                 {question.answer ? (
-                  <div className="mt-2.5 rounded-[14px] bg-mint-soft p-3">
+                  <div className={`mt-2.5 rounded-[14px] p-3 ${answered ? "bg-mint-soft" : "bg-sunken"}`}>
+                    {reopened ? <p className="mb-1 text-[11px] font-bold text-peach">Earlier answer. The participant says it did not settle the question.</p> : null}
                     <p className="text-[13px] leading-relaxed text-ink">{question.answer}</p>
                     <p className="mt-1.5 text-[11px] text-ink-soft">Sent by {question.answeredBy}{question.answerCitation ? `. ${question.answerCitation}` : ""}</p>
                   </div>
-                ) : (
-                  <form action={coordinatorAnswerAction} className="mt-2.5 space-y-2.5">
-                    <input type="hidden" name="questionId" value={question.id} />
-                    <input type="hidden" name="inquiryId" value={inquiry.id} />
-                    {suggestion ? (
-                      <p className="rounded-[12px] bg-sunken px-3 py-2 text-[11.5px] leading-relaxed text-ink-soft">
-                        A site-policy answer has been pre-filled from your saved replies. Edit it before sending. You are the author.
-                      </p>
-                    ) : null}
-                    <label className="block text-[12px] font-semibold text-ink-soft">
-                      Your answer
-                      <textarea name="answer" rows={4} required defaultValue={suggestion?.answer ?? ""}
-                        className="mt-1 w-full rounded-[14px] border border-rule bg-surface p-3 text-[13.5px] text-ink" />
-                    </label>
-                    <label className="block text-[12px] font-semibold text-ink-soft">
-                      Where this comes from (shown to the participant)
-                      <input name="citation" defaultValue={suggestion?.citation ?? ""}
-                        className="mt-1 min-h-12 w-full rounded-[14px] border border-rule bg-surface px-3 text-[13.5px] text-ink" />
-                    </label>
-                    <button type="submit" className="press min-h-12 w-full rounded-full border border-iris bg-iris-soft text-[14px] font-bold text-iris-deep hover:bg-iris hover:text-white">
-                      Send this answer
-                    </button>
-                  </form>
-                )}
+                ) : null}
+
+                {!answered ? (
+                  <>
+                    <form action={coordinatorAssignAction} className="mt-2.5 flex items-end gap-2">
+                      <input type="hidden" name="questionId" value={question.id} />
+                      <input type="hidden" name="inquiryId" value={inquiry.id} />
+                      <label className="min-w-0 flex-1 text-[12px] font-semibold text-ink-soft">
+                        Owner
+                        <select name="assignee" defaultValue={question.assignedTo ?? (question.category === "clinical" ? "investigator" : question.category === "financial" ? "finance" : "coordinator")}
+                          className="mt-1 min-h-11 w-full rounded-[14px] border border-rule bg-surface px-3 text-[13px] text-ink">
+                          {SITE_STAFF.map((staff) => <option key={staff.id} value={staff.id}>{staff.label}</option>)}
+                        </select>
+                      </label>
+                      <button type="submit" className="press min-h-11 shrink-0 rounded-full border border-rule-strong bg-surface px-4 text-[13px] font-bold text-ink hover:bg-sunken">Assign</button>
+                    </form>
+
+                    <form action={coordinatorAnswerAction} className="mt-2.5 space-y-2.5">
+                      <input type="hidden" name="questionId" value={question.id} />
+                      <input type="hidden" name="inquiryId" value={inquiry.id} />
+                      {draft ? (
+                        <p className="rounded-[12px] bg-sunken px-3 py-2 text-[11.5px] leading-relaxed text-ink-soft">A saved draft. The participant cannot see it until you send it.</p>
+                      ) : suggestion ? (
+                        <p className="rounded-[12px] bg-sunken px-3 py-2 text-[11.5px] leading-relaxed text-ink-soft">
+                          A site-policy answer has been pre-filled from your saved replies. Edit it before sending. You are the author.
+                        </p>
+                      ) : null}
+                      <label className="block text-[12px] font-semibold text-ink-soft">
+                        Your answer
+                        <textarea name="answer" rows={4} required defaultValue={draft?.draft ?? suggestion?.answer ?? ""}
+                          className="mt-1 w-full rounded-[14px] border border-rule bg-surface p-3 text-[13.5px] text-ink" />
+                      </label>
+                      <label className="block text-[12px] font-semibold text-ink-soft">
+                        Where this comes from (shown to the participant)
+                        <input name="citation" defaultValue={draft?.citation ?? suggestion?.citation ?? ""}
+                          className="mt-1 min-h-12 w-full rounded-[14px] border border-rule bg-surface px-3 text-[13.5px] text-ink" />
+                      </label>
+                      <div className="flex gap-2">
+                        <button type="submit" name="intent" value="draft" className="press min-h-12 flex-1 rounded-full border border-rule-strong bg-surface text-[13.5px] font-bold text-ink hover:bg-sunken">Save draft</button>
+                        <button type="submit" name="intent" value="send" className="press min-h-12 flex-1 rounded-full border border-iris bg-iris-soft text-[13.5px] font-bold text-iris-deep hover:bg-iris hover:text-white">Send this answer</button>
+                      </div>
+                    </form>
+                  </>
+                ) : null}
               </Card>
             );
           })}
         </ul>
       </section>
 
-      {questions.some((q) => !q.answer) ? (
+      {questions.some((q) => !isAnswered(q)) ? (
         <StickyAction>
           <a href="#reply" className="press cta inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full text-[15px] font-bold text-white">
             <ChatCircleDots size={18} weight="bold" /> Reply to {name.split(" ")[0]}

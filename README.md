@@ -29,7 +29,7 @@ scholarly works from the CC0 [OpenAlex open dataset](https://registry.opendata.a
 
 ```bash
 npm run evaluate     # 43 checks: invariants, citations, burden, permissions
-npm run journey      # 78 checks: all twelve screens in a real browser
+npm run journey      # 88 checks: all twelve screens in a real browser
 npm run capture      # phone-size screenshots of all twelve screens, to .capture/
 npm run ingest       # refresh the registry snapshot from ClinicalTrials.gov
 npm run reset        # drop the local database; it reseeds on next request
@@ -192,7 +192,7 @@ Both suites run against the real 300-record snapshot.
 
 ```
 npm run evaluate    43 passed, 0 failed
-npm run journey     78 passed, 0 failed
+npm run journey     88 passed, 0 failed
 ```
 
 Selected results:

@@ -5,6 +5,7 @@ import { Callout, Card, Pill, ScreenHeader, SectionHeading } from "@/components/
 import { listGrants, listMilestones, listQuestions } from "@/lib/repo";
 import { getActiveParticipant } from "@/lib/session";
 import { revokeGrantAction } from "@/app/actions";
+import { isAnswered } from "@/lib/questions";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +18,7 @@ export default async function PassportPage() {
   const participant = await getActiveParticipant();
   const grants = listGrants(participant.id);
   const milestones = listMilestones(participant.id);
-  const openQuestions = listQuestions({ participantId: participant.id }).filter((q) => !q.answer).length;
+  const openQuestions = listQuestions({ participantId: participant.id }).filter((q) => !isAnswered(q)).length;
 
   const practical = [
     participant.oneWayTravelMinutes != null ? `${participant.oneWayTravelMinutes} min each way` : null,

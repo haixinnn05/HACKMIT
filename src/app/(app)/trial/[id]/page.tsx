@@ -10,14 +10,15 @@ import { Hills } from "@/components/Brand";
 import {
   Callout, Card, DataAge, FictionBanner, LinkButton, SectionHeading, StatusChip, StickyAction, Tabs,
 } from "@/components/ui";
-import { AI_METADATA, composeOfflineBrief, generateTrialBrief } from "@/lib/ai";
+import { AI_METADATA, answerFromSources, composeOfflineBrief, generateTrialBrief } from "@/lib/ai";
 import { assessTrial } from "@/lib/assess";
 import { computeBurden } from "@/lib/burden";
 import { requestNow } from "@/lib/clock";
 import { getTrial, listQuestions, listSavedTrialIds, recordMilestone } from "@/lib/repo";
 import { getActiveParticipant } from "@/lib/session";
-import { toggleSaveAction } from "@/app/actions";
+import { addQuestionAction, toggleSaveAction } from "@/app/actions";
 import type { CriterionAssessment, Trial, TrialAssessment } from "@/lib/types";
+import { isAnswered } from "@/lib/questions";
 
 export const dynamic = "force-dynamic";
 
@@ -25,9 +26,9 @@ const KM_PER_MILE = 1.609;
 
 export default async function TrialPage({
   params, searchParams,
-}: { params: Promise<{ id: string }>; searchParams: Promise<{ tab?: string }> }) {
+}: { params: Promise<{ id: string }>; searchParams: Promise<{ tab?: string; ask?: string }> }) {
   const { id } = await params;
-  const { tab: rawTab } = await searchParams;
+  const { tab: rawTab, ask } = await searchParams;
   const tab = rawTab === "eligibility" || rawTab === "expect" ? rawTab : "overview";
 
   const trial = getTrial(decodeURIComponent(id));
@@ -38,7 +39,7 @@ export default async function TrialPage({
   const assessment = assessTrial(trial, participant);
   const burden = computeBurden(trial, participant);
   const saved = listSavedTrialIds(participant.id).includes(trial.id);
-  const openQuestions = listQuestions({ participantId: participant.id, trialId: trial.id }).filter((q) => !q.answer);
+  const openQuestions = listQuestions({ participantId: participant.id, trialId: trial.id }).filter((q) => !isAnswered(q));
 
   // Going past the overview is what "reviewed" means. The stamp is earned once.
   if (tab !== "overview") {
@@ -111,7 +112,7 @@ export default async function TrialPage({
         ]}
       />
 
-      {tab === "overview" ? <Overview trial={trial} assessment={assessment} nearestCity={site?.city ?? null} now={now} /> : null}
+      {tab === "overview" ? <Overview trial={trial} assessment={assessment} nearestCity={site?.city ?? null} now={now} ask={ask?.slice(0, 200) ?? null} /> : null}
       {tab === "eligibility" ? <Eligibility assessment={assessment} /> : null}
       {tab === "expect" ? (
         <section className="space-y-4">
@@ -189,8 +190,9 @@ export default async function TrialPage({
 }
 
 async function Overview({
-trial: t, assessment, nearestCity, now,
-}: { trial: Trial; assessment: TrialAssessment; nearestCity: string | null; now: number }) {
+  trial: t, assessment, nearestCity, now, ask,
+}: { trial: Trial; assessment: TrialAssessment; nearestCity: string | null; now: number; ask: string | null }) {
+  const reply = ask?.trim() ? await answerFromSources(t, ask.trim()) : null;
   // The brief degrades rather than blocks: with no model configured the same
   // shape is assembled deterministically from the record itself.
   const brief = AI_METADATA.configured
@@ -246,6 +248,45 @@ trial: t, assessment, nearestCity, now,
           </div>
         ))}
       </Card>
+
+      <section aria-labelledby="ask-heading" id="ask" className="scroll-mt-6">
+        <SectionHeading id="ask-heading" hint="We search this study&rsquo;s own text and quote what we find. If it isn&rsquo;t there, we say so.">
+          Ask about this study
+        </SectionHeading>
+        <form action={`/trial/${t.id}#ask`} className="flex gap-2">
+          <label className="min-w-0 flex-1">
+            <span className="sr-only">Your question about this study</span>
+            <input name="ask" defaultValue={ask ?? ""} required maxLength={200} placeholder="e.g. Can I take part if I am pregnant?"
+              className="min-h-12 w-full rounded-full border border-rule bg-surface px-4 text-[13.5px] text-ink placeholder:text-ink-faint" />
+          </label>
+          <button type="submit" className="press min-h-12 shrink-0 rounded-full border border-iris bg-iris-soft px-5 text-[13.5px] font-bold text-iris-deep hover:bg-iris hover:text-white">Ask</button>
+        </form>
+
+        {reply ? (
+          <Card className="animate-rise mt-2.5 p-4" >
+            <p className="text-[12px] font-bold text-ink-soft">&ldquo;{ask}&rdquo;</p>
+            <p className="mt-1 text-[13.5px] font-semibold leading-relaxed text-ink">{reply.answer}</p>
+            {reply.supportingSpan ? (
+              <>
+                <blockquote className="source-quote mt-2">{reply.supportingSpan}</blockquote>
+                <p className="mt-1.5 text-[11px] text-ink-faint">{reply.sourceLabel}</p>
+              </>
+            ) : null}
+            <p className="mt-2 text-[11.5px] leading-relaxed text-peach"><strong>Keep in mind:</strong> {reply.uncertainty}</p>
+            <form action={addQuestionAction} className="mt-3">
+              <input type="hidden" name="trialId" value={t.id} />
+              <input type="hidden" name="text" value={ask ?? ""} />
+              <input type="hidden" name="returnTo" value={`/questions?trial=${t.id}`} />
+              <button type="submit" className={`press min-h-11 w-full rounded-full text-[13px] font-bold ${reply.answered ? "border border-rule-strong bg-surface text-ink hover:bg-sunken" : "cta text-white"}`}>
+                {reply.answered ? "Still unsure? Save this for the study team" : "Save this question for the study team"}
+              </button>
+            </form>
+            <p className="mt-2 text-[11px] text-ink-faint">
+              {reply.mode === "model" ? "Found with a language model, and the quote was checked against the record." : "Found by keyword search. No language model was involved."}
+            </p>
+          </Card>
+        ) : null}
+      </section>
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <DataAge date={t.lastUpdatePostDate} now={now} />

@@ -8,6 +8,7 @@ import { Avatar, Card, MenuRow, ScreenHeader, SectionHeading } from "@/component
 import { getPersonalNote, listParticipants, listQuestions, listSavedTrialIds } from "@/lib/repo";
 import { getActiveParticipant } from "@/lib/session";
 import { resetDemoAction } from "@/app/actions";
+import { isAnswered } from "@/lib/questions";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +18,7 @@ export default async function ProfilePage() {
   const name = participant.displayName.replace(/\s*\(synthetic\)$/, "");
   const sex = participant.sex ? participant.sex[0] + participant.sex.slice(1).toLowerCase() : null;
   const unknown = participant.clinicalFacts.filter((fact) => fact.provenance === "unknown" || !fact.value).length;
-  const open = listQuestions({ participantId: participant.id }).filter((q) => !q.answer).length;
+  const open = listQuestions({ participantId: participant.id }).filter((q) => !isAnswered(q)).length;
   const saved = listSavedTrialIds(participant.id).length;
   const note = getPersonalNote(participant.id);
 

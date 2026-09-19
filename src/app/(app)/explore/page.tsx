@@ -3,6 +3,7 @@ import { CaretRight, ChatCircleDots, Heart, MagnifyingGlass, MapPin, Question } 
 import { AutoSubmitSelect } from "@/components/AutoSubmitSelect";
 import { Card, Empty, Note, Pill, ScreenHeader } from "@/components/ui";
 import { assessTrial } from "@/lib/assess";
+import { requestNow, monthsSince, STALE_RECORD_MONTHS } from "@/lib/clock";
 import { getManifest } from "@/lib/db";
 import { getTrial } from "@/lib/repo";
 import { searchForProfile } from "@/lib/search";
@@ -29,6 +30,7 @@ export default async function ExplorePage({
 }: { searchParams: Promise<{ q?: string; phase?: string; near?: string; sort?: string }> }) {
   const params = await searchParams;
   const participant = await getActiveParticipant();
+  const now = requestNow();
   const manifest = getManifest() as { retrievedAt?: string; recordCount?: number } | null;
 
   const result = searchForProfile(participant, { text: params.q || null, limit: 40 });
@@ -110,7 +112,7 @@ export default async function ExplorePage({
           <h2 id="demo-heading" className="text-[12px] font-bold text-ink-soft">
             Demo study, kept apart because it isn&rsquo;t a real option
           </h2>
-          <ul><TrialCard trial={demoStudy} assessment={assessTrial(demoStudy, participant)} participant={participant} /></ul>
+          <ul><TrialCard trial={demoStudy} assessment={assessTrial(demoStudy, participant)} participant={participant} reasons={[]} now={now} /></ul>
           <h2 className="pt-1.5 text-[12px] font-bold text-ink-soft">From the public registry</h2>
         </section>
       ) : null}
@@ -123,7 +125,7 @@ export default async function ExplorePage({
       ) : (
         <ul className="space-y-3">
           {rows.map(({ hit, assessment }) => (
-            <TrialCard key={hit.trial.id} trial={hit.trial} assessment={assessment} participant={participant} />
+            <TrialCard key={hit.trial.id} trial={hit.trial} assessment={assessment} participant={participant} reasons={hit.reasons} now={now} />
           ))}
         </ul>
       )}
@@ -139,8 +141,13 @@ export default async function ExplorePage({
 }
 
 function TrialCard({
-  trial, assessment, participant,
-}: { trial: Trial; assessment: TrialAssessment; participant: ParticipantProfile }) {
+  trial, assessment, participant, reasons, now,
+}: { trial: Trial; assessment: TrialAssessment; participant: ParticipantProfile; reasons: string[]; now: number }) {
+  const overall = trial.overallStatus ? trial.overallStatus.toLowerCase().replace(/_/g, " ") : "status not stated";
+  const siteKnown = assessment.practicalFit.siteRecruitingStatusKnown;
+  const stale = trial.lastUpdatePostDate ? monthsSince(trial.lastUpdatePostDate, now) > STALE_RECORD_MONTHS : false;
+  // The card already shows condition and location, so repeat neither as a reason.
+  const why = reasons.filter((reason) => !/^Listed condition|^Has a listed site/.test(reason)).slice(0, 2);
   const status = cardStatus(assessment);
   const site = assessment.practicalFit.nearestSite;
   const km = assessment.practicalFit.nearestSiteKm;
@@ -166,10 +173,23 @@ function TrialCard({
               ? `${site.city}${site.state ? `, ${site.state}` : ""}${miles != null ? ` (about ${miles} miles)` : ""}`
               : trial.sites.length ? "Distance not known" : "No locations listed"}
           </p>
-          <p className="mt-1.5 text-[11.5px] text-ink-faint">
+          {/* Study-level and site-level status are different facts, so both are stated. */}
+          <p className="mt-1.5 text-[11.5px] leading-snug text-ink-soft">
+            <span className="font-semibold capitalize text-ink">{overall}</span>
+            {trial.sites.length ? (siteKnown ? ", site status published" : ", site status not published") : ""}
+            <span className={stale ? "font-semibold text-peach" : ""}>
+              {trial.lastUpdatePostDate ? `, record updated ${trial.lastUpdatePostDate}${stale ? " (over a year ago)" : ""}` : ", record date not stated"}
+            </span>
+          </p>
+          <p className="mt-1 text-[11.5px] text-ink-faint">
             {assessment.conflicts} to review, {assessment.unknowns} unanswered, {assessment.supported} matched
             {participant.maxTravelMinutes && assessment.practicalFit.withinStatedTravelPreference === false ? ", farther than you prefer" : ""}
           </p>
+          {why.length ? (
+            <ul className="mt-1 space-y-0.5">
+              {why.map((reason) => <li key={reason} className="text-[11.5px] leading-snug text-ink-faint">{reason}</li>)}
+            </ul>
+          ) : null}
         </div>
         <CaretRight size={18} weight="bold" className="shrink-0 text-iris" />
       </Link>

@@ -4,7 +4,8 @@ import { PrintButton } from "@/components/CountedTextarea";
 import { Callout, Card, Pill, ScreenHeader, SectionHeading } from "@/components/ui";
 import { getGrant, getInquiry, getTrial, listQuestions, markInquirySeen } from "@/lib/repo";
 import { getActiveParticipant } from "@/lib/session";
-import { decideAction } from "@/app/actions";
+import { decideAction, questionFollowUpAction } from "@/app/actions";
+import { isAnswered, QUESTION_STATE_LABEL } from "@/lib/questions";
 
 export const dynamic = "force-dynamic";
 
@@ -30,8 +31,8 @@ export default async function InquiryPage({ params }: { params: Promise<{ id: st
   const grant = inquiry.grantId ? getGrant(inquiry.grantId) : null;
   const questions = listQuestions({ inquiryId: inquiry.id });
   const copy = STATE_COPY[inquiry.state] ?? STATE_COPY.shared;
-  const answered = questions.filter((q) => q.answer);
-  const open = questions.filter((q) => !q.answer);
+  const answered = questions.filter((q) => isAnswered(q));
+  const open = questions.filter((q) => !isAnswered(q));
 
   const choices = [
     { value: "participating", label: "I have agreed to take part", hint: "Adds the study's confirmed visits to your timeline." },
@@ -70,6 +71,15 @@ export default async function InquiryPage({ params }: { params: Promise<{ id: st
                 <p className="mt-2 text-[11px] leading-relaxed text-ink-faint">
                   {question.answeredBy}{question.answerCitation ? `. ${question.answerCitation}` : ""}
                 </p>
+                {question.state === "resolved" ? (
+                  <p className="mt-2"><Pill tone="mint">You marked this resolved</Pill></p>
+                ) : (
+                  <form action={questionFollowUpAction} className="no-print mt-2.5 flex gap-2">
+                    <input type="hidden" name="questionId" value={question.id} />
+                    <button type="submit" name="intent" value="resolve" className="press min-h-11 flex-1 rounded-full border border-rule-strong bg-surface text-[12.5px] font-bold text-ink hover:bg-sunken">This answers it</button>
+                    <button type="submit" name="intent" value="reopen" className="press min-h-11 flex-1 rounded-full border border-rule-strong bg-surface text-[12.5px] font-bold text-ink hover:bg-sunken">I still have a question</button>
+                  </form>
+                )}
               </Card>
             ))}
           </ul>
@@ -84,7 +94,7 @@ export default async function InquiryPage({ params }: { params: Promise<{ id: st
               {open.map((question) => (
                 <li key={question.id} className="flex items-center justify-between gap-3 border-b border-rule py-3 last:border-0">
                   <span className="text-[13px] text-ink">{question.text}</span>
-                  <Pill>{question.state.replace(/_/g, " ")}</Pill>
+                  <Pill>{question.answer ? "Reopened" : question.state === "draft_answer" ? "Being answered" : QUESTION_STATE_LABEL[question.state]}</Pill>
                 </li>
               ))}
             </ul>

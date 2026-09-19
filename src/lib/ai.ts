@@ -94,6 +94,14 @@ function sourcesFor(trial: Trial): SourceDoc[] {
       text: trial.eligibilityText,
     });
   }
+  if (trial.knownLogistics?.compensationText) {
+    docs.push({
+      id: `${trial.id}#logistics`,
+      label: `${trial.isFictional ? "FICTIONAL FIXTURE" : "Study site"} ${trial.id}, site-confirmed logistics`,
+      version,
+      text: trial.knownLogistics.compensationText,
+    });
+  }
   if (trial.detailedDescription) {
     docs.push({
       id: `${trial.id}#description`,
@@ -337,18 +345,7 @@ Set answered=false when the sources do not address the question, and make the an
     "GroundedAnswer"
   ).catch(() => null);
 
-  if (!parsed) {
-    return {
-      mode: "offline_template",
-      answered: false,
-      answer:
-        "This is not answered in the material available for this study. Add it to your questions for the study team, a coordinator can answer it directly.",
-      sourceLabel: null,
-      supportingSpan: null,
-      uncertainty: "No language model was available, so only the study's own text was searched.",
-      latencyMs: Date.now() - started,
-    };
-  }
+  if (!parsed) return extractiveAnswer(docs, question, Date.now() - started);
 
   const span = typeof parsed.supportingSpan === "string" ? parsed.supportingSpan : null;
   const doc = span ? spanExists(span, docs) : null;
@@ -366,6 +363,86 @@ Set answered=false when the sources do not address the question, and make the an
       parsed.uncertainty ?? "The registry record may be out of date, and site practice can differ."
     ),
     latencyMs: Date.now() - started,
+  };
+}
+
+/* ------------------------------------------------------- extractive answers */
+
+const ASK_STOPWORDS = new Set([
+  "the", "and", "for", "with", "this", "that", "will", "would", "could", "should", "have", "has", "does",
+  "did", "are", "was", "can", "may", "how", "what", "when", "where", "which", "who", "why", "there", "any",
+  "study", "trial", "get", "need", "about", "from", "into", "your", "you", "much", "many", "long",
+  // Phrases people use to ask, which say nothing about the topic.
+  "take", "taking", "part", "join", "joining", "participate", "participating", "still", "able", "allowed",
+]);
+
+/** Small families of words that mean the same thing to someone asking. */
+const ASK_FAMILIES = [
+  ["paid", "pay", "payment", "payments", "compensation", "compensated", "reimbursed", "reimbursement", "reimburse", "money"],
+  ["pregnant", "pregnancy", "breastfeeding", "lactating"],
+  ["old", "age", "aged", "years", "older", "younger"],
+  ["metastatic", "metastasis", "metastases", "spread"],
+  ["travel", "transport", "transportation", "parking", "mileage"],
+];
+
+function askTerms(text: string): string[] {
+  const words = text.toLowerCase().replace(/[^a-z0-9\s-]/g, " ").split(/\s+/)
+    .filter((word) => word.length > 2 && !ASK_STOPWORDS.has(word));
+  return [...new Set(words)];
+}
+
+function termMatches(term: string, sentenceWords: Set<string>): boolean {
+  if (sentenceWords.has(term)) return true;
+  const family = ASK_FAMILIES.find((group) => group.includes(term));
+  return family ? family.some((word) => sentenceWords.has(word)) : false;
+}
+
+/**
+ * Answers from the record with no model at all: find the passage that shares the
+ * most of the question's words and quote it verbatim. It never paraphrases, so
+ * it cannot misstate the record. When nothing clears the bar it abstains, which
+ * is the right outcome for a question the record does not address.
+ */
+function extractiveAnswer(docs: SourceDoc[], question: string, latencyMs: number): GroundedAnswer {
+  const terms = askTerms(question);
+  let best: { doc: SourceDoc; sentence: string; score: number; matched: number } | null = null;
+
+  for (const doc of docs) {
+    const sentences = doc.text.split(/(?<=[.;])\s+|\n+/).map((part) => part.replace(/^[\s*\-\u2022]+/, "").trim())
+      .filter((part) => part.length >= 12);
+    for (const sentence of sentences) {
+      const words = new Set(askTerms(sentence).concat(sentence.toLowerCase().split(/[^a-z0-9]+/)));
+      const matched = terms.filter((term) => termMatches(term, words)).length;
+      const score = terms.length ? matched / terms.length : 0;
+      if (!best || score > best.score || (score === best.score && matched > best.matched)) {
+        best = { doc, sentence, score, matched };
+      }
+    }
+  }
+
+  // One shared word is coincidence. Require half the question, and at least one
+  // match when the question is a single meaningful word.
+  const confident = best && best.matched >= Math.min(2, terms.length) && best.score >= 0.5 && terms.length > 0;
+  if (!best || !confident) {
+    return {
+      mode: "offline_template",
+      answered: false,
+      answer: "This study's record does not say. That is worth asking the study team, and a coordinator can answer it directly.",
+      sourceLabel: null,
+      supportingSpan: null,
+      uncertainty: "We searched the study's own text by keyword, with no language model. Wording that differs from your question could have been missed.",
+      latencyMs,
+    };
+  }
+
+  return {
+    mode: "offline_template",
+    answered: true,
+    answer: "Here is the closest passage in this study's record. It is quoted word for word, and we have not interpreted it.",
+    sourceLabel: `${best.doc.label}, version ${best.doc.version}`,
+    supportingSpan: best.sentence,
+    uncertainty: "A keyword match can find the right topic without answering your exact question. If it does not settle it, save the question for the study team.",
+    latencyMs,
   };
 }
 

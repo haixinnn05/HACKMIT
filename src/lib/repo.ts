@@ -431,7 +431,8 @@ export function updateQuestion(id: string, patch: {
 }) {
   const current = getQuestion(id);
   if (!current) throw new Error(`Unknown question ${id}`);
-  const answered = patch.state === "reviewed_answer" || patch.state === "resolved";
+  // Only sending an answer stamps the time. Resolving or reopening must not.
+  const answered = patch.state === "reviewed_answer";
   getDb()
     .prepare(`UPDATE questions SET state=?, assigned_to=?, answer=?, answer_citation=?, answered_by=?, answered_at=? WHERE id=?`)
     .run(
@@ -545,4 +546,21 @@ export function setPersonalNote(participantId: string, note: string) {
   const trimmed = note.trim().slice(0, 140);
   if (!trimmed) db.prepare("DELETE FROM participant_notes WHERE participant_id = ?").run(participantId);
   else db.prepare("INSERT OR REPLACE INTO participant_notes (participant_id, note) VALUES (?, ?)").run(participantId, trimmed);
+}
+
+/* ----------------------------------------------------------- answer drafts */
+
+export function saveQuestionDraft(questionId: string, draft: string, citation: string | null) {
+  getDb().prepare("INSERT OR REPLACE INTO question_drafts (question_id, draft, citation, updated_at) VALUES (?,?,?,?)")
+    .run(questionId, draft, citation, new Date().toISOString());
+}
+
+export function getQuestionDraft(questionId: string): { draft: string; citation: string | null } | null {
+  const row = getDb().prepare("SELECT draft, citation FROM question_drafts WHERE question_id = ?")
+    .get(questionId) as { draft: string; citation: string | null } | undefined;
+  return row ?? null;
+}
+
+export function deleteQuestionDraft(questionId: string) {
+  getDb().prepare("DELETE FROM question_drafts WHERE question_id = ?").run(questionId);
 }

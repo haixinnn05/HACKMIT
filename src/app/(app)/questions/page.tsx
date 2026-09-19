@@ -3,12 +3,14 @@ import { Card, Empty, Pill, ScreenHeader, Tabs } from "@/components/ui";
 import { getTrial, listQuestions, listSavedTrialIds } from "@/lib/repo";
 import { getActiveParticipant } from "@/lib/session";
 import { addQuestionAction, removeQuestionAction } from "@/app/actions";
+import { isAnswered } from "@/lib/questions";
 import type { Question } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
 function statusOf(question: Question) {
-  if (question.answer) return { id: "answered", label: "Answered", tone: "mint" as const };
+  if (isAnswered(question)) return { id: "answered", label: question.state === "resolved" ? "Resolved" : "Answered", tone: "mint" as const };
+  if (question.answer) return { id: "sent", label: "Reopened", tone: "peach" as const };
   if (question.inquiryId) return { id: "sent", label: "Sent", tone: "neutral" as const };
   return { id: "ask", label: "Need to ask", tone: "iris" as const };
 }

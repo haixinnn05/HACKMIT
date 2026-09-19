@@ -202,6 +202,15 @@ CREATE TABLE IF NOT EXISTS participant_notes (
   note TEXT NOT NULL
 );
 
+-- A coordinator's unsent answer. Kept out of the questions table on purpose:
+-- nothing that reads a question can show a draft to the participant by mistake.
+CREATE TABLE IF NOT EXISTS question_drafts (
+  question_id TEXT PRIMARY KEY,
+  draft TEXT NOT NULL,
+  citation TEXT,
+  updated_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS audit_events (
   id TEXT PRIMARY KEY,
   actor TEXT NOT NULL,
@@ -479,7 +488,7 @@ export function resetDemoData() {
     db.exec(`
       DELETE FROM inquiries; DELETE FROM questions; DELETE FROM grants;
       DELETE FROM milestones; DELETE FROM enrollments; DELETE FROM saved_trials;
-      DELETE FROM todos; DELETE FROM inquiry_reads;
+      DELETE FROM todos; DELETE FROM inquiry_reads; DELETE FROM question_drafts;
       DELETE FROM audit_events; DELETE FROM participants;
     `);
     db.prepare("DELETE FROM meta WHERE key = 'seeded_at'").run();

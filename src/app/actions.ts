@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
-  audit, clearTodos, createGrant, createInquiry, createQuestion, ensureTodo, getParticipant, getTrial,
+  audit, clearTodos, createGrant, deleteQuestionDraft, getQuestion, saveQuestionDraft, createInquiry, createQuestion, ensureTodo, getParticipant, getTrial,
   listQuestions, recordMilestone, setPersonalNote, revokeGrant, saveTrial, setInquiryState, toggleTodo,
   unsaveTrial, updateParticipant, updateQuestion, upsertEnrollment,
 } from "@/lib/repo";
@@ -198,8 +198,11 @@ export async function coordinatorRequestInfoAction(formData: FormData) {
   revalidatePath("/coordinator");
 }
 
-/** The human-reviewed reply. A draft is offered, but it is only sent after a
- *  person edits or accepts it and clicks send. */
+/**
+ * The human-reviewed reply. A coordinator can save a draft, which the
+ * participant never sees, or send the answer, which they do. Nothing is sent
+ * without a person pressing Send.
+ */
 export async function coordinatorAnswerAction(formData: FormData) {
   const questionId = String(formData.get("questionId"));
   const inquiryId = String(formData.get("inquiryId"));
@@ -207,24 +210,33 @@ export async function coordinatorAnswerAction(formData: FormData) {
   const citation = String(formData.get("citation") ?? "").trim() || null;
   if (!answer) return;
 
-  updateQuestion(questionId, {
-    state: "reviewed_answer",
-    answer,
-    answerCitation: citation,
-    answeredBy: "R. Alvarez, Research Coordinator (simulated staff account)",
-  });
-  setInquiryState(inquiryId, "answered");
-  audit("coord-fixture-1", "question.answered", questionId);
+  if (formData.get("intent") === "draft") {
+    saveQuestionDraft(questionId, answer, citation);
+    updateQuestion(questionId, { state: "draft_answer" });
+    audit("coord-fixture-1", "question.draft_saved", questionId);
+  } else {
+    updateQuestion(questionId, {
+      state: "reviewed_answer", answer, answerCitation: citation,
+      answeredBy: "R. Alvarez, Research Coordinator (simulated staff account)",
+    });
+    deleteQuestionDraft(questionId);
+    setInquiryState(inquiryId, "answered");
+    audit("coord-fixture-1", "question.answered", questionId);
+  }
   revalidatePath(`/coordinator/${inquiryId}`);
   revalidatePath(`/inquiry/${inquiryId}`);
   revalidatePath("/coordinator");
+  revalidatePath("/inbox");
+  revalidatePath("/questions");
   revalidatePath("/");
 }
 
 export async function coordinatorAssignAction(formData: FormData) {
   const questionId = String(formData.get("questionId"));
   const inquiryId = String(formData.get("inquiryId"));
-  updateQuestion(questionId, { state: "assigned", assignedTo: String(formData.get("assignee") ?? "") });
+  const assignee = String(formData.get("assignee") ?? "");
+  updateQuestion(questionId, { state: "assigned", assignedTo: assignee });
+  audit("coord-fixture-1", "question.assigned", questionId, assignee);
   revalidatePath(`/coordinator/${inquiryId}`);
 }
 
@@ -332,4 +344,26 @@ export async function resetDemoAction() {
   resetDemoData();
   revalidatePath("/", "layout");
   redirect("/");
+}
+
+/** The participant closes a question, or says the answer did not settle it. */
+export async function questionFollowUpAction(formData: FormData) {
+  const participant = await getActiveParticipant();
+  const question = getQuestion(String(formData.get("questionId")));
+  // Only the person who asked can resolve or reopen their question.
+  if (!question || question.participantId !== participant.id) return;
+
+  if (formData.get("intent") === "reopen") {
+    // The earlier answer stays as history; the question is simply open again.
+    updateQuestion(question.id, { state: "open", assignedTo: null });
+    if (question.inquiryId) setInquiryState(question.inquiryId, "acknowledged");
+    audit(participant.id, "question.reopened", question.id);
+  } else {
+    updateQuestion(question.id, { state: "resolved" });
+    audit(participant.id, "question.resolved", question.id);
+  }
+  if (question.inquiryId) revalidatePath(`/inquiry/${question.inquiryId}`);
+  revalidatePath("/questions");
+  revalidatePath("/inbox");
+  revalidatePath("/coordinator");
 }

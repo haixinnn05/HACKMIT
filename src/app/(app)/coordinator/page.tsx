@@ -2,6 +2,7 @@ import Link from "next/link";
 import { CaretRight, ShieldCheck, Tray } from "@phosphor-icons/react/dist/ssr";
 import { Avatar, Callout, Card, Empty, Pill, ScreenHeader, Tabs } from "@/components/ui";
 import { getParticipant, getTrial, listInquiriesForCoordinator, listQuestions } from "@/lib/repo";
+import { isAnswered } from "@/lib/questions";
 
 export const dynamic = "force-dynamic";
 
@@ -48,7 +49,7 @@ export default async function CoordinatorInbox({ searchParams }: { searchParams:
           {shown.map((inquiry) => {
             const participant = getParticipant(inquiry.participantId);
             const name = (participant?.displayName ?? "Participant").replace(/\s*\(synthetic\)$/, "");
-            const open = listQuestions({ inquiryId: inquiry.id }).filter((q) => !q.answer).length;
+            const open = listQuestions({ inquiryId: inquiry.id }).filter((q) => !isAnswered(q)).length;
             return (
               <Card as="li" key={inquiry.id}>
                 <Link href={`/coordinator/${inquiry.id}`} className="press flex items-center gap-3 p-4">

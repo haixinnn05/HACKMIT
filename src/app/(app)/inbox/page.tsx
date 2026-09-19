@@ -4,6 +4,7 @@ import { Card, Empty, Pill, ScreenHeader, Tabs } from "@/components/ui";
 import { getGrant, getTrial, isInquiryUnread, listInquiriesForParticipant, listQuestions } from "@/lib/repo";
 import { getActiveParticipant } from "@/lib/session";
 import type { InquiryState } from "@/lib/types";
+import { isAnswered } from "@/lib/questions";
 
 export const dynamic = "force-dynamic";
 
@@ -66,7 +67,7 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
             const sender = (grant?.recipientLabel ?? "Study team").replace(/\s*\(.*\)$/, "");
             const initials = sender.split(/\s+/).map((word) => word[0]).filter((c) => /[A-Z]/.test(c ?? "")).slice(0, 4).join("");
             const state = STATE[inquiry.state];
-            const answer = listQuestions({ inquiryId: inquiry.id }).find((q) => q.answer)?.answer;
+            const answer = listQuestions({ inquiryId: inquiry.id }).find((q) => isAnswered(q))?.answer;
             const isNew = isInquiryUnread(inquiry);
             return (
               <li key={inquiry.id} className="border-b border-rule last:border-0">
