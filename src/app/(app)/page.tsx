@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { Card, Empty, LinkButton, Note, SectionHeading } from "@/components/ui";
-import { getTrial, listEnrollments, listInquiriesForParticipant, listMilestones, listQuestions } from "@/lib/repo";
+import { Card, Empty, Note, SectionHeading } from "@/components/ui";
+import { getTrial, listEnrollments, listInquiriesForParticipant, listMilestones, listQuestions, listSavedTrialIds } from "@/lib/repo";
 import { getActiveParticipant } from "@/lib/session";
 import { requestNow } from "@/lib/clock";
 
@@ -21,6 +21,9 @@ export default async function HomePage() {
   const enrollments = listEnrollments(participant.id);
   const inquiries = listInquiriesForParticipant(participant.id);
   const milestones = listMilestones(participant.id);
+  const savedTrialIds = listSavedTrialIds(participant.id);
+  const participantQuestions = listQuestions({ participantId: participant.id });
+  const recordedFacts = participant.clinicalFacts.filter((fact) => fact.value).length;
 
   const today = new Date(now).toISOString().slice(0, 10);
   const upcoming = enrollments
@@ -38,14 +41,37 @@ export default async function HomePage() {
 
   return (
     <div className="space-y-6">
-      <header>
-        <p className="text-sm text-ink-soft">
+      <header className="relative overflow-hidden rounded-[1.75rem] border border-rule bg-white px-5 py-6 shadow-[0_12px_34px_rgba(23,23,32,0.07)] sm:px-7 sm:py-8">
+        <div aria-hidden className="absolute -right-9 -top-12 size-40 rounded-full border-[22px] border-teal-soft" />
+        <div aria-hidden className="absolute -bottom-10 right-28 size-20 rotate-12 rounded-2xl bg-coral-soft" />
+        <p className="relative inline-flex rounded-full bg-lemon-soft px-3 py-1 text-xs font-bold uppercase tracking-[0.14em] text-amber">
+          Your trial journey
+        </p>
+        <p className="relative mt-4 text-sm font-medium text-ink-faint">
           {new Date(now).toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
         </p>
-        <h1 className="text-2xl font-semibold tracking-tight text-ink">
-          {participant.displayName.replace(/\s*\(synthetic\)$/, "")}
+        <h1 className="relative mt-1 text-3xl font-bold tracking-[-0.04em] text-ink sm:text-4xl">
+          Welcome, {participant.displayName.replace(/\s*\(synthetic\)$/, "")}
         </h1>
+        <p className="relative mt-2 max-w-lg text-sm leading-relaxed text-ink-soft">
+          Take this one step at a time. Your questions, options, and next steps are all in one place.
+        </p>
+        <Link
+          href="/explore"
+          className="relative mt-5 inline-flex min-h-11 items-center gap-2 rounded-xl bg-teal px-5 py-2 text-sm font-bold text-white shadow-[0_7px_18px_rgba(100,55,245,0.22)] transition-colors hover:bg-teal-deep"
+        >
+          Find clinical trials
+          <span aria-hidden>→</span>
+        </Link>
       </header>
+
+      <JourneyRoadmap
+        recordedFacts={recordedFacts}
+        totalFacts={participant.clinicalFacts.length}
+        savedCount={savedTrialIds.length}
+        openQuestionCount={participantQuestions.filter((question) => !question.answer).length}
+        inquiryCount={inquiries.length}
+      />
 
       {answered.length ? (
         <section aria-labelledby="replies-heading">
@@ -151,20 +177,6 @@ export default async function HomePage() {
         </section>
       ) : null}
 
-      {upcoming.length === 0 && awaiting.length === 0 && answered.length === 0 ? (
-        <section>
-          <SectionHeading hint="Start by seeing which studies might be worth a conversation.">
-            Where to begin
-          </SectionHeading>
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <LinkButton href="/explore" className="flex-1">Explore options</LinkButton>
-            <LinkButton href="/passport" variant="secondary" className="flex-1">
-              Check my passport
-            </LinkButton>
-          </div>
-        </section>
-      ) : null}
-
       {milestones.length ? (
         <section aria-labelledby="stamps-heading">
           <SectionHeading
@@ -193,5 +205,85 @@ export default async function HomePage() {
         study, and taking part in research is always decided with a study&rsquo;s own team.
       </Note>
     </div>
+  );
+}
+
+function JourneyRoadmap({
+  recordedFacts,
+  totalFacts,
+  savedCount,
+  openQuestionCount,
+  inquiryCount,
+}: {
+  recordedFacts: number;
+  totalFacts: number;
+  savedCount: number;
+  openQuestionCount: number;
+  inquiryCount: number;
+}) {
+  const steps = [
+    {
+      number: "01",
+      title: "Build your passport",
+      detail: `${recordedFacts} of ${totalFacts} clinical facts recorded`,
+      href: "/passport",
+      action: "Review profile",
+      marker: "bg-teal text-white",
+      accent: "border-l-teal",
+    },
+    {
+      number: "02",
+      title: "Find trials worth a conversation",
+      detail: savedCount ? `${savedCount} option${savedCount === 1 ? "" : "s"} saved` : "Search the public registry snapshot",
+      href: "/explore",
+      action: "Explore trials",
+      marker: "bg-blue text-white",
+      accent: "border-l-blue",
+    },
+    {
+      number: "03",
+      title: "Prepare your questions",
+      detail: openQuestionCount ? `${openQuestionCount} open question${openQuestionCount === 1 ? "" : "s"}` : "Save questions as you review each study",
+      href: "/passport",
+      action: "View questions",
+      marker: "bg-coral text-white",
+      accent: "border-l-coral",
+    },
+    {
+      number: "04",
+      title: "Choose what happens next",
+      detail: inquiryCount ? `${inquiryCount} conversation${inquiryCount === 1 ? "" : "s"} in your inbox` : "Nothing is shared until you choose",
+      href: inquiryCount ? "/coordinator" : "/about",
+      action: inquiryCount ? "Open inbox" : "See how sharing works",
+      marker: "bg-lemon text-ink",
+      accent: "border-l-lemon",
+    },
+  ];
+
+  return (
+    <section aria-labelledby="roadmap-heading">
+      <SectionHeading id="roadmap-heading" hint="A simple roadmap from learning to deciding. You can move back and forth at any time.">
+        Your roadmap
+      </SectionHeading>
+      <ol className="roadmap-line ml-5 space-y-3 pl-8">
+        {steps.map((step) => (
+          <li key={step.number} className="relative">
+            <span className={`absolute -left-[3.05rem] top-5 grid size-10 place-items-center rounded-full border-4 border-paper text-[11px] font-extrabold shadow-sm ${step.marker}`}>
+              {step.number}
+            </span>
+            <Card className={`overflow-hidden border-l-4 ${step.accent}`}>
+              <Link href={step.href} className="group flex min-h-24 items-center justify-between gap-4 p-4 sm:p-5">
+                <span className="min-w-0">
+                  <span className="block text-base font-bold tracking-[-0.02em] text-ink">{step.title}</span>
+                  <span className="mt-1 block text-sm leading-relaxed text-ink-soft">{step.detail}</span>
+                  <span className="mt-2 block text-xs font-bold text-teal">{step.action}</span>
+                </span>
+                <span aria-hidden className="grid size-10 shrink-0 place-items-center rounded-full bg-paper-sunken text-lg text-ink transition-transform group-hover:translate-x-0.5">→</span>
+              </Link>
+            </Card>
+          </li>
+        ))}
+      </ol>
+    </section>
   );
 }

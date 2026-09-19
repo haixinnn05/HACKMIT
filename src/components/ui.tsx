@@ -9,7 +9,7 @@ export function Card({
   children, className = "", as: Tag = "div",
 }: { children: ReactNode; className?: string; as?: "div" | "section" | "article" | "li" }) {
   return (
-    <Tag className={`rounded-xl border border-rule bg-paper-raised ${className}`}>
+    <Tag className={`rounded-2xl border border-rule bg-paper-raised shadow-[0_7px_22px_rgba(23,23,32,0.055)] ${className}`}>
       {children}
     </Tag>
   );
@@ -19,9 +19,9 @@ export function SectionHeading({
   children, hint, id,
 }: { children: ReactNode; hint?: ReactNode; id?: string }) {
   return (
-    <div className="mb-3">
-      <h2 id={id} className="text-lg font-semibold tracking-tight text-ink">{children}</h2>
-      {hint ? <p className="mt-1 text-sm leading-relaxed text-ink-soft">{hint}</p> : null}
+    <div className="mb-3.5">
+      <h2 id={id} className="text-xl font-semibold tracking-[-0.015em] text-ink">{children}</h2>
+      {hint ? <p className="mt-1 max-w-2xl text-sm leading-relaxed text-ink-soft">{hint}</p> : null}
     </div>
   );
 }
@@ -94,15 +94,16 @@ export function Note({
   children, tone = "neutral",
 }: { children: ReactNode; tone?: "neutral" | "caution" }) {
   return (
-    <p
-      className={`rounded-lg border px-3.5 py-2.5 text-sm leading-relaxed ${
+    <div
+      className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-sm leading-relaxed ${
         tone === "caution"
           ? "border-amber/30 bg-amber-soft text-amber"
-          : "border-rule bg-paper-sunken text-ink-soft"
+          : "border-blue/15 bg-blue-soft text-slate"
       }`}
     >
-      {children}
-    </p>
+      <span aria-hidden className="mt-1 block size-1.5 shrink-0 rounded-full bg-current" />
+      <p>{children}</p>
+    </div>
   );
 }
 
@@ -110,14 +111,14 @@ export function Button({
   children, variant = "primary", ...props
 }: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "secondary" | "quiet" }) {
   const styles = {
-    primary: "bg-teal text-white hover:bg-teal-deep border-teal",
-    secondary: "bg-paper-raised text-ink hover:bg-paper-sunken border-rule-strong",
+    primary: "bg-teal text-white hover:bg-teal-deep border-teal shadow-[0_6px_16px_rgba(100,55,245,0.2)]",
+    secondary: "bg-paper-raised text-ink hover:bg-paper-sunken border-rule-strong shadow-[0_3px_10px_rgba(23,23,32,0.05)]",
     quiet: "bg-transparent text-ink-soft hover:text-ink hover:bg-paper-sunken border-transparent",
   }[variant];
   return (
     <button
       {...props}
-      className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${styles} ${props.className ?? ""}`}
+      className={`inline-flex min-h-11 cursor-pointer items-center justify-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold transition-[color,background-color,border-color,box-shadow,transform] duration-200 active:translate-y-px disabled:cursor-not-allowed disabled:opacity-50 ${styles} ${props.className ?? ""}`}
     >
       {children}
     </button>
@@ -128,13 +129,13 @@ export function LinkButton({
   children, href, variant = "primary", className = "",
 }: { children: ReactNode; href: string; variant?: "primary" | "secondary"; className?: string }) {
   const styles = {
-    primary: "bg-teal text-white hover:bg-teal-deep border-teal",
-    secondary: "bg-paper-raised text-ink hover:bg-paper-sunken border-rule-strong",
+    primary: "bg-teal text-white hover:bg-teal-deep border-teal shadow-[0_6px_16px_rgba(100,55,245,0.2)]",
+    secondary: "bg-paper-raised text-ink hover:bg-paper-sunken border-rule-strong shadow-[0_3px_10px_rgba(23,23,32,0.05)]",
   }[variant];
   return (
     <Link
       href={href}
-      className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${styles} ${className}`}
+      className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border px-4 py-2 text-sm font-semibold transition-[color,background-color,border-color,box-shadow,transform] duration-200 active:translate-y-px ${styles} ${className}`}
     >
       {children}
     </Link>
@@ -143,8 +144,14 @@ export function LinkButton({
 
 export function Empty({ title, children }: { title: string; children?: ReactNode }) {
   return (
-    <Card className="p-6 text-center">
-      <p className="font-medium text-ink">{title}</p>
+    <Card className="p-7 text-center">
+      <span aria-hidden className="mx-auto mb-3 grid size-11 place-items-center rounded-full bg-teal-soft text-teal">
+        <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M5 16.5a7.5 7.5 0 0 1 14 0" />
+          <path d="M12 5v4M4.5 10.5l2.8 1.6M19.5 10.5l-2.8 1.6M3 19h18" />
+        </svg>
+      </span>
+      <p className="font-semibold text-ink">{title}</p>
       {children ? <div className="mx-auto mt-1.5 max-w-md text-sm leading-relaxed text-ink-soft">{children}</div> : null}
     </Card>
   );

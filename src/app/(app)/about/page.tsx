@@ -15,9 +15,10 @@ export default function AboutPage() {
     <div className="space-y-5">
       <Link href="/passport" className="inline-flex min-h-11 items-center text-sm text-teal hover:underline">← My passport</Link>
 
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-ink">How this works</h1>
-        <p className="mt-1 text-sm leading-relaxed text-ink-soft">
+      <div className="page-intro">
+        <p className="mb-1 text-xs font-bold uppercase tracking-[0.16em] text-teal">Clear about the limits</p>
+        <h1 className="text-3xl font-semibold tracking-[-0.025em] text-ink">How this works</h1>
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-soft">
           Trial Passport helps you understand what taking part in a study would involve and
           prepare a first conversation with a research coordinator. That is the whole job.
         </p>

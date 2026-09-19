@@ -44,9 +44,9 @@ export default async function HandoffPage({
 
   return (
     <div className="space-y-5">
-      <header>
+      <header className="page-intro">
         <p className="text-xs uppercase tracking-wide text-ink-faint">Shared passport</p>
-        <h1 className="text-2xl font-semibold tracking-tight text-ink">
+        <h1 className="text-3xl font-semibold tracking-[-0.025em] text-ink">
           {allowed.has("basics") ? participant.displayName : "A participant"}
         </h1>
         <p className="mt-1 text-sm text-ink-soft">

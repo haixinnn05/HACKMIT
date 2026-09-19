@@ -24,10 +24,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           displayName: persona.displayName,
         }))}
       />
-      <main id="main" className="mx-auto max-w-3xl px-4 pb-28 pt-5">
-        {children}
-      </main>
-      <BottomNav participantName={participant.displayName} />
+      <div className="mx-auto flex max-w-6xl items-start gap-8 px-4 sm:px-6 lg:px-8">
+        <main id="main" className="min-w-0 max-w-3xl flex-1 pb-28 pt-6 sm:pt-8 lg:order-2 lg:pb-16">
+          {children}
+        </main>
+        <BottomNav participantName={participant.displayName} />
+      </div>
     </>
   );
 }

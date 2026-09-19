@@ -17,7 +17,13 @@ import { Button } from "./ui";
  * shows only the fields chosen, and says who it was shared with and when it
  * expires.
  */
-export function PassportQr({ participantName }: { participantName: string }) {
+export function PassportQr({
+  participantName,
+  variant = "floating",
+}: {
+  participantName: string;
+  variant?: "floating" | "sidebar" | "responsive";
+}) {
   const [open, setOpen] = useState(false);
   const [fields, setFields] = useState<string[]>(["basics", "condition", "practical"]);
   const [state, setState] = useState<"idle" | "loading" | "ready" | "error">("idle");
@@ -61,10 +67,16 @@ export function PassportQr({ participantName }: { participantName: string }) {
         type="button"
         onClick={() => { setOpen(true); setState("idle"); setPayload(null); }}
         aria-haspopup="dialog"
-        className="relative -mt-6 flex size-14 shrink-0 items-center justify-center rounded-full border-4 border-paper bg-teal text-white shadow-lg transition-transform hover:bg-teal-deep active:scale-95"
+        aria-label="Show my passport code"
+        className={variant === "sidebar"
+          ? "flex min-h-11 w-full cursor-pointer items-center justify-start gap-3 rounded-xl bg-teal px-3 py-2 text-sm font-semibold text-white shadow-[0_6px_16px_rgba(100,55,245,0.2)] transition-colors hover:bg-teal-deep"
+          : variant === "responsive"
+            ? "relative -mt-6 flex size-14 shrink-0 cursor-pointer items-center justify-center gap-3 rounded-full border-4 border-paper bg-teal text-sm font-semibold text-white shadow-[0_8px_22px_rgba(100,55,245,0.28)] transition-[background-color,transform] hover:bg-teal-deep active:scale-95 lg:mt-0 lg:min-h-11 lg:w-full lg:justify-start lg:rounded-xl lg:border-0 lg:px-3 lg:py-2 lg:shadow-[0_6px_16px_rgba(100,55,245,0.2)]"
+            : "relative -mt-6 flex size-14 shrink-0 cursor-pointer items-center justify-center rounded-full border-4 border-paper bg-teal text-white shadow-[0_8px_22px_rgba(100,55,245,0.28)] transition-[background-color,transform] hover:bg-teal-deep active:scale-95"}
       >
-        <span className="sr-only">Show my passport code</span>
         <QrGlyph />
+        {variant === "sidebar" ? <span>Share passport</span> : null}
+        {variant === "responsive" ? <span className="hidden lg:inline">Share passport</span> : null}
       </button>
 
       {open ? (
@@ -82,7 +94,11 @@ export function PassportQr({ participantName }: { participantName: string }) {
                 <h2 id="qr-title" className="text-lg font-semibold text-ink">My passport code</h2>
                 <p className="text-sm text-ink-soft">{participantName}</p>
               </div>
-              <Button variant="quiet" onClick={() => setOpen(false)} aria-label="Close">✕</Button>
+              <Button variant="quiet" onClick={() => setOpen(false)} aria-label="Close">
+                <svg aria-hidden viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+                  <path d="m6 6 12 12M18 6 6 18" />
+                </svg>
+              </Button>
             </div>
 
             {state !== "ready" ? (

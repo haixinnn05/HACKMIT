@@ -72,9 +72,10 @@ export default async function NewInquiryPage({
         ← Back to the study
       </Link>
 
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-ink">Before you share</h1>
-        <p className="mt-1 text-sm leading-relaxed text-ink-soft">
+      <div className="page-intro">
+        <p className="mb-1 text-xs font-bold uppercase tracking-[0.16em] text-teal">You stay in control</p>
+        <h1 className="text-3xl font-semibold tracking-[-0.025em] text-ink">Before you share</h1>
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-soft">
           This is exactly what would be sent, and to whom. Nothing has been shared yet.
         </p>
       </div>

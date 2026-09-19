@@ -100,11 +100,12 @@ export default function AccessGapsPage() {
     <div className="space-y-5">
       <Link href="/passport" className="inline-flex min-h-11 items-center text-sm text-teal hover:underline">← My passport</Link>
 
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-ink">
+      <div className="page-intro">
+        <p className="mb-1 text-xs font-bold uppercase tracking-[0.16em] text-teal">Transparency by design</p>
+        <h1 className="text-3xl font-semibold tracking-[-0.025em] text-ink">
           What the public data does not say
         </h1>
-        <p className="mt-1 text-sm leading-relaxed text-ink-soft">
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-soft">
           Every gap below is measured against the {total} public ClinicalTrials.gov records in
           this snapshot. They describe how much a person can learn before contacting a site.
         </p>

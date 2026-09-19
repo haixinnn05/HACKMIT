@@ -68,8 +68,9 @@ export default async function CoordinatorInquiryPage({
 
       {trial.isFictional ? <FictionBanner /> : null}
 
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight text-ink">
+      <header className="page-intro">
+        <p className="mb-1 text-xs font-bold uppercase tracking-[0.16em] text-teal">Participant inquiry</p>
+        <h1 className="text-3xl font-semibold tracking-[-0.025em] text-ink">
           {participant.displayName}
         </h1>
         <p className="mt-1 text-sm text-ink-soft">{trial.briefTitle ?? trial.id}</p>

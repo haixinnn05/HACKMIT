@@ -3,54 +3,96 @@
 /*
  * Trial Passport visual language.
  *
- * Warm off-white surfaces, dark ink, one muted teal accent. Essential
+ * White-first marketplace surfaces, black ink, and a small family of bright
+ * orientation colours. Essential
  * information comes before animation, and every status is carried by words and
  * shape as well as colour — colour alone never encodes meaning.
  */
 
 @theme {
-  --color-paper: #faf8f4;
+  --color-paper: #f8f8fb;
   --color-paper-raised: #ffffff;
-  --color-paper-sunken: #f2eee7;
-  --color-ink: #1c1a17;
-  --color-ink-soft: #55504a;
-  --color-ink-faint: #85807a;
-  --color-rule: #e4ded4;
-  --color-rule-strong: #cfc7ba;
+  --color-paper-sunken: #f1f1f6;
+  --color-ink: #15151a;
+  --color-ink-soft: #50505b;
+  --color-ink-faint: #71717d;
+  --color-rule: #e3e3ea;
+  --color-rule-strong: #c7c7d2;
 
-  --color-teal: #1f6f6b;
-  --color-teal-soft: #e3f0ee;
-  --color-teal-deep: #164e4b;
+  /* Existing semantic class names stay stable; teal now maps to brand violet. */
+  --color-teal: #6437f5;
+  --color-teal-soft: #eeeaff;
+  --color-teal-deep: #4320b8;
 
-  --color-amber: #8a5a10;
-  --color-amber-soft: #fbf0dc;
-  --color-clay: #9c3d2e;
-  --color-clay-soft: #fbe8e4;
-  --color-slate: #45566b;
-  --color-slate-soft: #e9eef4;
+  --color-blue: #2563eb;
+  --color-blue-soft: #eaf1ff;
+  --color-coral: #e85f55;
+  --color-coral-soft: #fff0ed;
+  --color-lemon: #e8b923;
+  --color-lemon-soft: #fff8d8;
 
-  --font-sans: ui-sans-serif, -apple-system, "Segoe UI", system-ui, sans-serif;
+  --color-amber: #7a5400;
+  --color-amber-soft: #fff7d6;
+  --color-clay: #a83b34;
+  --color-clay-soft: #ffebe8;
+  --color-slate: #2453ad;
+  --color-slate-soft: #eaf1ff;
+
+  --font-sans: var(--font-jakarta), ui-sans-serif, -apple-system, "Segoe UI", sans-serif;
+  --font-display: var(--font-jakarta), ui-sans-serif, -apple-system, "Segoe UI", sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
 }
 
 :root { color-scheme: light; }
 
-html { -webkit-text-size-adjust: 100%; }
+html {
+  -webkit-text-size-adjust: 100%;
+  scroll-padding-top: 7.5rem;
+}
 
 body {
   background: var(--color-paper);
   color: var(--color-ink);
   font-family: var(--font-sans);
   font-size: 16px;
-  line-height: 1.6;
+  line-height: 1.65;
   -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-wrap: balance;
+}
+
+p { text-wrap: pretty; }
+
+button, a, select, input, textarea { touch-action: manipulation; }
+
+button, a { -webkit-tap-highlight-color: transparent; }
+
+input, select, textarea {
+  transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
+}
+
+input:hover, select:hover, textarea:hover { border-color: var(--color-rule-strong); }
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--color-teal);
+  box-shadow: 0 0 0 3px rgb(18 107 97 / 0.12);
+  outline: none;
+}
+
+::selection {
+  background: var(--color-teal-soft);
+  color: var(--color-teal-deep);
 }
 
 /* Visible focus everywhere, never removed. */
 :focus-visible {
-  outline: 2px solid var(--color-teal);
-  outline-offset: 2px;
-  border-radius: 3px;
+  outline: 3px solid var(--color-teal);
+  outline-offset: 3px;
+  border-radius: 6px;
 }
 
 /* Motion is decorative here, so it yields entirely to the user's preference. */
@@ -76,14 +118,64 @@ body {
 }
 .animate-rise { animation: rise 260ms ease-out both; }
 
+.page-intro {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--color-rule);
+  border-radius: 1.5rem;
+  background: var(--color-paper-raised);
+  box-shadow: 0 10px 26px rgb(23 23 32 / 0.06);
+  padding: 1.25rem;
+}
+
+.page-intro::before {
+  content: "";
+  position: absolute;
+  bottom: -1.7rem;
+  right: 5rem;
+  width: 4.25rem;
+  height: 4.25rem;
+  border-radius: 1rem;
+  background: var(--color-coral-soft);
+  transform: rotate(17deg);
+  pointer-events: none;
+}
+
+.page-intro::after {
+  content: "";
+  position: absolute;
+  top: -2.75rem;
+  right: -2.25rem;
+  width: 8.5rem;
+  height: 8.5rem;
+  border: 1.35rem solid var(--color-teal-soft);
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.page-intro > * { position: relative; z-index: 1; }
+
+.roadmap-line {
+  background-image: linear-gradient(to bottom, var(--color-rule-strong) 55%, transparent 0%);
+  background-position: left;
+  background-size: 2px 12px;
+  background-repeat: repeat-y;
+}
+
+@media (min-width: 640px) {
+  .page-intro { padding: 1.5rem 1.75rem; }
+}
+
 /* Utility: quoted source text. Deliberately looks like a document, not like UI. */
 .source-quote {
   font-family: var(--font-mono);
   font-size: 0.8125rem;
   line-height: 1.65;
   background: var(--color-paper-sunken);
-  border-left: 3px solid var(--color-rule-strong);
-  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--color-rule);
+  border-left: 4px solid var(--color-teal);
+  border-radius: 0.75rem;
+  padding: 0.9rem 1rem;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }

@@ -50,9 +50,10 @@ export default async function InquiryPage({ params }: { params: Promise<{ id: st
     <div className="space-y-5">
       <Link href="/passport" className="inline-flex min-h-11 items-center text-sm text-teal hover:underline">← My passport</Link>
 
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-ink">{copy.title}</h1>
-        <p className="mt-1 text-sm leading-relaxed text-ink-soft">{copy.body}</p>
+      <div className="page-intro">
+        <p className="mb-1 text-xs font-bold uppercase tracking-[0.16em] text-teal">Your conversation</p>
+        <h1 className="text-3xl font-semibold tracking-[-0.025em] text-ink">{copy.title}</h1>
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-soft">{copy.body}</p>
       </div>
 
       <Card className="space-y-2 p-4">

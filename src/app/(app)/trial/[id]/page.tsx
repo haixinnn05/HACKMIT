@@ -55,9 +55,9 @@ export default async function TrialPage({
     <div className="space-y-6">
       <Link href="/explore" className="inline-flex min-h-11 items-center text-sm text-teal hover:underline">← Back to options</Link>
 
-      <header className="space-y-3">
+      <header className="page-intro space-y-3">
         {trial.isFictional ? <FictionBanner /> : null}
-        <h1 className="text-2xl font-semibold leading-tight tracking-tight text-ink">
+        <h1 className="max-w-2xl text-3xl font-semibold leading-tight tracking-[-0.025em] text-ink">
           {trial.briefTitle ?? trial.id}
         </h1>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-ink-faint">

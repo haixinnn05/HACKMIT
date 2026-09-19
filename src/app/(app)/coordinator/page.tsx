@@ -16,9 +16,10 @@ export default function CoordinatorInbox() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-ink">Site inbox</h1>
-        <p className="mt-1 text-sm leading-relaxed text-ink-soft">
+      <div className="page-intro">
+        <p className="mb-1 text-xs font-bold uppercase tracking-[0.16em] text-teal">Coordinator workspace</p>
+        <h1 className="text-3xl font-semibold tracking-[-0.025em] text-ink">Research inbox</h1>
+        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-soft">
           Inquiries people have chosen to share with this site, with their evidence and the
           information they are missing.
         </p>
@@ -44,7 +45,7 @@ export default function CoordinatorInbox() {
             const open = questions.filter((question) => !question.answer).length;
 
             return (
-              <Card as="li" key={inquiry.id} className="transition-colors hover:border-rule-strong">
+              <Card as="li" key={inquiry.id} className="border-l-4 border-l-coral transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-teal/30 hover:shadow-[0_14px_34px_rgba(23,23,32,0.09)]">
                 <Link href={`/coordinator/${inquiry.id}`} className="block p-4">
                   <div className="flex flex-wrap items-center gap-2">
                     <span
