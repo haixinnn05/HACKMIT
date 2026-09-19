@@ -32,6 +32,8 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# The example file holds variable names only, never values.
+!.env.example
 
 # vercel
 .vercel
@@ -48,7 +50,7 @@ next-env.d.ts
 # Journey screenshots
 /.journey/
 
-# Generated agent instruction files
-/AGENTS.md
-/CLAUDE.md
 tsconfig.tsbuildinfo
+
+# Review captures
+/.capture/

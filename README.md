@@ -23,12 +23,14 @@ npm run dev          # http://localhost:3000
 
 The database is created and seeded on first request from `data/snapshot/`
 (300 real ClinicalTrials.gov records) and `data/fixtures/` (synthetic personas
-and one clearly-labelled fictional study). No API key and no external service
-are required.
+and one clearly-labelled fictional study). No API key is required. The core
+journey runs locally; when a network is available, trial pages add related
+scholarly works from the CC0 [OpenAlex open dataset](https://registry.opendata.aws/openalex/).
 
 ```bash
 npm run evaluate     # 43 checks: invariants, citations, burden, permissions
-npm run journey      # 48 checks: the full demo journey in a real browser
+npm run journey      # 78 checks: all twelve screens in a real browser
+npm run capture      # phone-size screenshots of all twelve screens, to .capture/
 npm run ingest       # refresh the registry snapshot from ClinicalTrials.gov
 npm run reset        # drop the local database; it reseeds on next request
 ```
@@ -43,25 +45,31 @@ produced the text.
 
 ---
 
-## The journey
+## The twelve screens
 
-1. **Passport** — minimal profile. Every clinical field supports "I don't know",
-   and that answer is stored as unknown rather than treated as "no".
-2. **Explore** — a small ranked set of registry studies, each showing why it
-   surfaced, how old the record is, and what the record does not say.
-3. **Trial detail** — the study in plain language, with every claim quoted from
-   its source; criterion-by-criterion observations; and the participation
-   preview.
-4. **Participation preview** — what taking part would cost in hours, with the
-   arithmetic shown in full.
-5. **Inquiry preview** — the exact payload, chosen field by field, before
-   anything is shared.
-6. **Coordinator workspace** — a simulated site account reviews the evidence,
-   sees what is missing, and writes a reply.
-7. **Back to the participant** — the answer arrives, and declining is offered
-   with the same weight as continuing.
+| # | Screen | Route | What it does |
+|---|---|---|---|
+| 1 | Home / Journey | `/` | Greeting, five-step progress derived from real activity, one next step, replies and the next visit |
+| 2 | Find Clinical Trials | `/explore` | Search, location and phase filters, sort, provisional status on every card |
+| 3 | Trial Detail | `/trial/[id]` | Overview, Eligibility and What to Expect tabs, save, OpenAlex Insight |
+| 4 | Participation Preview | `/trial/[id]/preview` | Six sourced rows, total hours with arithmetic, what-if, suggested questions |
+| 5 | Saved Questions | `/questions` | All / Need to ask / Answered, add, remove, answers with their author |
+| 6 | My Trial Passport | `/passport` | Passport card, scoped ten-minute QR, who can see what, revoke, stamps |
+| 7 | Shared Patient Profile | `/handoff/[token]` | Read-only researcher view of only the chosen sections |
+| 8 | Inquiry Preview | `/inquiry/new/[trialId]` | Tick what to share, personal note, editable and printable packet |
+| 9 | Inbox | `/inbox`, `/inquiry/[id]` | All / Unread / Archived, thread, four choices including declining |
+| 10 | My Profile | `/profile` | Section menu, edit information, saved trials, demo controls |
+| 11 | Research Team Inbox | `/coordinator` | Simulated site: considerations (not a decision), missing info, human-written reply |
+| 12 | Visits & Timeline | `/timeline` | Timeline and calendar of confirmed visits, to-dos, logistics check-in |
 
----
+Where the mockups and the design document disagreed, the document won:
+
+- Cards say "Potential option", never "Potential fit" or anything implying eligibility.
+- The passport shows no QR until the person chooses what to share. The code holds a random
+  ten-minute link, never profile data, and the scanned view renders without the app's navigation.
+- A real registry record shows "Not published" for visits and duration. Only the labelled
+  fictional study has a schedule, and timeline entries show no invented clock times.
+- Personas are synthetic, so avatars are monograms rather than photographs.
 
 ## The three design commitments
 
@@ -129,8 +137,19 @@ src/lib/
   assess.ts   the rule engine — invariants I1–I5
   burden.ts   participation preview arithmetic
   ai.ts       model adapter with span validation and offline fallback
+  openalex.ts OpenAlex lookup using only public trial topics, with offline fallback
   clock.ts    one timestamp per request
 ```
+
+### OpenAlex open data
+
+Each real trial page queries the OpenAlex Works API. It first looks for works
+indexed with the public NCT identifier; if none exist, it shows clearly-labelled
+background research matched from the trial's public condition and intervention.
+Results include their OpenAlex record, authors, venue, publication year,
+citation count and open-access state. Passport, contact and other participant
+data never enter the query. OpenAlex failure is non-blocking, so it cannot stop
+someone from reading the registry record or preparing questions.
 
 One Next.js app and one ingestion job. SQLite is both the relational store and,
 by default, the search backend, so the whole demonstration runs offline and
@@ -173,7 +192,7 @@ Both suites run against the real 300-record snapshot.
 
 ```
 npm run evaluate    43 passed, 0 failed
-npm run journey     48 passed, 0 failed
+npm run journey     78 passed, 0 failed
 ```
 
 Selected results:

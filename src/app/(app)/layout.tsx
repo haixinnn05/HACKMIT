@@ -1,35 +1,22 @@
-import { BottomNav, TopBar } from "@/components/Nav";
-import { listParticipants } from "@/lib/repo";
-import { getActiveParticipant } from "@/lib/session";
+import { BottomNav } from "@/components/NavLink";
 
 /**
- * Chrome for the participant-facing app.
+ * The participant app frame: one phone-width column, centred on larger screens.
  *
- * This lives in a route group rather than in the root layout so that routes
- * outside the group — the scanned handoff view in particular — render without
- * it. A nested layout would compose with the root one, not replace it, and a
- * coordinator holding someone else's phone would still see a persona switcher
- * naming every other person in the system.
+ * It lives in a route group rather than the root layout so that the scanned
+ * passport view renders without it. A nested layout would compose with the root
+ * one rather than replace it, and whoever is holding the participant's phone
+ * would inherit their navigation.
  */
-export default async function AppLayout({ children }: { children: React.ReactNode }) {
-  const participant = await getActiveParticipant();
-  const personas = listParticipants();
-
+export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <>
-      <TopBar
-        currentId={participant.id}
-        personas={personas.map((persona) => ({
-          id: persona.id,
-          displayName: persona.displayName,
-        }))}
-      />
-      <div className="mx-auto flex max-w-6xl items-start gap-8 px-4 sm:px-6 lg:px-8">
-        <main id="main" className="min-w-0 max-w-3xl flex-1 pb-28 pt-6 sm:pt-8 lg:order-2 lg:pb-16">
-          {children}
-        </main>
-        <BottomNav participantName={participant.displayName} />
-      </div>
-    </>
+    <div className="mx-auto min-h-dvh w-full max-w-[430px] bg-canvas shadow-[0_0_60px_rgba(14,13,99,0.08)]">
+      {/* The prototype must never be mistaken for a live service. */}
+      <p className="no-print bg-peach-soft px-4 pb-1 pt-[max(0.25rem,env(safe-area-inset-top))] text-center text-[10.5px] font-semibold leading-snug text-peach">
+        Prototype. Synthetic people, public registry records. Not a medical device.
+      </p>
+      <main id="main" className="px-5 pb-32 pt-5">{children}</main>
+      <BottomNav />
+    </div>
   );
 }

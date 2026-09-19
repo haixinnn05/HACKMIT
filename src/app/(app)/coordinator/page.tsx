@@ -1,75 +1,72 @@
 import Link from "next/link";
-import { Card, Empty, Note } from "@/components/ui";
+import { CaretRight, ShieldCheck, Tray } from "@phosphor-icons/react/dist/ssr";
+import { Avatar, Callout, Card, Empty, Pill, ScreenHeader, Tabs } from "@/components/ui";
 import { getParticipant, getTrial, listInquiriesForCoordinator, listQuestions } from "@/lib/repo";
 
 export const dynamic = "force-dynamic";
 
 /**
- * Coordinator inbox.
+ * Research Team Inbox, for a simulated site account.
  *
- * A simulated site account. It shows only inquiries backed by a currently active
- * sharing grant — revoking a grant removes the item rather than greying a field,
- * because a coordinator should not be looking at data the person has withdrawn.
+ * Only inquiries backed by a currently active sharing grant appear. Revoking a
+ * grant removes the item outright rather than greying a field, because a
+ * coordinator should not be looking at data the person has withdrawn.
  */
-export default function CoordinatorInbox() {
+export default async function CoordinatorInbox({ searchParams }: { searchParams: Promise<{ tab?: string }> }) {
+  const { tab: rawTab } = await searchParams;
+  const tab = rawTab === "review" || rawTab === "replied" ? rawTab : "all";
+
   const inquiries = listInquiriesForCoordinator();
+  const needsReview = inquiries.filter((i) => ["shared", "acknowledged"].includes(i.state));
+  const replied = inquiries.filter((i) => ["answered", "needs_information", "closed"].includes(i.state));
+  const shown = tab === "review" ? needsReview : tab === "replied" ? replied : inquiries;
 
   return (
-    <div className="space-y-5">
-      <div className="page-intro">
-        <p className="mb-1 text-xs font-bold uppercase tracking-[0.16em] text-teal">Coordinator workspace</p>
-        <h1 className="text-3xl font-semibold tracking-[-0.025em] text-ink">Research inbox</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-soft">
-          Inquiries people have chosen to share with this site, with their evidence and the
-          information they are missing.
-        </p>
-      </div>
+    <div className="space-y-4">
+      <ScreenHeader back="/inbox" title="Research Team Inbox" sub="Organize patient inquiries and support your study team." />
 
-      <Note tone="caution">
-        Simulated staff account — R. Alvarez, Research Coordinator, Harborview Cancer Center.
-        This is a demonstration of the coordinator side of the workflow. No real site, staff
-        member or participant is involved, and nothing here leaves this app.
-      </Note>
+      <Callout tone="caution" title="Simulated staff account">
+        R. Alvarez, Research Coordinator, Harborview Cancer Center. No real site, staff member or
+        participant is involved, and nothing here leaves this app.
+      </Callout>
 
-      {inquiries.length === 0 ? (
-        <Empty title="Nothing waiting">
-          When someone shares an inquiry it appears here. Try preparing one from a study in{" "}
-          <Link href="/explore" className="text-teal hover:underline">Explore</Link>.
+      <Tabs
+        current={tab}
+        tabs={[
+          { id: "all", label: `All (${inquiries.length})`, href: "/coordinator" },
+          { id: "review", label: `Needs Review (${needsReview.length})`, href: "/coordinator?tab=review" },
+          { id: "replied", label: "Replied", href: "/coordinator?tab=replied" },
+        ]}
+      />
+
+      {shown.length === 0 ? (
+        <Empty title="Nothing waiting" icon={<Tray size={22} />}>
+          When someone shares an inquiry, it appears here with their evidence and what is missing.
         </Empty>
       ) : (
-        <ul className="space-y-3">
-          {inquiries.map((inquiry) => {
+        <ul className="space-y-2.5">
+          {shown.map((inquiry) => {
             const participant = getParticipant(inquiry.participantId);
-            const trial = getTrial(inquiry.trialId);
-            const questions = listQuestions({ inquiryId: inquiry.id });
-            const open = questions.filter((question) => !question.answer).length;
-
+            const name = (participant?.displayName ?? "Participant").replace(/\s*\(synthetic\)$/, "");
+            const open = listQuestions({ inquiryId: inquiry.id }).filter((q) => !q.answer).length;
             return (
-              <Card as="li" key={inquiry.id} className="border-l-4 border-l-coral transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-teal/30 hover:shadow-[0_14px_34px_rgba(23,23,32,0.09)]">
-                <Link href={`/coordinator/${inquiry.id}`} className="block p-4">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span
-                      className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${
-                        inquiry.state === "shared"
-                          ? "border-teal/30 bg-teal-soft text-teal-deep"
-                          : "border-rule-strong bg-paper-sunken text-ink-soft"
-                      }`}
-                    >
-                      {inquiry.state.replace(/_/g, " ")}
+              <Card as="li" key={inquiry.id}>
+                <Link href={`/coordinator/${inquiry.id}`} className="press flex items-center gap-3 p-4">
+                  <Avatar name={name} size="size-12 text-sm" />
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-baseline justify-between gap-2">
+                      <span className="truncate text-[14px] font-bold text-ink">{name}</span>
+                      <span className="shrink-0 text-[11.5px] text-ink-faint">
+                        {new Date(inquiry.updatedAt).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                      </span>
                     </span>
-                    <span className="text-xs text-ink-faint">
-                      {new Date(inquiry.createdAt).toLocaleString()}
+                    <span className="block truncate text-[12px] text-ink-soft">{getTrial(inquiry.trialId)?.briefTitle ?? inquiry.trialId}</span>
+                    <span className="mt-1 flex flex-wrap items-center gap-1.5">
+                      <Pill tone="iris" icon={<ShieldCheck size={12} weight="fill" />}>Patient-authorized</Pill>
+                      {open ? <Pill tone="peach">{open} open {open === 1 ? "question" : "questions"}</Pill> : <Pill tone="mint">Replied</Pill>}
                     </span>
-                  </div>
-                  <p className="mt-2 text-sm font-medium text-ink">
-                    {participant?.displayName ?? "Participant"}
-                  </p>
-                  <p className="text-sm text-ink-soft">{trial?.briefTitle ?? inquiry.trialId}</p>
-                  <p className="mt-1.5 text-xs text-ink-faint">
-                    {open} open question{open === 1 ? "" : "s"} ·{" "}
-                    {Object.keys(inquiry.sharedFields).length} field
-                    {Object.keys(inquiry.sharedFields).length === 1 ? "" : "s"} shared
-                  </p>
+                  </span>
+                  <CaretRight size={16} weight="bold" className="shrink-0 text-iris" />
                 </Link>
               </Card>
             );

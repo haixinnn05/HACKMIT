@@ -177,6 +177,31 @@ CREATE TABLE IF NOT EXISTS enrollments (
   created_at TEXT NOT NULL
 );
 
+-- Practical to-dos for a study the person agreed to join. Created from what the
+-- study's own material leaves unstated, never from a guess about the protocol.
+CREATE TABLE IF NOT EXISTS todos (
+  id TEXT PRIMARY KEY,
+  participant_id TEXT NOT NULL REFERENCES participants(id) ON DELETE CASCADE,
+  trial_id TEXT NOT NULL,
+  label TEXT NOT NULL,
+  kind TEXT NOT NULL,
+  done INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL
+);
+
+-- When the participant last opened an inquiry, so the inbox can show what is new
+-- to them without changing the inquiry's own state.
+CREATE TABLE IF NOT EXISTS inquiry_reads (
+  inquiry_id TEXT PRIMARY KEY,
+  seen_at TEXT NOT NULL
+);
+
+-- A sentence in the person's own words. Shared only with "personal information".
+CREATE TABLE IF NOT EXISTS participant_notes (
+  participant_id TEXT PRIMARY KEY REFERENCES participants(id) ON DELETE CASCADE,
+  note TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS audit_events (
   id TEXT PRIMARY KEY,
   actor TEXT NOT NULL,
@@ -406,6 +431,10 @@ export function seedIfEmpty(db: Database.Database, force = false) {
         clinical_facts: JSON.stringify(persona.clinicalFacts ?? []),
         contact: JSON.stringify(persona.contact ?? {}),
       });
+      if (persona.personalNote) {
+        db.prepare("INSERT OR REPLACE INTO participant_notes (participant_id, note) VALUES (?, ?)")
+          .run(persona.id, persona.personalNote);
+      }
     }
 
     db.prepare("INSERT OR REPLACE INTO meta (key, value) VALUES ('seeded_at', ?)").run(
@@ -450,6 +479,7 @@ export function resetDemoData() {
     db.exec(`
       DELETE FROM inquiries; DELETE FROM questions; DELETE FROM grants;
       DELETE FROM milestones; DELETE FROM enrollments; DELETE FROM saved_trials;
+      DELETE FROM todos; DELETE FROM inquiry_reads;
       DELETE FROM audit_events; DELETE FROM participants;
     `);
     db.prepare("DELETE FROM meta WHERE key = 'seeded_at'").run();

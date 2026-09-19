@@ -1,31 +1,25 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
-import { Card, FictionBanner, Note, SectionHeading, StatusChip } from "@/components/ui";
+import { ChatCircleDots, CheckCircle, FileText, Question, WarningCircle } from "@phosphor-icons/react/dist/ssr";
+import type { ReactNode } from "react";
+import { Callout, Card, DataRow, FictionBanner, Pill, ScreenHeader, SectionHeading, StickyAction } from "@/components/ui";
 import { assessTrial } from "@/lib/assess";
-import {
-  getGrant, getInquiry, getParticipant, getTrial, isGrantActive, listQuestions,
-} from "@/lib/repo";
 import { getFictionalFixture } from "@/lib/db";
-import {
-  coordinatorAcknowledgeAction, coordinatorAnswerAction, coordinatorRequestInfoAction,
-} from "@/app/actions";
+import { getGrant, getInquiry, getParticipant, getTrial, isGrantActive, listQuestions } from "@/lib/repo";
+import { coordinatorAcknowledgeAction, coordinatorAnswerAction, coordinatorRequestInfoAction } from "@/app/actions";
+import type { CriterionAssessment } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
 /**
  * One inquiry, from the coordinator's side.
  *
- * The point of this screen is to save the repeated intake and clarification work
- * a coordinator does on every first contact: the participant's own words, the
- * criterion observations with their source text, an explicit list of what is
- * missing, and a reply that a person writes or edits before it is sent.
- *
- * A pre-filled draft is offered for logistical questions because site policy
- * answers repeat across participants. It is never sent automatically.
+ * It exists to save the intake and clarification a coordinator repeats on every
+ * first contact: the participant's own words, criterion observations with their
+ * source wording, an explicit list of what is missing, and a reply a person
+ * writes or edits before it is sent. A saved site-policy answer may be offered
+ * for logistics questions. It is never sent automatically.
  */
-export default async function CoordinatorInquiryPage({
-  params,
-}: { params: Promise<{ id: string }> }) {
+export default async function CoordinatorInquiryPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const inquiry = getInquiry(id);
   if (!inquiry) notFound();
@@ -35,14 +29,11 @@ export default async function CoordinatorInquiryPage({
   if (!isGrantActive(grant)) {
     return (
       <div className="space-y-4">
-        <Link href="/coordinator" className="inline-flex min-h-11 items-center text-sm text-teal hover:underline">← Inbox</Link>
-        <Card className="p-6">
-          <h1 className="text-lg font-semibold text-ink">This inquiry is no longer available</h1>
-          <p className="mt-1.5 text-sm leading-relaxed text-ink-soft">
-            The participant revoked access, or the sharing grant expired. Nothing further can be
-            read here. If you already recorded details elsewhere, your institution&rsquo;s own
-            retention rules apply to that copy — revoking access in this app cannot recall it.
-          </p>
+        <ScreenHeader back="/coordinator" title="No longer available" />
+        <Card className="p-5 text-[13.5px] leading-relaxed text-ink-soft">
+          The participant revoked access, or the sharing grant expired. Nothing further can be read
+          here. If you already recorded details elsewhere, your institution&rsquo;s retention rules apply
+          to that copy. Revoking access in this app cannot recall it.
         </Card>
       </div>
     );
@@ -52,190 +43,141 @@ export default async function CoordinatorInquiryPage({
   const trial = getTrial(inquiry.trialId);
   if (!participant || !trial) notFound();
 
+  const allowed = new Set(grant!.allowedFields);
+  const shared = inquiry.sharedFields as Record<string, unknown>;
+  const name = allowed.has("basics") ? participant.displayName.replace(/\s*\(synthetic\)$/, "") : "Participant";
   const assessment = assessTrial(trial, participant);
   const questions = listQuestions({ inquiryId: inquiry.id });
-  const shared = inquiry.sharedFields as Record<string, unknown>;
+  const canned = trial.isFictional ? getFictionalFixture()?.cannedAnswers ?? [] : [];
+  const note = inquiry.message.split("\n\n")[0];
 
-  const conflicts = assessment.assessments.filter((a) => a.status === "conflict");
-  const unknowns = assessment.assessments.filter((a) => a.status === "unknown");
-  const reviews = assessment.assessments.filter((a) => a.status === "needs_clinical_review");
-
-  const canned = trial.isFictional ? cannedAnswersFor(trial.id) : [];
+  const by = (status: CriterionAssessment["status"]) => assessment.assessments.filter((a) => a.status === status);
+  const considerations: { label: string; tone: "mint" | "iris" | "peach" | "blush"; icon: ReactNode; items: CriterionAssessment[] }[] = [
+    { label: "Supported", tone: "mint", icon: <CheckCircle size={18} weight="fill" />, items: by("supported") },
+    { label: "Unknown", tone: "iris", icon: <Question size={18} weight="fill" />, items: by("unknown") },
+    { label: "Needs review", tone: "peach", icon: <WarningCircle size={18} weight="fill" />, items: [...by("conflict"), ...by("needs_clinical_review")] },
+  ];
 
   return (
-    <div className="space-y-5">
-      <Link href="/coordinator" className="inline-flex min-h-11 items-center text-sm text-teal hover:underline">← Inbox</Link>
+    <div className="space-y-4">
+      <ScreenHeader back="/coordinator" title={name} sub={trial.briefTitle ?? trial.id} />
 
       {trial.isFictional ? <FictionBanner /> : null}
 
-      <header className="page-intro">
-        <p className="mb-1 text-xs font-bold uppercase tracking-[0.16em] text-teal">Participant inquiry</p>
-        <h1 className="text-3xl font-semibold tracking-[-0.025em] text-ink">
-          {participant.displayName}
-        </h1>
-        <p className="mt-1 text-sm text-ink-soft">{trial.briefTitle ?? trial.id}</p>
-        <p className="mt-1 text-xs text-ink-faint">
-          Shared {new Date(inquiry.createdAt).toLocaleString()} · state:{" "}
-          {inquiry.state.replace(/_/g, " ")} · authorised fields:{" "}
-          {grant!.allowedFields.join(", ")}
+      <div>
+        <p className="text-[13px] text-ink-soft">
+          {allowed.has("basics")
+            ? [participant.ageYears != null ? `Age ${participant.ageYears}` : null, participant.sex ? participant.sex[0] + participant.sex.slice(1).toLowerCase() : null, [participant.state, "USA"].filter(Boolean).join(", ")].filter(Boolean).join(", ")
+            : "Personal details not shared"}
         </p>
-      </header>
+        {note ? <p className="mt-2 rounded-[16px] bg-lavender px-4 py-3 text-[13px] leading-relaxed text-ink">&ldquo;{note}&rdquo;</p> : null}
+      </div>
 
-      <Note tone="caution">
-        Everything below is self-reported by the participant and has not been verified against
-        medical records. It is preparation for a conversation, not a screening decision. Confirm
-        eligibility through your own process.
-      </Note>
-
-      {/* ------------------------------------------------- what they shared */}
-      <section>
-        <SectionHeading hint="Only the fields this person chose to share are present.">
-          Participant-authorised information
+      <section aria-labelledby="considerations-heading">
+        <SectionHeading id="considerations-heading" hint="Generated by rule from self-reported information. Verify against the protocol before relying on any of it.">
+          Eligibility Considerations <span className="font-normal text-ink-faint">(not a decision)</span>
         </SectionHeading>
-        <Card className="p-4">
-          <dl className="space-y-2">
-            {Object.entries(shared).map(([key, value]) => (
-              <div key={key} className="grid gap-0.5 border-b border-rule pb-2 last:border-0 sm:grid-cols-[10rem_1fr]">
-                <dt className="text-xs uppercase tracking-wide text-ink-faint">{humanize(key)}</dt>
-                <dd className="text-sm text-ink">{renderValue(value)}</dd>
-              </div>
-            ))}
-          </dl>
-          {!grant!.allowedFields.includes("contact") ? (
-            <p className="mt-3 rounded-lg bg-paper-sunken px-3 py-2 text-xs leading-relaxed text-ink-soft">
-              This person did not share contact details. Reply through this inquiry and they will
-              see it in their passport.
-            </p>
-          ) : null}
-        </Card>
-      </section>
-
-      {/* -------------------------------------------- their own words */}
-      <section>
-        <SectionHeading>Their message</SectionHeading>
-        <Card className="p-4">
-          <pre className="whitespace-pre-wrap font-mono text-xs leading-relaxed text-ink-soft">
-            {inquiry.message}
-          </pre>
-        </Card>
-      </section>
-
-      {/* ---------------------------------------------- pre-screen summary */}
-      <section>
-        <SectionHeading hint="Generated by rule, with the source wording attached to each observation. Verify against the protocol before relying on any of it.">
-          Provisional criterion observations
-        </SectionHeading>
-
-        <div className="mb-2.5 flex flex-wrap gap-2 text-xs text-ink-soft">
-          <span>{assessment.supported} matched</span>
-          <span>· {conflicts.length} possible conflict{conflicts.length === 1 ? "" : "s"}</span>
-          <span>· {unknowns.length} unanswered</span>
-          <span>· {reviews.length} needing review</span>
-        </div>
-
-        {[
-          { title: "Possible conflicts", items: conflicts },
-          { title: "Needs your review", items: reviews },
-          { title: "Unanswered", items: unknowns.slice(0, 8) },
-        ].map((group) =>
-          group.items.length ? (
-            <Card key={group.title} className="mb-2.5 p-4">
-              <h3 className="mb-2 text-sm font-semibold text-ink">
-                {group.title} ({group.items.length})
-              </h3>
-              <ul className="space-y-2">
+        <Card className="overflow-hidden">
+          {considerations.map((group) => (
+            <details key={group.label} className="group border-b border-rule last:border-0">
+              <summary className="press flex min-h-14 cursor-pointer list-none items-center gap-3 px-4 py-2.5">
+                <Pill tone={group.tone} icon={group.icon}>{group.label}</Pill>
+                <span className="min-w-0 flex-1 text-[12px] leading-snug text-ink-soft">
+                  {group.items.length === 0 ? "None" : group.items.slice(0, 2).map((item) => (
+                    <span key={item.criterionId} className="block truncate">{item.criterionText}</span>
+                  ))}
+                </span>
+                <span className="text-[12px] font-bold text-ink">{group.items.length}</span>
+              </summary>
+              <ul className="space-y-2.5 px-4 pb-4">
                 {group.items.map((item) => (
-                  <li key={item.criterionId} className="rounded-lg border border-rule p-2.5">
-                    <div className="mb-1"><StatusChip status={item.status} /></div>
-                    <p className="text-sm leading-relaxed text-ink-soft">{item.rationale}</p>
-                    <blockquote className="source-quote mt-1.5">{item.evidenceSpan}</blockquote>
+                  <li key={item.criterionId} className="rounded-[14px] border border-rule p-3">
+                    <p className="text-[12.5px] leading-relaxed text-ink-soft">{item.rationale}</p>
+                    <blockquote className="source-quote mt-2">{item.evidenceSpan}</blockquote>
                     <p className="mt-1 text-[11px] text-ink-faint">
-                      {trial.id} eligibility criteria
-                      {item.sourceStart >= 0 ? `, characters ${item.sourceStart}–${item.sourceEnd}` : ""} · record version{" "}
-                      {trial.lastUpdatePostDate ?? "unknown"}
+                      {trial.id} eligibility criteria{item.sourceStart >= 0 ? `, characters ${item.sourceStart} to ${item.sourceEnd}` : ""}, record version {trial.lastUpdatePostDate ?? "unknown"}
                     </p>
                   </li>
                 ))}
               </ul>
-            </Card>
-          ) : null
-        )}
+            </details>
+          ))}
+        </Card>
+      </section>
 
-        {assessment.missingInformation.length ? (
-          <Card className="p-4">
-            <h3 className="mb-1.5 text-sm font-semibold text-ink">Missing information to request</h3>
-            <ul className="space-y-1">
-              {assessment.missingInformation.map((missing) => (
-                <li key={missing.key} className="text-sm text-ink-soft">
-                  · {missing.label} — would resolve {missing.affectedCriteria} requirement
-                  {missing.affectedCriteria === 1 ? "" : "s"}
-                </li>
-              ))}
-            </ul>
-          </Card>
+      {assessment.missingInformation.length ? (
+        <Card className="p-4">
+          <p className="text-[13.5px] font-bold text-ink">Missing information to request</p>
+          <ul className="mt-1.5 space-y-1">
+            {assessment.missingInformation.map((missing) => (
+              <li key={missing.key} className="text-[12.5px] text-ink-soft">
+                {missing.label}, would resolve {missing.affectedCriteria} requirement{missing.affectedCriteria === 1 ? "" : "s"}
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
+
+      <section>
+        <SectionHeading hint={`Only what this person chose to share: ${grant!.allowedFields.join(", ")}.`}>Patient-authorized information</SectionHeading>
+        <Card className="px-4">
+          <dl>
+            {Object.entries(shared).map(([key, value]) => (
+              <DataRow key={key} label={humanize(key)} value={renderValue(value)} />
+            ))}
+          </dl>
+        </Card>
+        {!allowed.has("contact") ? (
+          <p className="mt-2 text-[12px] leading-relaxed text-ink-faint">
+            This person did not share contact details. Reply here and they will see it in their inbox.
+          </p>
         ) : null}
       </section>
 
-      {/* ----------------------------------------------------- their questions */}
-      <section>
-        <SectionHeading hint="Each answer is written or edited by you before it is sent. Nothing is sent automatically.">
+      <Callout icon={<FileText size={20} weight="fill" />}>
+        This tool organizes patient information to support your review. It does not make an
+        eligibility decision.
+      </Callout>
+
+      <section id="reply" className="scroll-mt-6">
+        <SectionHeading hint="You write or edit every answer before it is sent. Nothing is sent automatically.">
           Questions to answer ({questions.filter((q) => !q.answer).length} open)
         </SectionHeading>
-
         <ul className="space-y-3">
+          {questions.length === 0 ? <Card as="li" className="p-4 text-[13px] text-ink-soft">This person did not attach any questions.</Card> : null}
           {questions.map((question) => {
-            const suggestion = canned.find((entry) =>
-              entry.matches.some((keyword) => question.text.toLowerCase().includes(keyword))
-            );
+            const suggestion = canned.find((entry) => entry.matches.some((keyword) => question.text.toLowerCase().includes(keyword)));
             return (
               <Card as="li" key={question.id} className="p-4">
-                <p className="text-sm font-medium text-ink">{question.text}</p>
-                <p className="mt-0.5 text-xs text-ink-faint">
-                  {question.category}
-                  {question.category === "clinical"
-                    ? " — route to an investigator or qualified staff member"
-                    : ""}
-                  {" · "}
-                  {question.state.replace(/_/g, " ")}
+                <p className="text-[13.5px] font-bold text-ink">{question.text}</p>
+                <p className="text-[11.5px] text-ink-faint">
+                  {question.category}{question.category === "clinical" ? ": route to an investigator or qualified staff member" : ""}
                 </p>
-
                 {question.answer ? (
-                  <div className="mt-2.5 rounded-lg border border-teal/30 bg-teal-soft p-3">
-                    <p className="text-sm leading-relaxed text-teal-deep">{question.answer}</p>
-                    <p className="mt-1.5 text-[11px] text-teal-deep/70">
-                      Sent by {question.answeredBy}
-                      {question.answerCitation ? ` · ${question.answerCitation}` : ""}
-                    </p>
+                  <div className="mt-2.5 rounded-[14px] bg-mint-soft p-3">
+                    <p className="text-[13px] leading-relaxed text-ink">{question.answer}</p>
+                    <p className="mt-1.5 text-[11px] text-ink-soft">Sent by {question.answeredBy}{question.answerCitation ? `. ${question.answerCitation}` : ""}</p>
                   </div>
                 ) : (
-                  <form action={coordinatorAnswerAction} className="mt-2.5 space-y-2">
+                  <form action={coordinatorAnswerAction} className="mt-2.5 space-y-2.5">
                     <input type="hidden" name="questionId" value={question.id} />
                     <input type="hidden" name="inquiryId" value={inquiry.id} />
                     {suggestion ? (
-                      <p className="rounded-lg bg-paper-sunken px-2.5 py-1.5 text-[11px] leading-relaxed text-ink-soft">
-                        A site-policy answer has been pre-filled from your saved replies. Edit it
-                        before sending — you are the author.
+                      <p className="rounded-[12px] bg-sunken px-3 py-2 text-[11.5px] leading-relaxed text-ink-soft">
+                        A site-policy answer has been pre-filled from your saved replies. Edit it before sending. You are the author.
                       </p>
                     ) : null}
-                    <label className="sr-only" htmlFor={`answer-${question.id}`}>Your answer</label>
-                    <textarea
-                      id={`answer-${question.id}`} name="answer" rows={4} required
-                      defaultValue={suggestion?.answer ?? ""}
-                      placeholder="Write the answer you want this person to receive."
-                      className="w-full rounded-lg border border-rule bg-paper-raised p-3 text-sm text-ink"
-                    />
-                    <label className="block text-xs text-ink-soft">
-                      Where this comes from (shown to the participant)
-                      <input
-                        name="citation" defaultValue={suggestion?.citation ?? ""}
-                        placeholder="e.g. Protocol v2.1 section 6, or site policy confirmed today"
-                        className="mt-1 min-h-11 w-full rounded-lg border border-rule bg-paper-raised px-3 text-sm text-ink"
-                      />
+                    <label className="block text-[12px] font-semibold text-ink-soft">
+                      Your answer
+                      <textarea name="answer" rows={4} required defaultValue={suggestion?.answer ?? ""}
+                        className="mt-1 w-full rounded-[14px] border border-rule bg-surface p-3 text-[13.5px] text-ink" />
                     </label>
-                    <button
-                      type="submit"
-                      className="min-h-11 rounded-lg border border-teal bg-teal px-4 text-sm font-medium text-white hover:bg-teal-deep"
-                    >
+                    <label className="block text-[12px] font-semibold text-ink-soft">
+                      Where this comes from (shown to the participant)
+                      <input name="citation" defaultValue={suggestion?.citation ?? ""}
+                        className="mt-1 min-h-12 w-full rounded-[14px] border border-rule bg-surface px-3 text-[13.5px] text-ink" />
+                    </label>
+                    <button type="submit" className="press min-h-12 w-full rounded-full border border-iris bg-iris-soft text-[14px] font-bold text-iris-deep hover:bg-iris hover:text-white">
                       Send this answer
                     </button>
                   </form>
@@ -243,85 +185,52 @@ export default async function CoordinatorInquiryPage({
               </Card>
             );
           })}
-          {questions.length === 0 ? (
-            <Card as="li" className="p-4 text-sm text-ink-soft">
-              This person did not attach any questions.
-            </Card>
-          ) : null}
         </ul>
       </section>
 
-      <section>
-        <SectionHeading>Move this along</SectionHeading>
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <form action={coordinatorAcknowledgeAction} className="flex-1">
-            <input type="hidden" name="inquiryId" value={inquiry.id} />
-            <button
-              type="submit"
-              className="min-h-11 w-full rounded-lg border border-rule-strong bg-paper-raised px-4 text-sm font-medium text-ink hover:bg-paper-sunken"
-            >
-              Acknowledge receipt
-            </button>
-          </form>
-        </div>
-        <form action={coordinatorRequestInfoAction} className="mt-2.5 space-y-2">
+      {questions.some((q) => !q.answer) ? (
+        <StickyAction>
+          <a href="#reply" className="press cta inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full text-[15px] font-bold text-white">
+            <ChatCircleDots size={18} weight="bold" /> Reply to {name.split(" ")[0]}
+          </a>
+        </StickyAction>
+      ) : null}
+
+      <section className="space-y-2.5">
+        <SectionHeading hint="Acknowledging is not enrolment and is not a screening decision. The participant sees exactly these state changes.">Move this along</SectionHeading>
+        <form action={coordinatorAcknowledgeAction}>
           <input type="hidden" name="inquiryId" value={inquiry.id} />
-          <label className="block text-xs text-ink-soft">
-            Ask for something specific
-            <input
-              name="note"
-              placeholder="e.g. We would need your HER2 result before screening — your oncology team can send it."
-              className="mt-1 min-h-11 w-full rounded-lg border border-rule bg-paper-raised px-3 text-sm text-ink"
-            />
-          </label>
-          <button
-            type="submit"
-            className="min-h-11 rounded-lg border border-rule-strong bg-paper-raised px-4 text-sm font-medium text-ink hover:bg-paper-sunken"
-          >
-            Request information
-          </button>
+          <button type="submit" className="press min-h-12 w-full rounded-full border border-rule-strong bg-surface text-[14px] font-bold text-ink hover:bg-sunken">Acknowledge receipt</button>
         </form>
-        <p className="mt-2 text-xs leading-relaxed text-ink-faint">
-          Acknowledging an inquiry is not enrolment and is not a screening decision. The
-          participant sees exactly these state changes.
-        </p>
+        <form action={coordinatorRequestInfoAction} className="space-y-2">
+          <input type="hidden" name="inquiryId" value={inquiry.id} />
+          <label className="block text-[12px] font-semibold text-ink-soft">
+            Ask for something specific
+            <input name="note" required placeholder="e.g. We would need your HER2 result before screening."
+              className="mt-1 min-h-12 w-full rounded-[14px] border border-rule bg-surface px-3 text-[13.5px] text-ink placeholder:text-ink-faint" />
+          </label>
+          <button type="submit" className="press min-h-12 w-full rounded-full border border-rule-strong bg-surface text-[14px] font-bold text-ink hover:bg-sunken">Request information</button>
+        </form>
       </section>
     </div>
   );
 }
 
-interface CannedAnswer { matches: string[]; answer: string; citation: string }
-
-/** Saved site-policy replies, from the fictional fixture. A real deployment
- *  would hold a site's own approved reply library here. */
-function cannedAnswersFor(trialId: string): CannedAnswer[] {
-  if (trialId !== "TP-FIX-001") return [];
-  return getFictionalFixture()?.cannedAnswers ?? [];
-}
-
 function humanize(key: string) {
-  return key
-    .replace(/([A-Z])/g, " $1")
-    .replace(/^./, (char) => char.toUpperCase())
-    .trim();
+  return key.replace(/([A-Z])/g, " $1").replace(/^./, (char) => char.toUpperCase()).trim();
 }
 
 function renderValue(value: unknown): string {
   if (value == null || value === "") return "not shared";
   if (typeof value === "boolean") return value ? "yes" : "no";
   if (Array.isArray(value)) {
-    return value
-      .map((item) =>
-        item && typeof item === "object" && "label" in item
-          ? `${(item as { label: string }).label}: ${(item as { value: string | null }).value ?? "unknown"}`
-          : String(item)
-      )
-      .join("; ");
+    return value.map((item) =>
+      item && typeof item === "object" && "label" in item
+        ? `${(item as { label: string }).label}: ${(item as { value: string | null }).value ?? "unknown"}`
+        : String(item)).join("; ");
   }
   if (typeof value === "object") {
-    return Object.entries(value as Record<string, unknown>)
-      .map(([key, entry]) => `${key}: ${entry ?? "not shared"}`)
-      .join("; ");
+    return Object.entries(value as Record<string, unknown>).map(([key, entry]) => `${key}: ${entry ?? "not shared"}`).join("; ");
   }
   return String(value);
 }

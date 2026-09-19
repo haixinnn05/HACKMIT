@@ -2,38 +2,33 @@ import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 
-const jakarta = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  variable: "--font-jakarta",
-  display: "swap",
-});
+const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-jakarta", display: "swap" });
 
 export const metadata: Metadata = {
   title: "Trial Passport",
   description:
-    "Understand what taking part in a cancer trial would actually involve, and prepare a useful first conversation with a research coordinator.",
+    "Understand what taking part in a cancer trial would involve, and prepare a useful first conversation with a research coordinator.",
+  // Launches full-screen from the iPhone home screen, without Safari's chrome.
+  appleWebApp: { capable: true, title: "Trial Passport", statusBarStyle: "default" },
 };
 
-export const viewport: Viewport = {
-  themeColor: "#ffffff",
-  width: "device-width",
-  initialScale: 1,
-};
+// viewport-fit=cover exposes the safe-area insets, so the bottom navigation
+// clears the home indicator on notched phones.
+export const viewport: Viewport = { themeColor: "#fde9d7", width: "device-width", initialScale: 1, viewportFit: "cover" };
 
 /**
- * Root layout: document shell only.
- *
- * Navigation lives in the `(app)` route group so that routes rendered for
- * someone other than the account holder — the scanned handoff view — can opt out
- * of participant chrome entirely.
+ * Root layout: document shell only. Navigation lives in the `(app)` route group
+ * so routes read by someone other than the account holder, such as the scanned
+ * passport view, can opt out of participant chrome entirely.
  */
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={jakarta.variable}>
-      <body className="min-h-dvh">
+      {/* Browser extensions add attributes to <body> before hydration. */}
+      <body className="min-h-dvh" suppressHydrationWarning>
         <a
           href="#main"
-          className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 focus:rounded-lg focus:bg-teal focus:px-4 focus:py-2 focus:text-sm focus:text-white"
+          className="sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50 focus:rounded-full focus:bg-iris focus:px-4 focus:py-2 focus:text-sm focus:text-white"
         >
           Skip to content
         </a>

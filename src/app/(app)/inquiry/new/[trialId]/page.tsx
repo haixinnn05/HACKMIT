@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
-import { Card, FictionBanner, Note, SectionHeading } from "@/components/ui";
+import { LockKey, PaperPlaneTilt } from "@phosphor-icons/react/dist/ssr";
+import { CountedTextarea, PrintButton } from "@/components/CountedTextarea";
+import { Callout, Card, FictionBanner, ScreenHeader, StickyAction } from "@/components/ui";
 import { getTrial, listQuestions } from "@/lib/repo";
 import { getActiveParticipant } from "@/lib/session";
 import { buildDraft, shareInquiryAction } from "@/app/actions";
@@ -8,182 +9,91 @@ import { buildDraft, shareInquiryAction } from "@/app/actions";
 export const dynamic = "force-dynamic";
 
 /**
- * Inquiry preview.
+ * Review Your Inquiry.
  *
  * Nothing leaves the passport until this screen is submitted. The person sees
- * the exact payload — not a description of it — chooses the fields, and edits
- * the message. Autofill reuses what they already confirmed; it never invents a
- * value and never includes a field they did not tick.
+ * what each tick covers, contact details start unticked, and the packet that
+ * accompanies their note is shown in full and can be edited or printed.
  */
-export default async function NewInquiryPage({
-  params,
-}: { params: Promise<{ trialId: string }> }) {
+export default async function NewInquiryPage({ params }: { params: Promise<{ trialId: string }> }) {
   const { trialId } = await params;
   const trial = getTrial(decodeURIComponent(trialId));
   if (!trial) notFound();
 
   const participant = await getActiveParticipant();
-  const draft = await buildDraft(trial.id, participant.id);
-  const questions = listQuestions({ participantId: participant.id, trialId: trial.id })
-    .filter((question) => question.state === "open");
-
-  const recipient = trial.isFictional
-    ? "Harborview Cancer Center, Cambridge — simulated site account"
-    : `${trial.leadSponsor ?? "Study team"} (${trial.id})`;
+  const packet = await buildDraft(trial.id, participant.id);
+  const questions = listQuestions({ participantId: participant.id, trialId: trial.id }).filter((q) => q.state === "open");
+  const recorded = participant.clinicalFacts.filter((fact) => fact.value).length;
 
   const groups = [
-    {
-      id: "basics", label: "Name, age and general location", defaultOn: true,
-      preview: [
-        participant.displayName,
-        participant.ageYears ? `${participant.ageYears} years old` : null,
-        [participant.city, participant.state].filter(Boolean).join(", ") || null,
-      ].filter(Boolean),
-    },
-    {
-      id: "condition", label: "Condition and what I've recorded about it", defaultOn: true,
-      preview: [
-        participant.condition,
-        participant.conditionDetail,
-        ...participant.clinicalFacts.map((fact) =>
-          `${fact.label}: ${fact.value ?? "I don't know"}${fact.provenance === "unknown" ? " (marked unknown)" : " (self-reported)"}`
-        ),
-      ].filter(Boolean) as string[],
-    },
-    {
-      id: "practical", label: "Travel, work and caregiver situation", defaultOn: true,
-      preview: [
-        participant.oneWayTravelMinutes ? `About ${participant.oneWayTravelMinutes} minutes of travel each way` : null,
-        participant.maxTravelMinutes ? `Can travel up to ${participant.maxTravelMinutes} minutes` : null,
-        participant.needsTravelHelp ? "Needs help with travel" : null,
-        participant.caregiverAvailable ? "Someone can come to visits" : null,
-        participant.workConstraints,
-      ].filter(Boolean) as string[],
-    },
-    {
-      id: "contact", label: "Email and phone", defaultOn: false,
-      preview: [participant.contact.email, participant.contact.phone].filter(Boolean) as string[],
-    },
+    { id: "basics", on: true, label: "Personal information", sub: `Name, age, location (${[participant.state, "USA"].filter(Boolean).join(", ")})` },
+    { id: "condition", on: true, label: "Relevant medical history", sub: `${participant.condition ?? "Condition"}, ${recorded} recorded facts, unknowns marked` },
+    { id: "practical", on: true, label: "Travel preferences", sub: "Location, flexibility, support needs" },
+    { id: "questions", on: true, label: "Saved questions", sub: questions.length ? `${questions.length} about this study` : "None saved for this study yet" },
+    { id: "contact", on: false, label: "Contact details", sub: "Email and phone. Off unless you choose." },
   ];
 
-  return (
-    <div className="space-y-5">
-      <Link href={`/trial/${trial.id}`} className="inline-flex min-h-11 items-center text-sm text-teal hover:underline">
-        ← Back to the study
-      </Link>
+  const recipient = trial.isFictional
+    ? "Harborview Cancer Center, Cambridge (simulated site account)"
+    : `${trial.leadSponsor ?? "the study team"} (${trial.id})`;
 
-      <div className="page-intro">
-        <p className="mb-1 text-xs font-bold uppercase tracking-[0.16em] text-teal">You stay in control</p>
-        <h1 className="text-3xl font-semibold tracking-[-0.025em] text-ink">Before you share</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-soft">
-          This is exactly what would be sent, and to whom. Nothing has been shared yet.
-        </p>
-      </div>
+  return (
+    <div className="space-y-4">
+      <ScreenHeader
+        back={`/trial/${trial.id}`}
+        title="Review Your Inquiry"
+        sub="Here’s what will be shared with the research team. You choose what to include."
+      />
 
       {trial.isFictional ? (
-        <FictionBanner>
-          This inquiry goes to a simulated site account inside this app. Nothing is sent to
-          any real trial site, and no real person receives it.
-        </FictionBanner>
+        <FictionBanner>This goes to a simulated site account. No real person receives it.</FictionBanner>
       ) : (
-        <Note tone="caution">
-          In this prototype nothing is sent to a real site. Sharing creates an inquiry inside
-          this app so the workflow can be demonstrated end to end.
-        </Note>
+        <Callout tone="caution">Prototype: nothing is sent to a real site. The inquiry stays inside this app.</Callout>
       )}
 
-      <form action={shareInquiryAction} className="space-y-5">
+      <form action={shareInquiryAction} className="space-y-4">
         <input type="hidden" name="trialId" value={trial.id} />
+        <Card className="px-4 py-1.5">
+        <p className="border-b border-rule py-2.5 text-[12px] text-ink-soft">To <strong className="font-bold text-ink">{recipient}</strong></p>
+        <ul>
+          {groups.map((group) => (
+            <li key={group.id}>
+              <label className="flex min-h-12 cursor-pointer items-start gap-3.5 py-2">
+                <input type="checkbox" name="field" value={group.id} defaultChecked={group.on} className="mt-0.5 size-6 shrink-0 rounded-[8px] accent-[#5e44fb]" />
+                <span>
+                  <span className="block text-[14px] font-bold text-ink">{group.label}</span>
+                  <span className="block text-[12.5px] text-ink-soft">{group.sub}</span>
+                </span>
+              </label>
+            </li>
+          ))}
+        </ul>
+        </Card>
 
-        <section>
-          <SectionHeading hint={`Going to: ${recipient}`}>What you are sharing</SectionHeading>
-          <div className="space-y-2.5">
-            {groups.map((group) => (
-              <Card key={group.id} className="p-3.5">
-                <label className="flex min-h-11 cursor-pointer items-start gap-3 py-1">
-                  <input
-                    type="checkbox" name="field" value={group.id} defaultChecked={group.defaultOn}
-                    className="mt-0.5 size-5 shrink-0 accent-teal"
-                  />
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-sm font-medium text-ink">{group.label}</span>
-                    {group.preview.length ? (
-                      <ul className="mt-1.5 space-y-0.5">
-                        {group.preview.map((line) => (
-                          <li key={line} className="font-mono text-xs leading-relaxed text-ink-soft break-words">
-                            {line}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <span className="mt-1 block text-xs text-ink-faint">
-                        Nothing recorded for this yet.
-                      </span>
-                    )}
-                  </span>
-                </label>
-              </Card>
-            ))}
-          </div>
-          <p className="mt-2 text-xs leading-relaxed text-ink-faint">
-            Unticked information is not sent and is not stored with the inquiry. Everything you
-            share is marked self-reported, because it has not been checked against medical records.
-          </p>
-        </section>
-
-        {questions.length ? (
-          <section>
-            <SectionHeading hint="These go with the inquiry, and the site can answer them one at a time.">
-              Questions travelling with this ({questions.length})
-            </SectionHeading>
-            <Card className="p-3.5">
-              <ol className="space-y-1.5">
-                {questions.map((question, index) => (
-                  <li key={question.id} className="text-sm leading-relaxed text-ink-soft">
-                    {index + 1}. {question.text}
-                    {question.category === "clinical" ? (
-                      <span className="ml-1.5 rounded bg-slate-soft px-1.5 py-0.5 text-[11px] text-slate">
-                        for qualified staff
-                      </span>
-                    ) : null}
-                  </li>
-                ))}
-              </ol>
-            </Card>
-          </section>
-        ) : null}
-
-        <section>
-          <SectionHeading hint="Written for you from your passport and this study's record. Change anything you like — it is your message.">
-            Your message
-          </SectionHeading>
-          <label className="sr-only" htmlFor="message">Message to the study team</label>
-          <textarea
-            id="message" name="message" defaultValue={draft} rows={22}
-            className="w-full rounded-xl border border-rule bg-paper-raised p-3.5 font-mono text-xs leading-relaxed text-ink"
-          />
-        </section>
-
-        <div className="flex flex-col gap-2 sm:flex-row">
-          <button
-            type="submit"
-            className="min-h-11 flex-1 rounded-lg border border-teal bg-teal px-4 text-sm font-medium text-white hover:bg-teal-deep"
-          >
-            Share this inquiry
-          </button>
-          <Link
-            href={`/trial/${trial.id}`}
-            className="flex min-h-11 flex-1 items-center justify-center rounded-lg border border-rule-strong bg-paper-raised px-4 text-sm font-medium text-ink hover:bg-paper-sunken"
-          >
-            Not yet
-          </Link>
+        <div>
+          <label htmlFor="note" className="mb-1.5 block text-[14px] font-bold text-ink">Optional personal message</label>
+          <CountedTextarea id="note" name="note" defaultValue="I'm very interested in this study and would like to learn more about next steps. Thank you for your time." />
         </div>
 
-        <Note>
-          Sharing an inquiry is not consent to take part, and it does not enrol you. You can
-          revoke a site&rsquo;s access from your passport at any time — though revoking blocks
-          future access in the app and cannot recall anything already read.
-        </Note>
+        <details className="rounded-[16px] border border-rule bg-surface px-4">
+          <summary className="flex min-h-12 cursor-pointer items-center text-[13px] font-bold text-iris">See and edit the full packet</summary>
+          <p className="mb-2 text-[12.5px] leading-relaxed text-ink-soft">Filled in from your passport and this study&rsquo;s record. It is your message, so change anything.</p>
+          <label className="sr-only" htmlFor="packet">Inquiry packet</label>
+          <textarea id="packet" name="packet" defaultValue={packet} rows={18}
+            className="mb-3 w-full rounded-[14px] border border-rule bg-sunken p-3 font-mono text-[11.5px] leading-relaxed text-ink" />
+          <div className="pb-4"><PrintButton label="Print this packet" /></div>
+        </details>
+
+        <Callout icon={<LockKey size={20} weight="fill" />}>
+          Only what you tick is shared, and you can take it back from your passport any time.
+          Sharing isn&rsquo;t agreeing to take part.
+        </Callout>
+
+        <StickyAction>
+          <button type="submit" className="press cta inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full text-[15px] font-bold text-white">
+            <PaperPlaneTilt size={18} weight="bold" /> Share Inquiry
+          </button>
+        </StickyAction>
       </form>
     </div>
   );

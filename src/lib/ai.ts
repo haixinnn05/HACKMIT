@@ -81,7 +81,7 @@ function sourcesFor(trial: Trial): SourceDoc[] {
   if (trial.briefSummary) {
     docs.push({
       id: `${trial.id}#summary`,
-      label: `${trial.isFictional ? "FICTIONAL FIXTURE" : "ClinicalTrials.gov"} record ${trial.id} — brief summary`,
+      label: `${trial.isFictional ? "FICTIONAL FIXTURE" : "ClinicalTrials.gov"} record ${trial.id}, brief summary`,
       version,
       text: trial.briefSummary,
     });
@@ -89,7 +89,7 @@ function sourcesFor(trial: Trial): SourceDoc[] {
   if (trial.eligibilityText) {
     docs.push({
       id: `${trial.id}#eligibility`,
-      label: `${trial.isFictional ? "FICTIONAL FIXTURE" : "ClinicalTrials.gov"} record ${trial.id} — eligibility criteria`,
+      label: `${trial.isFictional ? "FICTIONAL FIXTURE" : "ClinicalTrials.gov"} record ${trial.id}, eligibility criteria`,
       version,
       text: trial.eligibilityText,
     });
@@ -97,7 +97,7 @@ function sourcesFor(trial: Trial): SourceDoc[] {
   if (trial.detailedDescription) {
     docs.push({
       id: `${trial.id}#description`,
-      label: `${trial.isFictional ? "FICTIONAL FIXTURE" : "ClinicalTrials.gov"} record ${trial.id} — detailed description`,
+      label: `${trial.isFictional ? "FICTIONAL FIXTURE" : "ClinicalTrials.gov"} record ${trial.id}, detailed description`,
       version,
       text: trial.detailedDescription.slice(0, 6000),
     });
@@ -342,7 +342,7 @@ Set answered=false when the sources do not address the question, and make the an
       mode: "offline_template",
       answered: false,
       answer:
-        "This is not answered in the material available for this study. Add it to your questions for the study team — a coordinator can answer it directly.",
+        "This is not answered in the material available for this study. Add it to your questions for the study team, a coordinator can answer it directly.",
       sourceLabel: null,
       supportingSpan: null,
       uncertainty: "No language model was available, so only the study's own text was searched.",
@@ -392,7 +392,7 @@ export function draftInquiry(input: {
   lines.push(`Hello,`);
   lines.push("");
   lines.push(
-    `I am interested in learning more about ${trial.briefTitle ?? trial.id} (${trial.id}). I am not asking to enrol yet — I am trying to work out whether it could fit my situation, and what I would need to find out first.`
+    `I am interested in learning more about ${trial.briefTitle ?? trial.id} (${trial.id}). I am not asking to enrol yet, I am trying to work out whether it could fit my situation, and what I would need to find out first.`
   );
   lines.push("");
   lines.push(`About me (self-reported, ${profile.ageYears ?? "age not given"}, ${[profile.city, profile.state].filter(Boolean).join(", ") || "location not given"}):`);
@@ -402,7 +402,7 @@ export function draftInquiry(input: {
   if (unknown.length > 0) {
     lines.push("Things I do not know, and would need help confirming:");
     for (const f of unknown) {
-      lines.push(`  • ${f.label}${f.note ? ` — ${f.note}` : ""}`);
+      lines.push(`  • ${f.label}${f.note ? `, ${f.note}` : ""}`);
     }
     lines.push("");
   }
@@ -411,7 +411,7 @@ export function draftInquiry(input: {
   if (conflicts.length > 0) {
     lines.push("Points I think may not match, which I would rather raise up front than assume:");
     for (const conflict of conflicts.slice(0, 4)) {
-      lines.push(`  • "${conflict.criterionText.slice(0, 160)}" — ${conflict.rationale}`);
+      lines.push(`  • "${conflict.criterionText.slice(0, 160)}", ${conflict.rationale}`);
     }
     lines.push("");
   }

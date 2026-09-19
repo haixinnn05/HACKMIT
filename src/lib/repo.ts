@@ -476,3 +476,73 @@ export function listEnrollments(participantId: string): EnrollmentEntry[] {
     .prepare("SELECT * FROM enrollments WHERE participant_id = ? ORDER BY created_at")
     .all(participantId) as any[]).map(rowToEnrollment);
 }
+
+/* --------------------------------------------------------------------- todos */
+
+export interface Todo {
+  id: string; participantId: string; trialId: string;
+  label: string; kind: string; done: boolean; createdAt: string;
+}
+
+const rowToTodo = (row: any): Todo => ({
+  id: row.id, participantId: row.participant_id, trialId: row.trial_id,
+  label: row.label, kind: row.kind, done: Boolean(row.done), createdAt: row.created_at,
+});
+
+export function listTodos(participantId: string): Todo[] {
+  return (getDb()
+    .prepare("SELECT * FROM todos WHERE participant_id = ? ORDER BY done, created_at")
+    .all(participantId) as any[]).map(rowToTodo);
+}
+
+/** Idempotent per (participant, trial, kind), so agreeing twice adds nothing. */
+export function ensureTodo(participantId: string, trialId: string, kind: string, label: string) {
+  const db = getDb();
+  const existing = db
+    .prepare("SELECT id FROM todos WHERE participant_id = ? AND trial_id = ? AND kind = ?")
+    .get(participantId, trialId, kind);
+  if (existing) return;
+  db.prepare("INSERT INTO todos (id, participant_id, trial_id, label, kind, done, created_at) VALUES (?,?,?,?,?,0,?)")
+    .run(randomUUID(), participantId, trialId, label, kind, new Date().toISOString());
+}
+
+export function toggleTodo(id: string, participantId: string) {
+  // Scoped by participant: nobody can tick another person's list.
+  getDb().prepare("UPDATE todos SET done = 1 - done WHERE id = ? AND participant_id = ?")
+    .run(id, participantId);
+}
+
+export function clearTodos(participantId: string, trialId: string) {
+  getDb().prepare("DELETE FROM todos WHERE participant_id = ? AND trial_id = ?")
+    .run(participantId, trialId);
+}
+
+/* -------------------------------------------------------------- inbox reads */
+
+export function markInquirySeen(inquiryId: string) {
+  getDb().prepare("INSERT OR REPLACE INTO inquiry_reads (inquiry_id, seen_at) VALUES (?, ?)")
+    .run(inquiryId, new Date().toISOString());
+}
+
+/** Unread means the site changed something since the person last opened it. */
+export function isInquiryUnread(inquiry: Inquiry): boolean {
+  if (inquiry.updatedAt === inquiry.createdAt) return false;
+  const row = getDb().prepare("SELECT seen_at FROM inquiry_reads WHERE inquiry_id = ?")
+    .get(inquiry.id) as { seen_at: string } | undefined;
+  return !row || row.seen_at < inquiry.updatedAt;
+}
+
+/* ------------------------------------------------------------ personal note */
+
+export function getPersonalNote(participantId: string): string | null {
+  const row = getDb().prepare("SELECT note FROM participant_notes WHERE participant_id = ?")
+    .get(participantId) as { note: string } | undefined;
+  return row?.note ?? null;
+}
+
+export function setPersonalNote(participantId: string, note: string) {
+  const db = getDb();
+  const trimmed = note.trim().slice(0, 140);
+  if (!trimmed) db.prepare("DELETE FROM participant_notes WHERE participant_id = ?").run(participantId);
+  else db.prepare("INSERT OR REPLACE INTO participant_notes (participant_id, note) VALUES (?, ?)").run(participantId, trimmed);
+}

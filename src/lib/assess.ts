@@ -434,7 +434,7 @@ function structuralAssessments(trial: Trial, profile: ParticipantProfile): Crite
       sourceStart: -1, sourceEnd: -1,
       status, rationale,
       usedFactKeys: profile.ageYears == null ? [] : ["age"],
-      evidenceSpan: `Registry eligibility fields — ${bounds}`,
+      evidenceSpan: `Registry eligibility fields, ${bounds}`,
       reviewState: "auto",
     });
   }
@@ -453,7 +453,7 @@ function structuralAssessments(trial: Trial, profile: ParticipantProfile): Crite
           ? `The registry record lists this study as enrolling ${trial.sex.toLowerCase()} participants.`
           : `The registry record lists this study as enrolling ${trial.sex.toLowerCase()} participants. Some studies list a restriction that a site can clarify; it is worth asking rather than assuming.`,
       usedFactKeys: profile.sex == null ? [] : ["sex"],
-      evidenceSpan: `Registry eligibility field — sex: ${trial.sex}`,
+      evidenceSpan: `Registry eligibility field, sex: ${trial.sex}`,
       reviewState: "auto",
     });
   }
@@ -527,12 +527,12 @@ export function assessPracticalFit(trial: Trial, profile: ParticipantProfile): P
     const approxMinutes = Math.round((nearestSiteKm / 60) * 60);
     withinStatedTravelPreference = approxMinutes <= profile.maxTravelMinutes;
     notes.push(
-      `Nearest listed site is about ${nearestSiteKm} km away in a straight line (roughly ${approxMinutes} minutes at 60 km/h — not a real drive time). You said you can travel up to ${profile.maxTravelMinutes} minutes.`
+      `Nearest listed site is about ${nearestSiteKm} km away in a straight line (roughly ${approxMinutes} minutes at 60 km/h, not a real drive time). You said you can travel up to ${profile.maxTravelMinutes} minutes.`
     );
   }
 
   if (profile.needsTravelHelp) {
-    notes.push("You said you need help with travel. Whether this study offers any is not stated in the registry record — ask the coordinator.");
+    notes.push("You said you need help with travel. Whether this study offers any is not stated in the registry record, ask the coordinator.");
   }
 
   return {

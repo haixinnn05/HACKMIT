@@ -1,305 +1,272 @@
 /**
- * End-to-end check of the demo journey, run against a live dev server.
+ * End-to-end check of the twelve screens, run against a live dev server.
  *
- * Exercises the path the demonstration actually walks: passport -> find the
- * study -> read the evidence -> preview the burden -> add a question -> share an
- * inquiry -> coordinator answers it -> participant sees the answer. Screenshots
- * are written to .journey/ for the demo recording.
+ * Walks the path the demonstration walks: home, find trials, trial detail,
+ * participation preview, saved questions, inquiry review, research team reply,
+ * inbox, decision, timeline, passport code, scanned profile, revocation.
+ * Screenshots go to .journey/.
  *
- * Usage: npm run dev, then `node scripts/journey.mjs`
+ * Usage: npm run dev, then `npm run journey`
  */
 import { chromium } from "playwright";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, rmSync } from "node:fs";
 
 const BASE = process.env.BASE_URL ?? "http://localhost:3000";
 const SHOTS = ".journey";
+rmSync(SHOTS, { recursive: true, force: true });
 mkdirSync(SHOTS, { recursive: true });
 
 let step = 0;
 const results = [];
-
 function assert(name, condition, detail = "") {
   results.push({ name, ok: Boolean(condition), detail });
-  console.log(`  ${condition ? "PASS" : "FAIL"}  ${name}${detail && !condition ? ` — ${detail}` : ""}`);
+  console.log(`  ${condition ? "PASS" : "FAIL"}  ${name}${detail && !condition ? ` (${detail})` : ""}`);
 }
-
-async function shot(page, name) {
-  step += 1;
-  await page.screenshot({ path: `${SHOTS}/${String(step).padStart(2, "0")}-${name}.png`, fullPage: true });
-}
-
 const browser = await chromium.launch();
 const context = await browser.newContext({ viewport: { width: 430, height: 932 }, deviceScaleFactor: 2 });
 const page = await context.newPage();
 page.on("pageerror", (error) => console.log(`  [page error] ${error.message}`));
+const shot = async (name, target = page) => {
+  step += 1;
+  await target.screenshot({ path: `${SHOTS}/${String(step).padStart(2, "0")}-${name}.png`, fullPage: true });
+};
+const go = (path) => page.goto(`${BASE}${path}`, { waitUntil: "networkidle" });
+const main = () => page.locator("#main");
+const text = async () => (await main().innerText()).replace(/\s+/g, " ");
 
-console.log("\nTrial Passport — end-to-end journey\n");
-
-// Start from the seeded state so each run is independent. Without this, an
-// inquiry left by a previous run makes the revocation check pass vacuously.
+console.log("\nTrial Passport: twelve-screen journey\n");
 await page.request.post(`${BASE}/api/reset`);
+await page.request.post(`${BASE}/api/persona`, { data: { id: "p-maria" } });
 
-/* 1. Become the demo persona. */
-await page.goto(`${BASE}/passport`, { waitUntil: "networkidle" });
-await page.selectOption("select", "p-maria");
-await page.waitForTimeout(700);
-await page.goto(`${BASE}/passport`, { waitUntil: "networkidle" });
-assert("passport loads for the demo persona",
-  (await page.content()).includes("Maria Restrepo"));
-assert("unknown facts are surfaced as unknown, not as 'no'",
-  (await page.content()).includes("HER2 status"));
-await shot(page, "passport");
+/* 1. Home */
+await go("/");
+let t = await text();
+assert("1 Home greets the participant by name", /Good (morning|afternoon|evening), Maria/.test(t));
+assert("1 Home shows journey progress out of five", /\d of 5 completed/.test(t));
+assert("1 Home offers exactly one next step", (await page.locator("text=Your next step").count()) === 1);
+await shot("home");
 
-/* 2. Explore. */
-await page.goto(`${BASE}/explore`, { waitUntil: "networkidle" });
-const exploreHtml = await page.content();
-assert("explore separates the demonstration study from registry results",
-  exploreHtml.includes("Demonstration study") && exploreHtml.includes("From the public registry"));
-// The product may *deny* that it decides eligibility; it must never assert it.
-assert("no card claims the person qualifies",
-  !/\b(you qualify|you are eligible|you meet the criteria)\b/i.test(
-    exploreHtml.replace(/whether you qualify|you qualify — only study staff can decide that/gi, "")
-  ));
-assert("cards state a provisional verdict only",
-  /Potential option to discuss|Needs more information|Something may not match/.test(exploreHtml));
-await shot(page, "explore");
+/* 2. Find Clinical Trials */
+await go("/explore");
+t = await text();
+assert("2 Trials lists a result count", /\d+ trials found/.test(t));
+assert("2 Trials keeps the demonstration study apart from registry results", t.includes("Demo study, kept apart") && t.includes("From the public registry"));
+assert("2 Trials never says the person qualifies", !/you qualify|you are eligible/i.test(t));
+assert("2 Trials cards carry a provisional label", /Potential option|Questions remain|Things to review/.test(t));
+await page.selectOption('select[name="phase"]', "PHASE2");
+await page.waitForURL(/phase=PHASE2/);
+assert("2 Trials phase filter narrows the list", /Phase 2/.test(await text()) && !/Phase 3 \|/.test(await text()));
+await shot("trials");
 
-/* 3. A real registry record: evidence, and no invented schedule. */
-const realLink = await page.locator('a[href^="/trial/NCT"]').first().getAttribute("href");
-await page.goto(`${BASE}${realLink}`, { waitUntil: "networkidle" });
-const realHtml = await page.content();
-assert("a real record refuses to estimate a visit schedule",
-  realHtml.includes("visit schedule is not published"));
-assert("a real record offers questions instead of a number",
-  realHtml.includes("Worth asking the study team"));
-assert("the original registry wording is available to open",
-  realHtml.includes("Show the exact wording from the record"));
-await shot(page, "real-trial-no-schedule");
+/* 3. Trial Detail */
+const realHref = await page.locator('a[href^="/trial/NCT"]').first().getAttribute("href");
+await go(realHref);
+t = await text();
+assert("3 Detail has the three tabs", ["Overview", "Eligibility", "What to Expect"].every((label) => t.includes(label)));
+assert("3 Detail shows OpenAlex background research, labelled as not evidence", t.includes("OpenAlex") && t.includes("not evidence"));
+await shot("detail-real");
+await go(`${realHref}?tab=expect`);
+assert("3 A real record refuses to estimate a time commitment", (await text()).includes("time commitment is not published"));
 
-/* 4. The fictional study: participation preview with real arithmetic. */
-await page.goto(`${BASE}/trial/TP-FIX-001`, { waitUntil: "networkidle" });
-let html = await page.content();
-assert("the fictional study is labelled as fictional", html.includes("Fictional study."));
-assert("the participation preview totals 14.3 hours", html.includes(">14.3<"));
-assert("the arithmetic is shown in full, and adds up to the stated total",
-  html.includes("4 × (2h on site + 2 × 45min travel) + 0.3h remote contact = 14.3h"));
-assert("waiting time is declared excluded", html.includes("Waiting time at the clinic"));
-assert("each input shows where it came from",
-  html.includes("Confirmed by simulated staff") && html.includes("You entered this"));
-await shot(page, "participation-preview");
+await go("/trial/TP-FIX-001");
+assert("3 The fictional study is labelled fictional", (await text()).includes("Fictional study"));
+await page.locator('button:has-text("Save Trial")').click();
+await page.waitForSelector('a:has-text("Prepare an inquiry")');
+assert("3 Saving swaps the primary action to preparing an inquiry", true);
+await go("/trial/TP-FIX-001?tab=eligibility");
+t = await text();
+assert("3 Eligibility is marked provisional", t.includes("provisional"));
+assert("3 Eligibility exposes the exact source wording", t.includes("Show the exact wording from the record"));
+assert("3 An unknown biomarker stays unknown", t.includes("HER2 status"));
+await shot("detail-eligibility");
 
-/* 5. A what-if is labelled hypothetical. */
-await page.goto(`${BASE}/trial/TP-FIX-001?visits=2&travel=45`, { waitUntil: "networkidle" });
-html = await page.content();
-assert("a what-if schedule is labelled as not agreed by the study",
-  html.includes("The study has not agreed to it"));
-assert("the what-if recomputes the total", html.includes(">7.3<"));
-await shot(page, "what-if");
+/* 4. Participation Preview */
+await go("/trial/TP-FIX-001/preview");
+await page.locator("summary", { hasText: "How we worked this out" }).click();
+t = await text();
+assert("4 Preview totals 14.3 hours", t.includes("14.3"));
+assert("4 Preview shows arithmetic that adds up", t.includes("4 × (2h on site + 2 × 45min travel) + 0.3h remote contact = 14.3h"));
+assert("4 Preview declares waiting time excluded", /waiting time/i.test(t));
+assert("4 Preview rows name the six areas", ["Study duration", "Study visits", "Time per visit", "Travel distance", "Possible reimbursement", "Caregiver / support"].every((l) => t.includes(l)));
+await shot("preview");
+await go("/trial/TP-FIX-001/preview?visits=2&travel=45");
+assert("4 A what-if is labelled as not agreed", (await text()).includes("The study has not agreed to it"));
+await go(`${realHref}/preview`);
+t = await text();
+assert("4 A real record shows Not published, never a guess", t.includes("Not published") && t.includes("No total can be shown"));
+await shot("preview-real");
 
-/* 6. Add a question the record cannot answer. */
-await page.goto(`${BASE}/trial/TP-FIX-001`, { waitUntil: "networkidle" });
-await page.fill("#question-text", "Is parking covered at the study site?");
-await page.click('button:has-text("Add question")');
+/* 5. Saved Questions */
+await go("/trial/TP-FIX-001/preview");
+await page.locator('button:has-text("Is parking covered")').click();
 await page.waitForLoadState("networkidle");
-html = await page.content();
-assert("the question is saved to the passport queue",
-  html.includes("Is parking covered at the study site?"));
-await shot(page, "question-added");
+await go("/questions?add=1&trial=TP-FIX-001");
+await page.fill('textarea[name="text"]', "Can my family member come with me to visits?");
+await page.click('button:has-text("Save question")');
+await page.waitForURL(/\/questions/);
+await go("/questions");
+t = await text();
+assert("5 Questions are saved and counted", t.includes("All (2)") && t.includes("Need to ask (2)"));
+await shot("questions");
 
-/* 7. Inquiry preview: exact payload, chosen by the person. */
-await page.goto(`${BASE}/inquiry/new/TP-FIX-001`, { waitUntil: "networkidle" });
-html = await page.content();
-assert("the inquiry preview shows the exact payload before sharing",
-  html.includes("What you are sharing") && html.includes("Nothing has been shared yet"));
-assert("contact details are off by default",
-  !(await page.locator('input[value="contact"]').isChecked()));
-assert("the draft carries the participant's unknowns",
-  html.includes("I don&#x27;t know") || html.includes("do not know"));
-assert("the draft states the burden figure",
-  (await page.locator("#message").inputValue()).includes("14.3 hours"));
-await shot(page, "inquiry-preview");
-
-/* 8. Share it. */
-await page.click('button:has-text("Share this inquiry")');
-// A server action redirect settles the client router after the network goes
-// quiet, so wait on the URL rather than on network state.
+/* 8. Inquiry review */
+await go("/inquiry/new/TP-FIX-001");
+t = await text();
+assert("8 Inquiry review lists what would be shared", ["Personal information", "Relevant medical history", "Travel preferences", "Saved questions"].every((l) => t.includes(l)));
+assert("8 Contact details start unticked", !(await page.locator('input[value="contact"]').isChecked()));
+assert("8 The message has a live character count", /\d+\/500/.test(t));
+assert("8 The autofilled packet carries the burden figure", (await page.locator("#packet").inputValue()).includes("14.3 hours"));
+await shot("inquiry-review");
+await page.click('button:has-text("Share Inquiry")');
 await page.waitForURL(/\/inquiry\/[0-9a-f-]{36}/, { timeout: 20000 });
 const inquiryUrl = page.url();
-assert("sharing lands on the inquiry's status page", /\/inquiry\/[0-9a-f-]{36}/.test(inquiryUrl));
-html = await page.content();
-assert("acknowledgement is not presented as enrolment",
-  html.includes("Shared, waiting to be picked up"));
-await shot(page, "inquiry-shared");
+assert("8 Sharing is not presented as enrolment", (await text()).includes("Shared, waiting to be picked up"));
 
-/* 9. Coordinator side. */
-await page.goto(`${BASE}/coordinator`, { waitUntil: "networkidle" });
-html = await page.content();
-// Scope to the inbox list: the persona switcher in the nav also names personas,
-// so a whole-page text match would pass even with an empty inbox.
-const inboxItems = page.locator('a[href^="/coordinator/"]:not([href$="/coordinator"])');
-assert("the inquiry reaches the coordinator inbox", (await inboxItems.count()) === 1);
-assert("the inbox item names the participant",
-  (await inboxItems.first().textContent()).includes("Maria Restrepo"));
-assert("the staff account is labelled simulated", html.includes("Simulated staff account"));
-await shot(page, "coordinator-inbox");
-
-await page.locator('a[href^="/coordinator/"]:not([href$="/coordinator"])').first().click();
-await page.waitForURL(/\/coordinator\/[0-9a-f-]{36}/, { timeout: 20000 });
+/* 11. Research Team Inbox */
+await go("/coordinator");
+t = await text();
+const items = page.locator('#main a[href^="/coordinator/"]');
+assert("11 The inquiry reaches the research team", (await items.count()) === 1 && t.includes("Maria Restrepo"));
+assert("11 The staff account is labelled simulated", t.includes("Simulated staff account"));
+assert("11 Items are marked patient-authorized", t.includes("Patient-authorized"));
+await shot("team-inbox");
+await items.first().click();
+await page.waitForURL(/\/coordinator\/[0-9a-f-]{36}/);
 await page.waitForLoadState("networkidle");
-html = await page.content();
-assert("the coordinator sees only authorised fields",
-  html.includes("Participant-authorised information"));
-assert("contact details were not shared and the UI says so",
-  html.includes("did not share contact details"));
-assert("criterion observations carry their source wording",
-  html.includes("Provisional criterion observations") && html.includes("eligibility criteria"));
-assert("missing information is listed for the coordinator to request",
-  html.includes("Missing information to request"));
-assert("a site-policy answer is pre-filled for the parking question",
-  html.includes("validated at the Harborview garage"));
-assert("the pre-filled answer is marked as needing human review",
-  html.includes("Edit it") && html.includes("you are the author"));
-await shot(page, "coordinator-review");
+t = await text();
+assert("11 Eligibility considerations are marked not a decision", t.includes("not a decision"));
+assert("11 Considerations group as Supported, Unknown, Needs review", ["Supported", "Unknown", "Needs review"].every((l) => t.includes(l)));
+assert("11 Unshared contact details are absent and explained", !t.includes("maria.demo@example.com") && t.includes("did not share contact details"));
+assert("11 Missing information is listed to request", t.includes("Missing information to request"));
+assert("11 A saved site answer is pre-filled and flagged for review", t.includes("You are the author"));
+assert("11 A Reply action stays in reach", (await page.locator('a:has-text("Reply to Maria")').count()) === 1);
+await shot("team-review");
+await page.locator("li", { hasText: "Is parking covered" }).locator('button:has-text("Send this answer")').click();
+await page.waitForSelector("text=Sent by R. Alvarez", { timeout: 20000 });
+assert("11 The reply is attributed to the person who sent it", true);
 
-/* 10. Coordinator sends the reviewed answer. */
-await page.click('button:has-text("Send this answer")');
-await page.waitForSelector('text=Sent by R. Alvarez', { timeout: 20000 });
-html = await page.content();
-assert("the sent answer is attributed to the person who sent it",
-  html.includes("Sent by R. Alvarez"));
-await shot(page, "coordinator-answered");
-
-/* 11. Back to the participant: the answer arrived. */
-await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
-html = await page.content();
-assert("the participant's home surfaces the reply", html.includes("You have a reply"));
-assert("stamps are shown as a private record", html.includes("Your passport stamps"));
-await shot(page, "home-with-reply");
-
+/* 9. Inbox */
+await go("/inbox");
+t = await text();
+assert("9 Inbox shows the reply as unread", t.includes("Unread (1)") && t.includes("Answered"));
+await shot("inbox");
+await go("/");
+assert("1 Home surfaces the reply", (await text()).includes("You have a reply"));
 await page.goto(inquiryUrl, { waitUntil: "networkidle" });
-html = await page.content();
-assert("the participant can read the full answer",
-  html.includes("validated at the Harborview garage"));
-assert("the answer states who wrote it", html.includes("R. Alvarez"));
-assert("declining is offered as a first-class choice",
-  html.includes("I am not interested"));
-await shot(page, "participant-answer");
+t = await text();
+assert("9 The thread shows the full answer and its author", t.includes("validated at the Harborview garage") && t.includes("R. Alvarez"));
+assert("9 All four choices are offered, including declining and asking for help",
+  ["I have agreed to take part", "I need more time", "Please help me contact the study team", "I am not interested"].every((l) => t.includes(l)));
+await shot("thread");
+await go("/inbox");
+assert("9 Opening the thread marks it read", (await text()).includes("Unread (0)"));
+await go("/questions?tab=answered");
+assert("5 The answered question moves to Answered", (await text()).includes("Answered (1)"));
 
-/* 12. Revocation removes the inquiry from the site. */
-await page.goto(`${BASE}/passport`, { waitUntil: "networkidle" });
-assert("the sharing grant is listed with what it covered",
-  (await page.content()).includes("Who can see what"));
-await page.locator('button:has-text("Revoke")').first().click();
-await page.waitForSelector('text=Revoked', { timeout: 20000 });
-assert("revocation is honest about what it cannot undo",
-  (await page.content()).includes("cannot recall information someone"));
-await shot(page, "revoked");
+/* 12. Visits & Timeline */
+await page.goto(inquiryUrl, { waitUntil: "networkidle" });
+await page.click('button:has-text("I have agreed to take part")');
+await page.waitForURL(/\/timeline/, { timeout: 20000 });
+t = await text();
+assert("12 Agreeing leads to a timeline of confirmed visits", ["Screening visit", "Baseline visit", "Month 3 follow-up", "Month 6 follow-up"].every((l) => t.includes(l)));
+assert("12 Visit times are not invented", t.includes("Time to be confirmed"));
+assert("12 To-dos come from what the study left unstated", t.includes("Confirm parking details") && t.includes("Plan travel arrangements"));
+await shot("timeline");
+await page.locator('button[role="checkbox"]').first().click();
+await page.waitForSelector('button[role="checkbox"][aria-checked="true"]');
+assert("12 A to-do can be ticked and stays ticked", true);
+await go("/timeline?view=calendar");
+assert("12 Calendar view renders month grids", (await page.locator("#main .grid-cols-7").count()) >= 1);
+await shot("calendar");
+await go("/");
+assert("1 Home reminds of the next visit", (await text()).includes("Screening visit"));
+assert("1 The journey is complete after a decision", (await text()).includes("5 of 5 completed"));
+await shot("home-complete");
 
-await page.goto(`${BASE}/coordinator`, { waitUntil: "networkidle" });
-assert("the revoked inquiry is gone from the coordinator inbox",
-  (await page.locator('a[href^="/coordinator/"]:not([href$="/coordinator"])').count()) === 0);
-assert("the coordinator sees an empty inbox rather than a stale item",
-  (await page.content()).includes("Nothing waiting"));
-await shot(page, "coordinator-after-revoke");
+/* 10. Profile */
+await go("/profile");
+t = await text();
+assert("10 Profile shows the person's own words with an Edit control", t.includes("what I'd be signing up for") && t.includes("Edit"));
+assert("10 Profile lists its sections", ["My Trial Passport", "Personal Information", "Medical History", "Preferences", "Privacy & Security", "Past / Saved Trials"].every((l) => t.includes(l)));
+await shot("profile");
+await go("/profile/saved");
+assert("10 Saved trials and decisions are listed", (await text()).includes("Taking part"));
 
-/* 13. The in-person handoff code. */
-await page.goto(`${BASE}/passport`, { waitUntil: "networkidle" });
-await page.click('button[aria-haspopup="dialog"]');
-await page.waitForSelector('text=My passport code');
-html = await page.content();
-assert("the code dialog states that the code carries no health information",
-  html.includes("contains") && html.includes("no health information"));
-assert("contact sharing is off by default in the code dialog",
-  !(await page.locator('input[type="checkbox"]').last().isChecked()));
-await page.click('button:has-text("Create code")');
+/* 6. Passport and 7. Shared Profile */
+await go("/passport");
+t = await text();
+assert("6 Opening the passport shares nothing", t.includes("No code is active"));
+await shot("passport");
+await page.click('button:has-text("Share QR Code")');
+await page.waitForSelector("text=Choose what to share");
+assert("6 Contact details are off by default", !(await page.locator('[role="dialog"] input[type="checkbox"]').last().isChecked()));
+const [handoffResponse] = await Promise.all([
+  page.waitForResponse((response) => response.url().endsWith("/api/handoff")),
+  page.click('button:has-text("Create 10-minute code")'),
+]);
+const handoffUrl = (await handoffResponse.json()).url;
 await page.waitForSelector("img[alt*='Scannable code']", { timeout: 20000 });
-const handoffUrl = await page.locator("p.font-mono").first().textContent();
-assert("the code encodes a URL and nothing else",
-  /^http:\/\/localhost:3000\/handoff\/[0-9a-f-]{36}$/.test(handoffUrl.trim()), handoffUrl);
-assert("the URL contains no condition, trial id or credential",
-  !/breast|cancer|NCT|TP-FIX|maria/i.test(handoffUrl));
-await shot(page, "passport-code");
+assert("6 The code counts down", /Expires in \d+:\d\d/.test(await text()));
+await shot("passport-code");
+const grantRow = await page.locator("text=In-person sharing code").first().textContent();
+const tokenPrefix = grantRow.match(/\(([0-9a-f]{8})\)/)[1];
+assert("6 The code is a bare link with no health data in it",
+  Boolean(handoffUrl) && /\/handoff\/[0-9a-f-]{36}$/.test(handoffUrl) && handoffUrl.includes(tokenPrefix) && !/breast|cancer|NCT|maria/i.test(handoffUrl), handoffUrl);
 
-// What a coordinator sees after scanning.
 const scanner = await context.newPage();
-await scanner.goto(handoffUrl.trim(), { waitUntil: "networkidle" });
-let scanned = await scanner.content();
-assert("scanning shows only the fields the person chose",
-  scanned.includes("Maria Restrepo") && scanned.includes("Practical situation"));
-assert("unshared contact details are absent and explained",
-  !scanned.includes("maria.demo@example.com") &&
-  scanned.includes("did not share contact details"));
-assert("scanned facts the person does not know say so",
-  scanned.includes("the participant does not know"));
-assert("the scanned view states the information is unverified",
-  scanned.includes("not been checked against medical records"));
-await scanner.screenshot({ path: `${SHOTS}/18-scanned-handoff.png`, fullPage: true });
+await scanner.goto(handoffUrl, { waitUntil: "networkidle" });
+assert("7 Shared profile opens as collapsed sections", (await scanner.locator("details[open]").count()) === 0);
+await scanner.locator("summary", { hasText: "Medical History" }).click();
+let s = (await scanner.locator("body").innerText()).replace(/\s+/g, " ");
+assert("7 Shared profile is marked patient-authorized", s.includes("Patient-authorized view"));
+assert("7 Shared profile shows only chosen sections", s.includes("Medical History") && !s.includes("Preferences"));
+assert("7 Unknown facts read as unknown", s.includes("I don't know"));
+assert("7 Contact details are withheld and said to be", s.includes("Contact details were not shared") && !s.includes("example.com"));
+assert("7 No participant navigation or other people leak into the scanned view",
+  (await scanner.locator("nav").count()) === 0 && !(await scanner.content()).includes("Dee Okafor"));
+await shot("shared-profile", scanner);
 
-// Revoking the code closes it immediately.
-await page.click('button:has-text("Done")');
-await page.goto(`${BASE}/passport`, { waitUntil: "networkidle" });
 await page.locator('button:has-text("Revoke")').first().click();
-await page.waitForSelector("text=Revoked", { timeout: 20000 });
-await scanner.goto(handoffUrl.trim(), { waitUntil: "networkidle" });
-scanned = await scanner.content();
-assert("a revoked code stops resolving", scanned.includes("This code is not active"));
-assert("a revoked code leaks nothing about who it belonged to",
-  !scanned.includes("Maria Restrepo"));
+await page.waitForSelector("text=Revoked");
+await scanner.goto(handoffUrl, { waitUntil: "networkidle" });
+s = await scanner.content();
+assert("7 A revoked code stops resolving and leaks nothing", s.includes("This code is not active") && !s.includes("Maria"));
 await scanner.close();
 
-/* 14. Access gaps. */
-await page.goto(`${BASE}/access-gaps`, { waitUntil: "networkidle" });
-html = await page.content();
-assert("missingness is reported with denominators",
-  (await page.locator("text=/\\d+\\s*\\/\\s*\\d+/").count()) > 0);
-assert("gaps are not presented as discrimination",
-  html.includes("not evidence that a site turns anyone away"));
-await shot(page, "access-gaps");
+/* Revoking the inquiry grant removes it from the team. */
+await go("/passport");
+await page.locator('button:has-text("Revoke")').first().click();
+await page.waitForLoadState("networkidle");
+await go("/coordinator");
+assert("11 Revoking access empties the research team inbox", (await page.locator('#main a[href^="/coordinator/"]').count()) === 0);
 
-/* 15. Accessibility basics. */
-await page.goto(`${BASE}/trial/TP-FIX-001`, { waitUntil: "networkidle" });
-const a11y = await page.evaluate(() => {
-  // WCAG 2.2 target size applies to the *interactive region*, which for a
-  // checkbox is its enclosing label, not the 20px box. Inline text links inside
-  // a paragraph are exempt, and the skip link is sized only once focused.
-  const small = [...document.querySelectorAll("button, a, input, select, textarea")].filter(
-    (element) => {
-      if (element.closest("summary") || element.classList.contains("sr-only")) return false;
-      if (element.tagName === "A" && element.closest("p, li, dd")) return false;
-      const region = element.closest("label") ?? element;
-      const rect = region.getBoundingClientRect();
+await go("/access-gaps");
+assert("Gaps are reported with denominators and not as discrimination", /\d+ \/ \d+/.test(await text()) && (await text()).includes("not evidence that a site turns anyone away"));
+await shot("access-gaps");
+
+/* Accessibility across screens */
+for (const path of ["/", "/explore", "/trial/TP-FIX-001", "/trial/TP-FIX-001/preview", "/questions", "/passport", "/inbox", "/profile", "/profile/edit", "/timeline", "/inquiry/new/TP-FIX-001"]) {
+  await go(path);
+  const a11y = await page.evaluate(() => {
+    const controls = [...document.querySelectorAll("button, a, input, select, textarea")];
+    const small = controls.filter((el) => {
+      if (el.closest("summary") || el.classList.contains("sr-only") || el.type === "hidden") return false;
+      if (el.tagName === "A" && el.closest("p, li > span, dd")) return false;
+      const rect = (el.closest("label") ?? el).getBoundingClientRect();
       return rect.width > 0 && rect.height > 0 && rect.height < 40;
-    }
-  );
-  return {
-    h1Count: document.querySelectorAll("h1").length,
-    unlabelledInputs: [...document.querySelectorAll("input, select, textarea")].filter(
-      (element) =>
-        !element.getAttribute("aria-label") &&
-        !element.closest("label") &&
-        !document.querySelector(`label[for="${element.id}"]`) &&
-        element.type !== "hidden"
-    ).length,
-    imagesWithoutAlt: [...document.querySelectorAll("img")].filter((img) => !img.alt).length,
-    smallTapTargets: small.length,
-    langSet: document.documentElement.lang === "en",
-  };
-});
-assert("exactly one h1 per page", a11y.h1Count === 1, `found ${a11y.h1Count}`);
-assert("every form control has a label", a11y.unlabelledInputs === 0, `${a11y.unlabelledInputs} unlabelled`);
-assert("every image has alt text", a11y.imagesWithoutAlt === 0);
-assert("document language is declared", a11y.langSet);
-assert("tap targets are at least 40px tall", a11y.smallTapTargets === 0, `${a11y.smallTapTargets} too small`);
+    }).map((el) => (el.textContent || el.name || el.tagName).trim().slice(0, 30));
+    const unlabelled = [...document.querySelectorAll("input, select, textarea")].filter((el) =>
+      el.type !== "hidden" && !el.getAttribute("aria-label") && !el.closest("label") && !document.querySelector(`label[for="${el.id}"]`)).length;
+    return { h1: document.querySelectorAll("h1").length, small, unlabelled, dashes: /[\u2014\u2013]/.test(document.querySelector("#main").innerText) };
+  });
+  assert(`a11y ${path}: one h1, labelled controls, 40px targets, no em-dashes`,
+    a11y.h1 === 1 && a11y.unlabelled === 0 && a11y.small.length === 0 && !a11y.dashes,
+    JSON.stringify(a11y));
+}
 
 await browser.close();
-
-const failed = results.filter((result) => !result.ok);
-console.log(`\n${"=".repeat(56)}`);
-console.log(`${results.length - failed.length} passed, ${failed.length} failed`);
-if (failed.length) {
-  console.log("\nFailures:");
-  for (const failure of failed) console.log(`  - ${failure.name}${failure.detail ? ` (${failure.detail})` : ""}`);
-}
-console.log(`screenshots in ${SHOTS}/`);
-console.log("=".repeat(56));
-process.exit(failed.length > 0 ? 1 : 0);
+const failed = results.filter((r) => !r.ok);
+console.log(`\n${"=".repeat(56)}\n${results.length - failed.length} passed, ${failed.length} failed`);
+for (const f of failed) console.log(`  - ${f.name}${f.detail ? ` (${f.detail})` : ""}`);
+console.log(`screenshots in ${SHOTS}/\n${"=".repeat(56)}`);
+process.exit(failed.length ? 1 : 0);

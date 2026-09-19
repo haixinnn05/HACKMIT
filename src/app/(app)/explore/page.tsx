@@ -1,205 +1,177 @@
 import Link from "next/link";
-import { Card, DataAge, Empty, Note } from "@/components/ui";
+import { CaretRight, ChatCircleDots, Heart, MagnifyingGlass, MapPin, Question } from "@phosphor-icons/react/dist/ssr";
+import { AutoSubmitSelect } from "@/components/AutoSubmitSelect";
+import { Card, Empty, Note, Pill, ScreenHeader } from "@/components/ui";
 import { assessTrial } from "@/lib/assess";
+import { getManifest } from "@/lib/db";
+import { getTrial } from "@/lib/repo";
 import { searchForProfile } from "@/lib/search";
 import { getActiveParticipant } from "@/lib/session";
-import { getManifest } from "@/lib/db";
-import { requestNow } from "@/lib/clock";
-import { getTrial } from "@/lib/repo";
-import type { SearchHit } from "@/lib/search";
-import type { ParticipantProfile } from "@/lib/types";
+import type { ParticipantProfile, Trial, TrialAssessment } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
+const KM_PER_MILE = 1.609;
+
+/** The label on a card. None of these is a verdict, and none says "you qualify". */
+function cardStatus(assessment: TrialAssessment) {
+  if (assessment.overall === "likely_conflict") {
+    return { label: "Things to review", tone: "iris" as const, icon: <ChatCircleDots size={13} weight="fill" /> };
+  }
+  if (assessment.overall === "needs_more_information") {
+    return { label: "Questions remain", tone: "peach" as const, icon: <Question size={13} weight="fill" /> };
+  }
+  return { label: "Potential option", tone: "blush" as const, icon: <Heart size={13} weight="fill" /> };
+}
+
 export default async function ExplorePage({
   searchParams,
-}: { searchParams: Promise<{ q?: string }> }) {
+}: { searchParams: Promise<{ q?: string; phase?: string; near?: string; sort?: string }> }) {
   const params = await searchParams;
   const participant = await getActiveParticipant();
-  // Read the clock once so every date on this page is judged against one instant.
-  const now = requestNow();
   const manifest = getManifest() as { retrievedAt?: string; recordCount?: number } | null;
 
-  const result = searchForProfile(participant, params.q ? { text: params.q } : {});
+  const result = searchForProfile(participant, { text: params.q || null, limit: 40 });
 
-  // The demonstration study is shown under its own heading rather than mixed
-  // into the ranking. It is invented, so it has no honest relevance score, and
-  // ranking it beside real records would imply one.
-  const demoStudy = getTrial("TP-FIX-001");
+  let rows = result.hits.map((hit) => ({ hit, assessment: assessTrial(hit.trial, participant) }));
+
+  if (params.phase) rows = rows.filter(({ hit }) => hit.trial.phases.includes(params.phase!));
+
+  // Distance filters keep records whose distance is unknown. Dropping them would
+  // hide an option the person could otherwise ask about.
+  const maxMiles = params.near === "50" ? 50 : params.near === "150" ? 150 : null;
+  if (maxMiles) {
+    rows = rows.filter(({ assessment }) => {
+      const km = assessment.practicalFit.nearestSiteKm;
+      return km == null || km / KM_PER_MILE <= maxMiles;
+    });
+  }
+  if (params.near === "state" && participant.state) {
+    rows = rows.filter(({ hit }) =>
+      hit.trial.sites.length === 0 || hit.trial.sites.some((site) => site.state === participant.state));
+  }
+  if (params.sort === "recent") {
+    rows = [...rows].sort((a, b) => (b.hit.trial.lastUpdatePostDate ?? "").localeCompare(a.hit.trial.lastUpdatePostDate ?? ""));
+  }
+
+  const total = rows.length;
+  rows = rows.slice(0, 12);
+  const demoStudy = !params.q && !params.phase ? getTrial("TP-FIX-001") : null;
+
+  const keep = (extra: Record<string, string>) => {
+    const next = new URLSearchParams();
+    for (const [key, value] of Object.entries({ q: params.q, phase: params.phase, near: params.near, sort: params.sort, ...extra })) {
+      if (value) next.set(key, value);
+    }
+    const query = next.toString();
+    return query ? `/explore?${query}` : "/explore";
+  };
 
   return (
-    <div className="space-y-5">
-      <div className="page-intro">
-        <p className="mb-1 text-xs font-bold uppercase tracking-[0.16em] text-teal">Find a starting point</p>
-        <h1 className="text-3xl font-semibold tracking-[-0.025em] text-ink">Explore options</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-soft">
-          Studies from the public registry that look worth a conversation, based on the
-          condition and location in your passport. Nothing here means you qualify — only
-          study staff can decide that.
-        </p>
-      </div>
+    <div className="space-y-4">
+      <ScreenHeader title="Find Clinical Trials" sub="Search for trials that may be right to discuss with your care team." />
 
-      <form action="/explore" className="flex gap-2 rounded-2xl border border-rule bg-white p-2 shadow-[0_8px_24px_rgba(23,23,32,0.06)]">
-        <label className="relative min-w-0 flex-1">
-          <span className="sr-only">Refine your search</span>
-          <svg aria-hidden viewBox="0 0 24 24" className="absolute left-3.5 top-1/2 size-5 -translate-y-1/2 text-ink-faint" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-            <circle cx="11" cy="11" r="6.5" /><path d="m16 16 4 4" />
-          </svg>
+      <form action="/explore" className="space-y-3">
+        <label className="relative block">
+          <span className="sr-only">Search by condition, keyword or location</span>
+          <MagnifyingGlass size={18} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-ink-faint" />
           <input
-            type="search"
-            name="q"
-            defaultValue={params.q ?? ""}
-            placeholder="Try surgery, radiation, or a treatment name"
-            className="min-h-11 w-full rounded-xl border-0 bg-paper-sunken/65 pl-11 pr-3.5 text-sm text-ink placeholder:text-ink-faint"
+            type="search" name="q" defaultValue={params.q ?? ""}
+            placeholder="Search by condition, keyword, or location"
+            className="min-h-12 w-full rounded-full border border-rule bg-surface pl-11 pr-4 text-[13.5px] text-ink placeholder:text-ink-faint"
           />
         </label>
-        <button
-          type="submit"
-          className="min-h-11 cursor-pointer rounded-xl border border-teal bg-teal px-5 text-sm font-bold text-white shadow-[0_6px_16px_rgba(100,55,245,0.2)] transition-colors hover:bg-teal-deep"
-        >
-          Search
-        </button>
+
+        <div className="-mx-5 flex items-center gap-2 overflow-x-auto px-5 pb-0.5">
+          <span className="inline-flex min-h-10 shrink-0 items-center rounded-full bg-iris px-3.5 text-[13px] font-semibold text-white">
+            {participant.condition ?? "Any condition"}
+          </span>
+          <AutoSubmitSelect name="near" label="Location" defaultValue={params.near ?? ""} options={[
+            { value: "", label: "Location" }, { value: "50", label: "Within 50 mi" },
+            { value: "150", label: "Within 150 mi" }, { value: "state", label: "My state" },
+          ]} />
+          <AutoSubmitSelect name="phase" label="Phase" defaultValue={params.phase ?? ""} options={[
+            { value: "", label: "Phase" }, { value: "PHASE1", label: "Phase 1" }, { value: "PHASE2", label: "Phase 2" },
+            { value: "PHASE3", label: "Phase 3" }, { value: "PHASE4", label: "Phase 4" },
+          ]} />
+          {params.sort ? <input type="hidden" name="sort" value={params.sort} /> : null}
+        </div>
       </form>
 
-      <p className="text-xs leading-relaxed text-ink-faint">
-        {result.hits.length} of {result.totalCandidates} candidates shown · searched in{" "}
-        {result.tookMs}ms · {result.backend === "sqlite_fts5" ? "SQLite FTS5" : "Elasticsearch"}
-        {result.lexicalOnly ? " (keyword matching only — no semantic ranking configured)" : ""}
-        {manifest?.retrievedAt
-          ? ` · snapshot of ${manifest.recordCount} records taken ${manifest.retrievedAt.slice(0, 10)}`
-          : ""}
-      </p>
+      <div className="-my-1.5 flex items-center justify-between text-[12.5px] text-ink-soft">
+        <span>{total} {total === 1 ? "trial" : "trials"} found</span>
+        <Link href={keep({ sort: params.sort === "recent" ? "" : "recent" })} className="flex min-h-11 items-center font-semibold text-ink">
+          Sort: {params.sort === "recent" ? "Recently updated" : "Relevance"}
+        </Link>
+      </div>
 
       {demoStudy ? (
-        <section aria-labelledby="demo-heading">
-          <h2 id="demo-heading" className="mb-1.5 text-sm font-semibold text-ink">
-            Demonstration study
+        <section aria-labelledby="demo-heading" className="space-y-2">
+          <h2 id="demo-heading" className="text-[12px] font-bold text-ink-soft">
+            Demo study, kept apart because it isn&rsquo;t a real option
           </h2>
-          <p className="mb-2 text-sm leading-relaxed text-ink-soft">
-            Real registry records do not publish visit schedules, so none of the studies below
-            can show you what taking part would cost in time. This invented study can. It is
-            shown separately because it is not a real option and has no place in a ranking of
-            real ones.
-          </p>
-          <ul>
-            <TrialCard
-              hit={{ trial: demoStudy, score: 0, reasons: [], matchedCriterionIds: [] }}
-              participant={participant}
-              now={now}
-            />
-          </ul>
+          <ul><TrialCard trial={demoStudy} assessment={assessTrial(demoStudy, participant)} participant={participant} /></ul>
+          <h2 className="pt-1.5 text-[12px] font-bold text-ink-soft">From the public registry</h2>
         </section>
       ) : null}
 
-      <h2 className="text-sm font-semibold text-ink">From the public registry</h2>
-
-      {result.hits.length === 0 ? (
-        <Empty title="No options matched">
-          Try removing words from your search, or widen the condition in your passport. A
-          study that does not appear here has not been ruled out — it may simply not be in
-          this snapshot.
+      {rows.length === 0 ? (
+        <Empty title="No trials matched" icon={<MagnifyingGlass size={22} />}>
+          Try fewer words or a wider location. A study missing here has not been ruled out. It
+          may simply not be in this snapshot.
         </Empty>
       ) : (
-        <ul className="grid gap-4 md:grid-cols-2">
-          {result.hits.map((hit) => (
-            <TrialCard key={hit.trial.id} hit={hit} participant={participant} now={now} />
+        <ul className="space-y-3">
+          {rows.map(({ hit, assessment }) => (
+            <TrialCard key={hit.trial.id} trial={hit.trial} assessment={assessment} participant={participant} />
           ))}
         </ul>
       )}
 
       <Note>
-        This search covers a fixed snapshot of public ClinicalTrials.gov records for one
-        condition area. It is not a complete list of trials, and a study being listed as
-        recruiting does not mean a place is open at a site near you.
+        A fixed snapshot of {manifest?.recordCount ?? "public"} ClinicalTrials.gov records
+        {manifest?.retrievedAt ? `, taken ${manifest.retrievedAt.slice(0, 10)}` : ""}. Keyword search
+        ({result.backend === "sqlite_fts5" ? "SQLite FTS5" : "Elasticsearch"}, {result.tookMs}ms).
+        A study listed as recruiting may not have a place open near you.
       </Note>
     </div>
   );
 }
 
 function TrialCard({
-  hit, participant, now,
-}: { hit: SearchHit; participant: ParticipantProfile; now: number }) {
-  const { trial } = hit;
-  const assessment = assessTrial(trial, participant);
-  const fit = assessment.practicalFit;
-  const assessmentTone = assessment.overall === "likely_conflict"
-    ? "border-coral/25 bg-coral-soft"
-    : assessment.overall === "needs_more_information"
-      ? "border-blue/20 bg-blue-soft"
-      : "border-teal/20 bg-teal-soft";
+  trial, assessment, participant,
+}: { trial: Trial; assessment: TrialAssessment; participant: ParticipantProfile }) {
+  const status = cardStatus(assessment);
+  const site = assessment.practicalFit.nearestSite;
+  const km = assessment.practicalFit.nearestSiteKm;
+  const miles = km != null ? Math.round(km / KM_PER_MILE) : null;
+  const condition = trial.conditions.find((c) => /breast|cancer|carcinoma/i.test(c)) ?? trial.conditions[0];
 
   return (
-    <Card as="li" className={`group overflow-hidden border-t-4 transition-[border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_34px_rgba(23,23,32,0.1)] ${trial.isFictional ? "border-t-coral" : "border-t-blue"}`}>
-      <Link href={`/trial/${trial.id}`} className="block p-4">
-        {trial.isFictional ? (
-          <p className="mb-2 inline-flex rounded border border-amber/40 bg-amber-soft px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-amber">
-            Fictional demonstration study
+    <Card as="li">
+      <Link href={`/trial/${trial.id}`} className="press flex items-center gap-2 p-4">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <Pill tone={status.tone} icon={status.icon}>{status.label}</Pill>
+            {trial.isFictional ? <Pill tone="peach">Fictional</Pill> : null}
+          </div>
+          <h3 className="mt-2 line-clamp-2 text-[14.5px] font-bold leading-snug text-ink">{trial.briefTitle ?? trial.id}</h3>
+          <p className="mt-1 flex flex-wrap gap-x-2 text-[12.5px] text-ink-soft">
+            <span>{trial.phases.length ? trial.phases.join(", ").replace(/PHASE/g, "Phase ").replace(/\bNA\b/, "No phase (not a drug study)") : "Phase not stated"}</span>
+            {condition ? <><span aria-hidden className="text-rule-strong">|</span><span className="truncate">{condition}</span></> : null}
           </p>
-        ) : null}
-
-        <h2 className="text-lg font-semibold leading-snug text-ink transition-colors group-hover:text-teal-deep">
-          {trial.briefTitle ?? trial.id}
-        </h2>
-
-        <div className="mt-2 flex flex-wrap items-center gap-1.5 text-[11px] font-semibold text-ink-soft">
-          <span className="rounded-full bg-paper-sunken px-2 py-1 font-mono">{trial.id}</span>
-          {trial.phases.length ? <span className="rounded-full bg-blue-soft px-2 py-1 text-slate">{trial.phases.join(", ").replace(/PHASE/g, "Phase ")}</span> : null}
-          <span className="rounded-full bg-lemon-soft px-2 py-1 text-amber">{trial.overallStatus?.toLowerCase().replace(/_/g, " ") ?? "status not stated"}</span>
+          <p className="mt-1 flex items-center gap-1 text-[12.5px] text-ink-soft">
+            <MapPin size={14} className="shrink-0 text-iris" />
+            {site?.city
+              ? `${site.city}${site.state ? `, ${site.state}` : ""}${miles != null ? ` (about ${miles} miles)` : ""}`
+              : trial.sites.length ? "Distance not known" : "No locations listed"}
+          </p>
+          <p className="mt-1.5 text-[11.5px] text-ink-faint">
+            {assessment.conflicts} to review, {assessment.unknowns} unanswered, {assessment.supported} matched
+            {participant.maxTravelMinutes && assessment.practicalFit.withinStatedTravelPreference === false ? ", farther than you prefer" : ""}
+          </p>
         </div>
-
-        {/* Clinical and practical read separately, and neither is a verdict. */}
-        <div className="mt-3 grid gap-2.5 sm:grid-cols-2">
-          <div className={`rounded-xl border p-3 ${assessmentTone}`}>
-            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
-              Against what you recorded
-            </p>
-            <p className="text-sm font-medium text-ink">
-              {assessment.overall === "likely_conflict"
-                ? "Something may not match"
-                : assessment.overall === "needs_more_information"
-                  ? "Needs more information"
-                  : "Potential option to discuss"}
-            </p>
-            <p className="mt-0.5 text-xs leading-relaxed text-ink-soft">
-              {assessment.conflicts} possible conflict{assessment.conflicts === 1 ? "" : "s"} ·{" "}
-              {assessment.unknowns} unanswered · {assessment.supported} matched
-            </p>
-          </div>
-
-          <div className="rounded-xl border border-lemon/25 bg-lemon-soft p-3">
-            <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-faint">
-              Practical
-            </p>
-            <p className="text-sm font-medium text-ink">
-              {fit.nearestSiteKm != null
-                ? `Nearest listed site about ${fit.nearestSiteKm} km away`
-                : "Distance not known"}
-            </p>
-            <p className="mt-0.5 text-xs leading-relaxed text-ink-soft">
-              {fit.siteRecruitingStatusKnown
-                ? "Site recruiting status published"
-                : "Site recruiting status not published"}
-              {" · "}
-              {fit.siteContactAvailable ? "Site contact listed" : "No site contact listed"}
-            </p>
-          </div>
-        </div>
-
-        {hit.reasons.length ? (
-          <ul className="mt-2.5 space-y-1">
-            {hit.reasons.map((reason) => (
-              <li key={reason} className="flex gap-1.5 text-xs leading-relaxed text-ink-soft">
-                <span aria-hidden className="text-ink-faint">·</span>
-                {reason}
-              </li>
-            ))}
-          </ul>
-        ) : null}
-
-        <div className="mt-3 flex items-center justify-between gap-3 border-t border-rule pt-2.5">
-          <DataAge date={trial.lastUpdatePostDate} now={now} />
-          <span className="text-sm font-medium text-teal">Read the brief →</span>
-        </div>
+        <CaretRight size={18} weight="bold" className="shrink-0 text-iris" />
       </Link>
     </Card>
   );

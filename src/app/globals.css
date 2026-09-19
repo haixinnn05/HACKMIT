@@ -3,99 +3,62 @@
 /*
  * Trial Passport visual language.
  *
- * White-first marketplace surfaces, black ink, and a small family of bright
- * orientation colours. Essential
- * information comes before animation, and every status is carried by words and
- * shape as well as colour — colour alone never encodes meaning.
+ * One violet accent on a near-white canvas, navy ink, and four soft tints that
+ * each carry one meaning. Colour is never the only carrier of that meaning:
+ * every status also has a word and an icon.
+ *
+ * Shape rule, applied everywhere: cards 20px, controls 14px, chips and primary
+ * actions fully round.
  */
 
 @theme {
-  --color-paper: #f8f8fb;
-  --color-paper-raised: #ffffff;
-  --color-paper-sunken: #f1f1f6;
-  --color-ink: #15151a;
-  --color-ink-soft: #50505b;
-  --color-ink-faint: #71717d;
-  --color-rule: #e3e3ea;
-  --color-rule-strong: #c7c7d2;
+  --color-canvas: #fafbfe;
+  --color-surface: #ffffff;
+  --color-sunken: #f4f4fd;
+  --color-lavender: #f0f0fe;
 
-  /* Existing semantic class names stay stable; teal now maps to brand violet. */
-  --color-teal: #6437f5;
-  --color-teal-soft: #eeeaff;
-  --color-teal-deep: #4320b8;
+  --color-ink: #0e0d63;
+  --color-ink-soft: #5f6390;
+  --color-ink-faint: #72769f;
+  --color-rule: #e9eaf6;
+  --color-rule-strong: #d5d7ec;
 
-  --color-blue: #2563eb;
-  --color-blue-soft: #eaf1ff;
-  --color-coral: #e85f55;
-  --color-coral-soft: #fff0ed;
-  --color-lemon: #e8b923;
-  --color-lemon-soft: #fff8d8;
+  --color-iris: #5e44fb;
+  --color-iris-deep: #4a30e0;
+  --color-iris-soft: #e5e0fe;
 
-  --color-amber: #7a5400;
-  --color-amber-soft: #fff7d6;
-  --color-clay: #a83b34;
-  --color-clay-soft: #ffebe8;
-  --color-slate: #2453ad;
-  --color-slate-soft: #eaf1ff;
+  --color-mint: #12704a;
+  --color-mint-soft: #e2f6ec;
+  --color-blush: #b0205c;
+  --color-blush-soft: #fee1ed;
+  --color-peach: #9a4a0c;
+  --color-peach-soft: #feeee0;
 
-  --font-sans: var(--font-jakarta), ui-sans-serif, -apple-system, "Segoe UI", sans-serif;
-  --font-display: var(--font-jakarta), ui-sans-serif, -apple-system, "Segoe UI", sans-serif;
+  --radius-card: 20px;
+  --radius-control: 14px;
+
+  --font-sans: var(--font-jakarta), ui-sans-serif, -apple-system, system-ui, sans-serif;
   --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
 }
 
 :root { color-scheme: light; }
-
-html {
-  -webkit-text-size-adjust: 100%;
-  scroll-padding-top: 7.5rem;
-}
+html { -webkit-text-size-adjust: 100%; background: #eeeefb; }
 
 body {
-  background: var(--color-paper);
   color: var(--color-ink);
   font-family: var(--font-sans);
-  font-size: 16px;
-  line-height: 1.65;
+  font-size: 15px;
+  line-height: 1.55;
   -webkit-font-smoothing: antialiased;
 }
 
-h1, h2, h3 {
-  font-family: var(--font-display);
-  font-weight: 700;
-  text-wrap: balance;
-}
-
-p { text-wrap: pretty; }
-
-button, a, select, input, textarea { touch-action: manipulation; }
-
-button, a { -webkit-tap-highlight-color: transparent; }
-
-input, select, textarea {
-  transition: border-color 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
-}
-
-input:hover, select:hover, textarea:hover { border-color: var(--color-rule-strong); }
-
-input:focus, select:focus, textarea:focus {
-  border-color: var(--color-teal);
-  box-shadow: 0 0 0 3px rgb(18 107 97 / 0.12);
-  outline: none;
-}
-
-::selection {
-  background: var(--color-teal-soft);
-  color: var(--color-teal-deep);
-}
-
-/* Visible focus everywhere, never removed. */
 :focus-visible {
-  outline: 3px solid var(--color-teal);
-  outline-offset: 3px;
-  border-radius: 6px;
+  outline: 2px solid var(--color-iris);
+  outline-offset: 2px;
+  border-radius: 8px;
 }
 
-/* Motion is decorative here, so it yields entirely to the user's preference. */
+/* All motion here is feedback or a state change, and all of it yields. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.001ms !important;
@@ -106,81 +69,41 @@ input:focus, select:focus, textarea:focus {
 }
 
 @keyframes stamp-press {
-  0%   { transform: scale(0.7) rotate(-9deg); opacity: 0; }
-  55%  { transform: scale(1.06) rotate(2deg); opacity: 1; }
+  0%   { transform: scale(0.72) rotate(-8deg); opacity: 0; }
+  55%  { transform: scale(1.05) rotate(2deg); opacity: 1; }
   100% { transform: scale(1) rotate(0deg); opacity: 1; }
 }
 .animate-stamp { animation: stamp-press 420ms cubic-bezier(0.2, 0.9, 0.3, 1) both; }
 
 @keyframes rise {
-  from { opacity: 0; transform: translateY(6px); }
+  from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.animate-rise { animation: rise 260ms ease-out both; }
+.animate-rise { animation: rise 300ms cubic-bezier(0.16, 1, 0.3, 1) both; }
 
-.page-intro {
-  position: relative;
-  overflow: hidden;
-  border: 1px solid var(--color-rule);
-  border-radius: 1.5rem;
-  background: var(--color-paper-raised);
-  box-shadow: 0 10px 26px rgb(23 23 32 / 0.06);
-  padding: 1.25rem;
+.press { transition: transform 120ms ease, background-color 160ms ease; }
+.press:active { transform: scale(0.98); }
+
+.cta {
+  background-image: linear-gradient(180deg, #6f55fc 0%, #5a3ef8 100%);
+  box-shadow: 0 8px 20px rgba(94, 68, 251, 0.28);
 }
+.cta:hover { background-image: linear-gradient(180deg, #6248f5 0%, #4a30e0 100%); }
 
-.page-intro::before {
-  content: "";
-  position: absolute;
-  bottom: -1.7rem;
-  right: 5rem;
-  width: 4.25rem;
-  height: 4.25rem;
-  border-radius: 1rem;
-  background: var(--color-coral-soft);
-  transform: rotate(17deg);
-  pointer-events: none;
-}
-
-.page-intro::after {
-  content: "";
-  position: absolute;
-  top: -2.75rem;
-  right: -2.25rem;
-  width: 8.5rem;
-  height: 8.5rem;
-  border: 1.35rem solid var(--color-teal-soft);
-  border-radius: 999px;
-  pointer-events: none;
-}
-
-.page-intro > * { position: relative; z-index: 1; }
-
-.roadmap-line {
-  background-image: linear-gradient(to bottom, var(--color-rule-strong) 55%, transparent 0%);
-  background-position: left;
-  background-size: 2px 12px;
-  background-repeat: repeat-y;
-}
-
-@media (min-width: 640px) {
-  .page-intro { padding: 1.5rem 1.75rem; }
-}
-
-/* Utility: quoted source text. Deliberately looks like a document, not like UI. */
+/* Quoted source text. Deliberately reads as a document, not as interface. */
 .source-quote {
   font-family: var(--font-mono);
-  font-size: 0.8125rem;
+  font-size: 0.78rem;
   line-height: 1.65;
-  background: var(--color-paper-sunken);
-  border: 1px solid var(--color-rule);
-  border-left: 4px solid var(--color-teal);
-  border-radius: 0.75rem;
-  padding: 0.9rem 1rem;
+  background: var(--color-sunken);
+  border-left: 3px solid var(--color-rule-strong);
+  border-radius: 0 10px 10px 0;
+  padding: 0.7rem 0.85rem;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 
 @media print {
   .no-print { display: none !important; }
-  body { background: #fff; }
+  html, body { background: #fff; }
 }

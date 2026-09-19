@@ -38,13 +38,13 @@ export function PersonaSwitcher({
   };
 
   return (
-    <label className="flex items-center gap-2 text-xs font-medium text-ink-faint">
-      <span className="hidden sm:inline">Previewing as</span>
+    <label className="block text-[12px] font-semibold text-ink-soft">
+      Viewing as
       <select
         value={value}
         disabled={pending}
         onChange={(event) => change(event.target.value)}
-        className="min-h-11 max-w-44 truncate rounded-xl border border-rule bg-white px-3 py-1.5 text-xs font-semibold text-ink shadow-[0_3px_12px_rgba(23,23,32,0.05)] disabled:cursor-wait disabled:opacity-60 sm:max-w-52"
+        className="mt-1 min-h-12 w-full rounded-[14px] border border-rule bg-surface px-3 text-[14px] font-semibold text-ink"
       >
         {personas.map((persona) => (
           <option key={persona.id} value={persona.id}>

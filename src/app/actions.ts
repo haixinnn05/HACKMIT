@@ -3,8 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
-  audit, createGrant, createInquiry, createQuestion, getParticipant, getTrial,
-  listQuestions, recordMilestone, revokeGrant, saveTrial, setInquiryState,
+  audit, clearTodos, createGrant, createInquiry, createQuestion, ensureTodo, getParticipant, getTrial,
+  listQuestions, recordMilestone, setPersonalNote, revokeGrant, saveTrial, setInquiryState, toggleTodo,
   unsaveTrial, updateParticipant, updateQuestion, upsertEnrollment,
 } from "@/lib/repo";
 import { assessTrial } from "@/lib/assess";
@@ -42,7 +42,11 @@ export async function addQuestionAction(formData: FormData) {
         : "general";
 
   createQuestion({ participantId: participant.id, trialId, text, category });
+  revalidatePath("/questions");
   revalidatePath(`/trial/${trialId}`);
+  // Only same-origin paths are honoured, so this cannot be used as an open redirect.
+  const returnTo = String(formData.get("returnTo") ?? "");
+  if (returnTo.startsWith("/") && !returnTo.startsWith("//")) redirect(returnTo);
 }
 
 export async function removeQuestionAction(formData: FormData) {
@@ -53,6 +57,7 @@ export async function removeQuestionAction(formData: FormData) {
   // Scoped by participant so one person can never delete another's question.
   getDb().prepare("DELETE FROM questions WHERE id = ? AND participant_id = ? AND state = 'open'")
     .run(id, participant.id);
+  revalidatePath("/questions");
   revalidatePath(`/trial/${trialId}`);
 }
 
@@ -69,7 +74,11 @@ export async function markReviewedAction(formData: FormData) {
 export async function shareInquiryAction(formData: FormData) {
   const participant = await getActiveParticipant();
   const trialId = String(formData.get("trialId"));
-  const message = String(formData.get("message") ?? "");
+  // The note is the person's own words; the packet is the editable, autofilled
+  // summary that travels with it.
+  const note = String(formData.get("note") ?? "").trim().slice(0, 500);
+  const packet = String(formData.get("packet") ?? formData.get("message") ?? "").trim();
+  const message = [note, packet].filter(Boolean).join("\n\n");
   const trial = getTrial(trialId);
   if (!trial) return;
 
@@ -98,7 +107,7 @@ export async function shareInquiryAction(formData: FormData) {
     participantId: participant.id,
     recipientLabel: trial.isFictional
       ? "Harborview Cancer Center, Cambridge (simulated site account)"
-      : `${trial.leadSponsor ?? "Study team"} — ${trial.id}`,
+      : `${trial.leadSponsor ?? "Study team"}, ${trial.id}`,
     trialId,
     allowedFields: selected,
     purpose: "Inquiry about taking part",
@@ -110,10 +119,15 @@ export async function shareInquiryAction(formData: FormData) {
 
   // Attach the participant's open questions to the inquiry so the coordinator
   // sees them as owned work rather than loose text in a message.
-  const { getDb } = await import("@/lib/db");
-  getDb()
-    .prepare("UPDATE questions SET inquiry_id = ? WHERE participant_id = ? AND trial_id = ? AND inquiry_id IS NULL")
-    .run(inquiry.id, participant.id, trialId);
+  // Questions travel only when the person ticked them.
+  if (selected.includes("questions")) {
+    const { getDb } = await import("@/lib/db");
+    getDb()
+      .prepare("UPDATE questions SET inquiry_id = ? WHERE participant_id = ? AND trial_id = ? AND inquiry_id IS NULL")
+      .run(inquiry.id, participant.id, trialId);
+  }
+  revalidatePath("/inbox");
+  revalidatePath("/questions");
 
   revalidatePath("/passport");
   revalidatePath("/coordinator");
@@ -158,7 +172,9 @@ export async function updateProfileAction(formData: FormData) {
     caregiverAvailable: formData.get("caregiverAvailable") === "on",
     clinicalFacts: facts,
   });
+  if (formData.has("personalNote")) setPersonalNote(participant.id, String(formData.get("personalNote") ?? ""));
   audit(participant.id, "profile.updated", participant.id);
+  revalidatePath("/profile");
   revalidatePath("/passport");
   revalidatePath("/explore");
 }
@@ -228,6 +244,7 @@ export async function decideAction(formData: FormData) {
 
   if (decision === "declined") {
     upsertEnrollment({ participantId: participant.id, trialId, status: "declined", visits: [] });
+    clearTodos(participant.id, trialId);
     const inquiryId = String(formData.get("inquiryId") ?? "");
     if (inquiryId) setInquiryState(inquiryId, "closed", "Participant decided not to continue.");
   } else if (decision === "participating") {
@@ -246,14 +263,35 @@ export async function decideAction(formData: FormData) {
       };
     });
     upsertEnrollment({ participantId: participant.id, trialId, status: "participating", visits });
+
+    // To-dos come from what the study's own material leaves unstated. They are
+    // prompts to ask, never claims about what the site provides.
+    const logistics = trial.knownLogistics;
+    if (!logistics?.parkingReimbursementStated) ensureTodo(participant.id, trialId, "parking", "Confirm parking details");
+    ensureTodo(participant.id, trialId, "travel", "Plan travel arrangements");
+    ensureTodo(participant.id, trialId, "bring", "Ask what to bring");
+  } else if (decision === "help") {
+    // "Please help me contact the study team": routed to staff as a question,
+    // never answered by the app.
+    createQuestion({
+      participantId: participant.id, trialId, category: "general",
+      text: "Please help me contact the study team directly.",
+      inquiryId: String(formData.get("inquiryId") ?? "") || null,
+    });
+    upsertEnrollment({ participantId: participant.id, trialId, status: "considering", visits: [] });
   } else {
     upsertEnrollment({ participantId: participant.id, trialId, status: "considering", visits: [] });
   }
 
   audit(participant.id, `decision.${decision}`, trialId);
+  revalidatePath("/timeline");
+  revalidatePath("/inbox");
   revalidatePath("/");
   revalidatePath("/passport");
   revalidatePath(`/trial/${trialId}`);
+  // Agreeing leads straight to the visits it created.
+  if (decision === "participating") redirect("/timeline");
+  if (decision === "declined") redirect("/inbox?tab=archived");
 }
 
 /** Builds the editable draft shown on the inquiry preview screen. */
@@ -266,4 +304,32 @@ export async function buildDraft(trialId: string, participantId: string) {
     .filter((question) => question.state === "open")
     .map((question) => question.text);
   return draftInquiry({ profile: participant, trial, assessment, burden, questions });
+}
+
+export async function toggleTodoAction(formData: FormData) {
+  const participant = await getActiveParticipant();
+  toggleTodo(String(formData.get("todoId")), participant.id);
+  revalidatePath("/timeline");
+}
+
+/**
+ * Logistics check-in: "Is anything making your next visit difficult?"
+ * An explicit request for help becomes a question owned by study staff. There
+ * is no risk score and nothing is inferred from silence.
+ */
+export async function requestVisitHelpAction(formData: FormData) {
+  const participant = await getActiveParticipant();
+  const trialId = String(formData.get("trialId"));
+  const text = String(formData.get("text") ?? "").trim();
+  if (!text) return;
+  createQuestion({ participantId: participant.id, trialId, category: "logistics", text: `Help with my next visit: ${text}` });
+  revalidatePath("/timeline");
+  revalidatePath("/questions");
+}
+
+export async function resetDemoAction() {
+  const { resetDemoData } = await import("@/lib/db");
+  resetDemoData();
+  revalidatePath("/", "layout");
+  redirect("/");
 }

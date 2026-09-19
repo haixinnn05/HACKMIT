@@ -10,10 +10,12 @@
     "ingest": "node scripts/ingest.mjs",
     "evaluate": "tsx scripts/evaluate.mts",
     "journey": "node scripts/journey.mjs",
-    "reset": "rm -f data/trial-passport.db*"
+    "reset": "rm -f data/trial-passport.db*",
+    "capture": "node scripts/capture.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.127.0",
+    "@phosphor-icons/react": "^2.1.10",
     "better-sqlite3": "^13.0.3",
     "next": "16.3.5",
     "qrcode": "^1.5.4",

@@ -1,112 +1,90 @@
 import { notFound } from "next/navigation";
-import Link from "next/link";
-import { Card, Note, SectionHeading } from "@/components/ui";
-import { getGrant, getInquiry, getTrial, listQuestions } from "@/lib/repo";
+import { CaretRight } from "@phosphor-icons/react/dist/ssr";
+import { PrintButton } from "@/components/CountedTextarea";
+import { Callout, Card, Pill, ScreenHeader, SectionHeading } from "@/components/ui";
+import { getGrant, getInquiry, getTrial, listQuestions, markInquirySeen } from "@/lib/repo";
 import { getActiveParticipant } from "@/lib/session";
 import { decideAction } from "@/app/actions";
 
 export const dynamic = "force-dynamic";
 
 const STATE_COPY: Record<string, { title: string; body: string }> = {
-  draft: { title: "Still a draft", body: "Nothing has been shared yet." },
-  shared: {
-    title: "Shared, waiting to be picked up",
-    body: "The site has it. Nobody has read it yet. Sites answer on their own schedule, and there is nothing further you need to do right now.",
-  },
-  acknowledged: {
-    title: "Someone at the site has it",
-    body: "A coordinator has opened your inquiry. This is not enrolment and does not mean you have been accepted or screened.",
-  },
-  needs_information: {
-    title: "The site has asked for something",
-    body: "There is a note below explaining what would help.",
-  },
-  answered: {
-    title: "You have a reply",
-    body: "A person at the site reviewed and sent this. Read it below.",
-  },
-  closed: {
-    title: "Closed",
-    body: "This inquiry is closed. You can start a new one at any time, and nothing you saved has been lost.",
-  },
+  shared: { title: "Shared, waiting to be picked up", body: "The team has it and nobody has read it yet. Sites answer on their own schedule. There is nothing you need to do." },
+  acknowledged: { title: "Someone on the team has it", body: "A coordinator has opened your inquiry. This is not enrolment, and it does not mean you have been accepted or screened." },
+  needs_information: { title: "The team has asked for something", body: "Their note below explains what would help." },
+  answered: { title: "You have a reply", body: "A person on the team reviewed and sent this." },
+  closed: { title: "Closed", body: "You can start a new inquiry at any time. Nothing you saved has been lost." },
 };
 
-/** The participant's view of one inquiry: who owns it, what state it is in. */
+/** One conversation with a study team: who owns it, and what state it is in. */
 export default async function InquiryPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const inquiry = getInquiry(id);
   const participant = await getActiveParticipant();
-
-  // Authorization: an inquiry is readable only by the person who created it.
+  // Authorization: only the person who created an inquiry can read it.
   if (!inquiry || inquiry.participantId !== participant.id) notFound();
+
+  markInquirySeen(inquiry.id);
 
   const trial = getTrial(inquiry.trialId);
   const grant = inquiry.grantId ? getGrant(inquiry.grantId) : null;
   const questions = listQuestions({ inquiryId: inquiry.id });
   const copy = STATE_COPY[inquiry.state] ?? STATE_COPY.shared;
-  const answered = questions.filter((question) => question.answer);
+  const answered = questions.filter((q) => q.answer);
+  const open = questions.filter((q) => !q.answer);
+
+  const choices = [
+    { value: "participating", label: "I have agreed to take part", hint: "Adds the study's confirmed visits to your timeline." },
+    { value: "considering", label: "I need more time", hint: "Keeps this open. Nobody will chase you." },
+    { value: "help", label: "Please help me contact the study team", hint: "Sends that request to the coordinator." },
+    { value: "declined", label: "I am not interested", hint: "Closes this. Nothing is lost." },
+  ];
 
   return (
-    <div className="space-y-5">
-      <Link href="/passport" className="inline-flex min-h-11 items-center text-sm text-teal hover:underline">← My passport</Link>
+    <div className="space-y-4">
+      <ScreenHeader back="/inbox" title={copy.title} sub={copy.body} action={<PrintButton />} />
 
-      <div className="page-intro">
-        <p className="mb-1 text-xs font-bold uppercase tracking-[0.16em] text-teal">Your conversation</p>
-        <h1 className="text-3xl font-semibold tracking-[-0.025em] text-ink">{copy.title}</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-relaxed text-ink-soft">{copy.body}</p>
-      </div>
-
-      <Card className="space-y-2 p-4">
-        <p className="text-sm font-medium text-ink">{trial?.briefTitle ?? inquiry.trialId}</p>
-        <p className="text-xs text-ink-faint">
-          Shared with {grant?.recipientLabel ?? "the study team"} on{" "}
-          {new Date(inquiry.createdAt).toLocaleDateString()}
+      <Card className="p-4">
+        <p className="text-[14px] font-bold leading-snug text-ink">{trial?.briefTitle ?? inquiry.trialId}</p>
+        <p className="mt-1 text-[12px] text-ink-soft">
+          Shared with {grant?.recipientLabel ?? "the study team"} on {new Date(inquiry.createdAt).toLocaleDateString()}
         </p>
-        <p className="text-xs text-ink-faint">
-          Fields shared: {grant?.allowedFields.join(", ") || "none"}
-          {grant?.state === "revoked" ? " · you have revoked this access" : ""}
+        <p className="mt-1 flex flex-wrap items-center gap-1.5 text-[12px] text-ink-faint">
+          Shared: {grant?.allowedFields.join(", ") || "nothing"}
+          {grant?.state === "revoked" ? <Pill tone="blush">Access revoked</Pill> : null}
         </p>
       </Card>
 
       {inquiry.coordinatorNote ? (
-        <Card className="p-4">
-          <SectionHeading>Note from the site</SectionHeading>
-          <p className="text-sm leading-relaxed text-ink-soft">{inquiry.coordinatorNote}</p>
-        </Card>
+        <Callout tone="caution" title="Note from the team">{inquiry.coordinatorNote}</Callout>
       ) : null}
 
       {answered.length ? (
         <section>
-          <SectionHeading hint="Written and reviewed by a person at the site, not generated by this app.">
-            Answers
-          </SectionHeading>
+          <SectionHeading hint="Written and reviewed by a person on the team, not generated by this app.">Answers</SectionHeading>
           <ul className="space-y-2.5">
             {answered.map((question) => (
-              <li key={question.id}>
-                <Card className="p-4">
-                  <p className="text-sm font-medium text-ink">{question.text}</p>
-                  <p className="mt-2 text-sm leading-relaxed text-ink-soft">{question.answer}</p>
-                  <p className="mt-2 border-t border-rule pt-2 text-[11px] text-ink-faint">
-                    {question.answeredBy}
-                    {question.answerCitation ? ` · ${question.answerCitation}` : ""}
-                    {question.answeredAt ? ` · ${new Date(question.answeredAt).toLocaleString()}` : ""}
-                  </p>
-                </Card>
-              </li>
+              <Card as="li" key={question.id} className="p-4">
+                <p className="text-[13.5px] font-bold text-ink">{question.text}</p>
+                <p className="mt-2 rounded-[14px] bg-mint-soft p-3 text-[13px] leading-relaxed text-ink">{question.answer}</p>
+                <p className="mt-2 text-[11px] leading-relaxed text-ink-faint">
+                  {question.answeredBy}{question.answerCitation ? `. ${question.answerCitation}` : ""}
+                </p>
+              </Card>
             ))}
           </ul>
         </section>
       ) : null}
 
-      {questions.filter((question) => !question.answer).length ? (
+      {open.length ? (
         <section>
           <SectionHeading>Still open</SectionHeading>
-          <Card className="p-4">
-            <ul className="space-y-1.5">
-              {questions.filter((question) => !question.answer).map((question) => (
-                <li key={question.id} className="text-sm text-ink-soft">
-                  · {question.text}{" "}
-                  <span className="text-xs text-ink-faint">({question.state.replace(/_/g, " ")})</span>
+          <Card className="px-4">
+            <ul>
+              {open.map((question) => (
+                <li key={question.id} className="flex items-center justify-between gap-3 border-b border-rule py-3 last:border-0">
+                  <span className="text-[13px] text-ink">{question.text}</span>
+                  <Pill>{question.state.replace(/_/g, " ")}</Pill>
                 </li>
               ))}
             </ul>
@@ -114,40 +92,36 @@ export default async function InquiryPage({ params }: { params: Promise<{ id: st
         </section>
       ) : null}
 
-      <section>
-        <SectionHeading hint="Whatever you choose, you keep everything you have saved here.">
-          Where you stand
-        </SectionHeading>
-        <Card className="space-y-2 p-4">
-          {[
-            { value: "participating", label: "I have agreed to take part", hint: "Adds the study's visits to your calendar." },
-            { value: "considering", label: "I need more time", hint: "Keeps this open with no follow-up from us." },
-            { value: "declined", label: "I am not interested", hint: "Closes the inquiry. Nothing is lost and nobody will chase you." },
-          ].map((option) => (
-            <form key={option.value} action={decideAction}>
+      <details className="rounded-[16px] border border-rule bg-surface px-4">
+        <summary className="flex min-h-12 cursor-pointer items-center text-[13px] font-bold text-iris">What you sent</summary>
+        <pre className="mb-4 whitespace-pre-wrap font-mono text-[11.5px] leading-relaxed text-ink-soft">{inquiry.message}</pre>
+      </details>
+
+      <section className="no-print">
+        <SectionHeading hint="Whatever you choose, you keep everything you have saved.">Where you stand</SectionHeading>
+        <Card className="overflow-hidden">
+          {choices.map((choice) => (
+            <form key={choice.value} action={decideAction} className="border-b border-rule last:border-0">
               <input type="hidden" name="trialId" value={inquiry.trialId} />
               <input type="hidden" name="inquiryId" value={inquiry.id} />
-              <input type="hidden" name="decision" value={option.value} />
-              <button
-                type="submit"
-                className="flex min-h-11 w-full items-center justify-between gap-3 rounded-lg border border-rule px-3.5 py-2.5 text-left hover:border-teal hover:bg-teal-soft"
-              >
-                <span>
-                  <span className="block text-sm font-medium text-ink">{option.label}</span>
-                  <span className="block text-xs text-ink-soft">{option.hint}</span>
+              <input type="hidden" name="decision" value={choice.value} />
+              <button type="submit" className="press flex min-h-16 w-full items-center gap-3 px-4 py-3 text-left hover:bg-sunken">
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[14px] font-bold text-ink">{choice.label}</span>
+                  <span className="block text-[12.5px] text-ink-soft">{choice.hint}</span>
                 </span>
-                <span aria-hidden className="text-teal">→</span>
+                <CaretRight size={16} weight="bold" className="text-iris" />
               </button>
             </form>
           ))}
         </Card>
       </section>
 
-      <Note>
-        Leaving Trial Passport is not the same as withdrawing from a study. If you are already
-        taking part in research, contact that study&rsquo;s team directly — deleting anything here
-        does not change your participation or your medical records.
-      </Note>
+      <Callout tone="neutral">
+        Leaving Trial Passport is not the same as withdrawing from a study. If you are taking part
+        in research, contact that study&rsquo;s team directly. Deleting anything here does not change
+        your participation or your medical records.
+      </Callout>
     </div>
   );
 }
