@@ -93,12 +93,12 @@ export function Tabs({
 }) {
   if (variant === "underline") {
     return (
-      <nav aria-label="Sections" className="flex gap-5 border-b border-rule">
+      <nav aria-label="Sections" className="-mx-5 flex gap-5 overflow-x-auto border-b border-rule px-5">
         {tabs.map((tab) => (
           <Link
             key={tab.id} href={tab.href} scroll={false}
             aria-current={tab.id === current ? "page" : undefined}
-            className={`-mb-px flex min-h-11 items-center border-b-2 text-[13px] font-semibold ${
+            className={`-mb-px flex min-h-11 shrink-0 items-center whitespace-nowrap border-b-2 text-[13px] font-semibold ${
               tab.id === current ? "border-iris text-ink" : "border-transparent text-ink-faint hover:text-ink"
             }`}
           >

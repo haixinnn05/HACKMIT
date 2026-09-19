@@ -11,7 +11,8 @@ import {
   listMilestones, listSavedTrialIds,
 } from "@/lib/repo";
 import { searchForProfile } from "@/lib/search";
-import { getActiveParticipant } from "@/lib/session";
+import { redirect } from "next/navigation";
+import { getActiveParticipant, getRole, hasChosenPersona } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +25,9 @@ export const dynamic = "force-dynamic";
  * deciding against a study completes the journey just as much as joining one.
  */
 export default async function HomePage() {
+  // A first-time visitor picks a face. Anyone who already has one goes straight in.
+  if (!(await getRole()) && !(await hasChosenPersona())) redirect("/welcome");
+
   const participant = await getActiveParticipant();
   const now = requestNow();
   const firstName = participant.displayName.split(" ")[0];

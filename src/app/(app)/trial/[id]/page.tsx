@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowSquareOut, Buildings, CaretLeft, CaretRight, ClipboardText, Flask, Heart, MapPin,
-  Heartbeat, PaperPlaneTilt, ShieldCheck, Timer,
+  Heartbeat, Lightbulb, PaperPlaneTilt, ShieldCheck, Timer,
 } from "@phosphor-icons/react/dist/ssr";
 import { OpenAlexResearch, OpenAlexResearchSkeleton } from "@/components/OpenAlexResearch";
 import { Hills } from "@/components/Brand";
@@ -29,7 +29,7 @@ export default async function TrialPage({
 }: { params: Promise<{ id: string }>; searchParams: Promise<{ tab?: string; ask?: string }> }) {
   const { id } = await params;
   const { tab: rawTab, ask } = await searchParams;
-  const tab = rawTab === "eligibility" || rawTab === "expect" ? rawTab : "overview";
+  const tab = rawTab === "eligibility" || rawTab === "expect" || rawTab === "insight" ? rawTab : "overview";
 
   const trial = getTrial(decodeURIComponent(id));
   if (!trial) notFound();
@@ -109,11 +109,17 @@ export default async function TrialPage({
           { id: "overview", label: "Overview", href: base },
           { id: "eligibility", label: "Eligibility", href: `${base}?tab=eligibility` },
           { id: "expect", label: "What to Expect", href: `${base}?tab=expect` },
+          { id: "insight", label: "Insight", href: `${base}?tab=insight` },
         ]}
       />
 
       {tab === "overview" ? <Overview trial={trial} assessment={assessment} nearestCity={site?.city ?? null} now={now} ask={ask?.slice(0, 200) ?? null} /> : null}
       {tab === "eligibility" ? <Eligibility assessment={assessment} /> : null}
+      {tab === "insight" ? (
+        <Suspense fallback={<OpenAlexResearchSkeleton />}>
+          <OpenAlexResearch trial={trial} />
+        </Suspense>
+      ) : null}
       {tab === "expect" ? (
         <section className="space-y-4">
           <Card className="p-4">
@@ -297,11 +303,16 @@ async function Overview({
         ) : null}
       </div>
 
-      {!t.isFictional ? (
-        <Suspense fallback={<OpenAlexResearchSkeleton />}>
-          <OpenAlexResearch trial={t} />
-        </Suspense>
-      ) : null}
+      <Card>
+        <Link href={`/trial/${t.id}?tab=insight`} scroll={false} className="flex items-center gap-3.5 p-4">
+          <span className="grid size-10 shrink-0 place-items-center rounded-[12px] bg-lavender text-iris"><Lightbulb size={22} /></span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[14px] font-bold text-ink">New to this kind of study?</span>
+            <span className="block text-[12.5px] text-ink-soft">Insight explains the medical background, from published research.</span>
+          </span>
+          <CaretRight size={16} weight="bold" className="text-ink-faint" />
+        </Link>
+      </Card>
     </section>
   );
 }

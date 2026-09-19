@@ -1,0 +1,101 @@
+{
+  "works": [
+    {
+      "id": "https://openalex.org/W4399347358",
+      "title": "INAVO122: A phase III study of maintenance inavolisib or placebo + pertuzumab + trastuzumab following induction with pertuzumab + trastuzumab + a taxane in patients (pts) with PIK3CA-mutated, HER2-positive advanced breast cancer (HER2+ aBC).",
+      "publicationYear": 2024,
+      "publicationDate": "2024-06-01",
+      "citedByCount": 9,
+      "authors": [
+        "Sandra M. Swain",
+        "Carlos H. Barrios",
+        "Reva Basho"
+      ],
+      "venue": "Journal of Clinical Oncology",
+      "doiUrl": "https://doi.org/10.1200/jco.2024.42.16_suppl.tps1124",
+      "isOpenAccess": false,
+      "openAccessUrl": null,
+      "isReview": false,
+      "abstractExcerpt": "TPS1124 Background: The PI3K pathway plays a crucial role in HER2 signaling. Somatic mutations of PIK3CA, the gene that encodes the PI3K p110α subunit, may induce resistance to HER2-targeted therapies and are associated with poorer clinical outcomes (Swain SM, et al. SABCS 2022; P2-11-07).",
+      "topicId": "T10755"
+    },
+    {
+      "id": "https://openalex.org/W4394872839",
+      "title": "PI3K/AKT/mTOR signaling pathway: an important driver and therapeutic target in triple-negative breast cancer",
+      "publicationYear": 2024,
+      "publicationDate": "2024-04-17",
+      "citedByCount": 177,
+      "authors": [
+        "Huanping Zhang",
+        "Ruiyuan Jiang",
+        "Jiayu Zhu"
+      ],
+      "venue": "Breast Cancer",
+      "doiUrl": "https://doi.org/10.1007/s12282-024-01567-5",
+      "isOpenAccess": true,
+      "openAccessUrl": "https://link.springer.com/content/pdf/10.1007/s12282-024-01567-5.pdf",
+      "isReview": false,
+      "abstractExcerpt": "Triple-negative breast cancer (TNBC) is a highly heterogeneous tumor lacking estrogen receptor (ER), progesterone receptor (PR), and human epidermal growth factor receptor 2 (HER2) expression. It has higher aggressiveness and metastasis than other subtypes, with limited effective therapeutic strategies, leading to a poor prognosis.",
+      "topicId": "T10952"
+    },
+    {
+      "id": "https://openalex.org/W4396587712",
+      "title": "Abstract PO2-19-09: INAVO122: a Phase III study of maintenance inavolisib or placebo + pertuzumab + trastuzumab following induction with pertuzumab + trastuzumab + a taxane in patients with PIK3CA-mutated, HER2-positive advanced breast cancer",
+      "publicationYear": 2024,
+      "publicationDate": "2024-05-02",
+      "citedByCount": 2,
+      "authors": [
+        "Sandra M. Swain",
+        "Carlos H. Barrios",
+        "Reva Basho"
+      ],
+      "venue": "Cancer Research",
+      "doiUrl": "https://doi.org/10.1158/1538-7445.sabcs23-po2-19-09",
+      "isOpenAccess": false,
+      "openAccessUrl": null,
+      "isReview": false,
+      "abstractExcerpt": "Background The PI3K pathway plays a crucial role in HER2 signaling. Somatic mutations of PIK3CA, the gene that encodes the PI3K p110α subunit, may induce resistance to HER2-targeted therapies and are associated with poorer clinical outcomes (Swain SM, et al. SABCS 2022; P2-11-07).",
+      "topicId": "T10183"
+    },
+    {
+      "id": "https://openalex.org/W4409289497",
+      "title": "Expert Consensus on the Clinical Application of PI3K/AKT/mTOR Inhibitors in the Treatment of Breast Cancer (2025 Edition)",
+      "publicationYear": 2025,
+      "publicationDate": "2025-04-09",
+      "citedByCount": 6,
+      "authors": [
+        "The Breast Cancer Expert Committee of the National Quality Control Center for Cancer",
+        "The Expert Committee on Cancer Prevention and Treatment of the Health China Research Center",
+        "The Society of Clinical Research on Oncology Medications of the China Anti-Cancer Association"
+      ],
+      "venue": "Cancer Innovation",
+      "doiUrl": "https://doi.org/10.1002/cai2.70008",
+      "isOpenAccess": true,
+      "openAccessUrl": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1002/cai2.70008",
+      "isReview": false,
+      "abstractExcerpt": "The phosphoinositide 3-kinase (PI3K)/protein kinase B (PKB or AKT)/mammalian target of rapamycin (mTOR) signaling pathway (PAM pathway) plays a critical role in breast cancer pathogenesis and progression, and is closely linked with resistance to endocrine therapy in advanced breast cancer.",
+      "topicId": "T10952"
+    }
+  ],
+  "topic": {
+    "id": "T10952",
+    "name": "PI3K/AKT/mTOR signaling in cancer",
+    "description": "This cluster of papers focuses on the mTOR signaling pathway, particularly its role in growth control, metabolism, and disease, with a specific emphasis on cancer. The PI3K/AKT pathway, Raptor, TSC2, and rapamycin are central to the research discussed in these papers.",
+    "keywords": [
+      "mTOR",
+      "signaling",
+      "PI3K/AKT pathway",
+      "cancer",
+      "growth control",
+      "metabolism",
+      "Raptor",
+      "TSC2"
+    ],
+    "field": "Biochemistry, Genetics and Molecular Biology",
+    "worksCount": 49218
+  },
+  "query": "NCT05894239",
+  "matchKind": "trial_id",
+  "fetchedAt": "2026-09-19T23:37:05.940Z",
+  "fromSnapshot": false
+}

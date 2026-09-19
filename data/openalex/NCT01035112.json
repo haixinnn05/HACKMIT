@@ -1,0 +1,99 @@
+{
+  "works": [
+    {
+      "id": "https://openalex.org/W1995388182",
+      "title": "Breast Density and Parenchymal Patterns as Markers of Breast Cancer Risk: A Meta-analysis",
+      "publicationYear": 2006,
+      "publicationDate": "2006-06-01",
+      "citedByCount": 2170,
+      "authors": [
+        "Valerie McCormack",
+        "Isabel dos‐Santos‐Silva"
+      ],
+      "venue": "Cancer Epidemiology Biomarkers & Prevention",
+      "doiUrl": "https://doi.org/10.1158/1055-9965.epi-06-0034",
+      "isOpenAccess": false,
+      "openAccessUrl": null,
+      "isReview": true,
+      "abstractExcerpt": "Mammographic features are associated with breast cancer risk, but estimates of the strength of the association vary markedly between studies, and it is uncertain whether the association is modified by other risk factors. We conducted a systematic review and meta-analysis of publications on mammographic patterns in relation to breast cancer risk.",
+      "topicId": "T11361"
+    },
+    {
+      "id": "https://openalex.org/W2117357260",
+      "title": "Mechanisms of Endocrine Resistance in Breast Cancer",
+      "publicationYear": 2010,
+      "publicationDate": "2010-01-26",
+      "citedByCount": 1190,
+      "authors": [
+        "C. Kent Osborne",
+        "Rachel Schiff"
+      ],
+      "venue": "Annual Review of Medicine",
+      "doiUrl": "https://doi.org/10.1146/annurev-med-070909-182917",
+      "isOpenAccess": true,
+      "openAccessUrl": "https://www.ncbi.nlm.nih.gov/pmc/articles/3656649",
+      "isReview": true,
+      "abstractExcerpt": "The estrogen receptor (ER) pathway plays a pivotal role in breast cancer development and progression. Endocrine therapy to block the ER pathway is highly effective, but its usefulness is limited by common intrinsic and acquired resistance.",
+      "topicId": "T10756"
+    },
+    {
+      "id": "https://openalex.org/W2137028370",
+      "title": "Meta-analysis of gene expression profiles in breast cancer: toward a unified understanding of breast cancer subtyping and prognosis signatures",
+      "publicationYear": 2008,
+      "publicationDate": "2008-07-28",
+      "citedByCount": 895,
+      "authors": [
+        "Pratyaksha Wirapati",
+        "Christos Sotiriou",
+        "Susanne Kunkel"
+      ],
+      "venue": "Breast Cancer Research",
+      "doiUrl": "https://doi.org/10.1186/bcr2124",
+      "isOpenAccess": true,
+      "openAccessUrl": "https://breast-cancer-research.biomedcentral.com/counter/pdf/10.1186/bcr2124",
+      "isReview": true,
+      "abstractExcerpt": "Breast cancer subtyping and prognosis have been studied extensively by gene expression profiling, resulting in disparate signatures with little overlap in their constituent genes.",
+      "topicId": "T10183"
+    },
+    {
+      "id": "https://openalex.org/W2171958606",
+      "title": "Neoadjuvant Versus Adjuvant Systemic Treatment in Breast Cancer: A Meta-Analysis",
+      "publicationYear": 2005,
+      "publicationDate": "2005-02-01",
+      "citedByCount": 1218,
+      "authors": [
+        "Davide Mauri",
+        "N. Pavlidis",
+        "John P. A. Ioannidis"
+      ],
+      "venue": "JNCI Journal of the National Cancer Institute",
+      "doiUrl": "https://doi.org/10.1093/jnci/dji021",
+      "isOpenAccess": false,
+      "openAccessUrl": null,
+      "isReview": true,
+      "abstractExcerpt": "Interest in the use of preoperative systemic treatment in the management of breast cancer has increased because such neoadjuvant therapy appears to reduce the extent of local surgery required.",
+      "topicId": "T10183"
+    }
+  ],
+  "topic": {
+    "id": "T10183",
+    "name": "Breast Cancer Treatment Studies",
+    "description": "This cluster of papers focuses on molecular research, treatment response, and prognostic markers in breast cancer. It covers topics such as gene expression patterns, molecular subtypes, neoadjuvant therapy, radiotherapy, and the impact of hormone receptors on survival. The papers also discuss the development of clinical practice guidelines for breast cancer management.",
+    "keywords": [
+      "Gene Expression",
+      "Breast Tumours",
+      "Treatment Response",
+      "Molecular Subtypes",
+      "Prognostic Markers",
+      "Neoadjuvant Therapy",
+      "Radiotherapy",
+      "Hormone Receptors"
+    ],
+    "field": "Biochemistry, Genetics and Molecular Biology",
+    "worksCount": 119994
+  },
+  "query": "Breast Cancer",
+  "matchKind": "topic",
+  "fetchedAt": "2026-09-19T23:37:08.548Z",
+  "fromSnapshot": false
+}

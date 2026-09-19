@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 import {
-  CaretRight, ChatCircle, FileText, Heart, LockKey, MapPin, Phone, ShieldCheck, User,
+  CaretLeft, CaretRight, ChatCircle, FileText, Heart, LockKey, MapPin, Phone, ShieldCheck, User,
 } from "@phosphor-icons/react/dist/ssr";
 import { Avatar, Callout, Card, DataRow } from "@/components/ui";
 import { requestNow } from "@/lib/clock";
@@ -19,8 +20,11 @@ export const dynamic = "force-dynamic";
  * Unknown, expired and revoked tokens all render identically. Telling them
  * apart would let someone probe which codes had once been valid.
  */
-export default async function HandoffPage({ params }: { params: Promise<{ token: string }> }) {
+export default async function HandoffPage({
+  params, searchParams,
+}: { params: Promise<{ token: string }>; searchParams: Promise<{ from?: string }> }) {
   const { token } = await params;
+  const fromClinic = (await searchParams).from === "clinic";
   const grant = getGrantByToken(token);
   const now = requestNow();
 
@@ -118,6 +122,11 @@ export default async function HandoffPage({ params }: { params: Promise<{ token:
 
   return (
     <div className="space-y-4">
+      {fromClinic ? (
+        <Link href="/clinic/scan" className="inline-flex min-h-11 items-center gap-1 text-[13px] font-bold text-iris">
+          <CaretLeft size={14} weight="bold" /> Back to your workspace
+        </Link>
+      ) : null}
       <header>
         <h1 className="text-[1.45rem] font-bold tracking-[-0.02em] text-ink">Shared Patient Profile</h1>
         <p className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-iris-soft px-3 py-1 text-[12px] font-bold text-iris-deep">

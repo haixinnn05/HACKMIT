@@ -6,9 +6,14 @@
   "officialTitle": "SIMULATED STUDY FIXTURE, A Demonstration Protocol Used Only to Exercise Mozaic's Participation Preview and Coordinator Workflow",
   "leadSponsor": "Harborview Community Oncology Network (fictional)",
   "overallStatus": "RECRUITING",
-  "phases": ["PHASE2"],
+  "phases": [
+    "PHASE2"
+  ],
   "studyType": "INTERVENTIONAL",
-  "conditions": ["Breast Cancer", "Hormone Receptor Positive Breast Cancer"],
+  "conditions": [
+    "Breast Cancer",
+    "Hormone Receptor Positive Breast Cancer"
+  ],
   "lastUpdatePostDate": "2026-09-02",
   "enrollmentCount": 60,
   "briefSummary": "This is a fictional study fixture. It exists so the demonstration can show a complete visit schedule, a site-confirmed travel burden, and a coordinator answering a logistical question, none of which are reliably available in public registry records. No real participant may enroll and no real site is described.",
@@ -35,13 +40,52 @@
     "confirmedOn": "2026-09-02",
     "notes": "Durations are scheduled clinic time only. Waiting time, unscheduled procedures and travel delays are excluded from the totals Mozaic calculates.",
     "visits": [
-      { "name": "Screening visit", "weekOffset": 0, "onSiteHours": 2, "procedures": ["Consent discussion", "Blood draw", "Questionnaire"] },
-      { "name": "Baseline visit", "weekOffset": 2, "onSiteHours": 2, "procedures": ["Blood draw", "Questionnaire", "Study app setup"] },
-      { "name": "Month 3 follow-up", "weekOffset": 14, "onSiteHours": 2, "procedures": ["Blood draw", "Questionnaire"] },
-      { "name": "Month 6 follow-up", "weekOffset": 27, "onSiteHours": 2, "procedures": ["Blood draw", "Questionnaire", "Exit interview"] }
+      {
+        "name": "Screening visit",
+        "weekOffset": 0,
+        "onSiteHours": 2,
+        "procedures": [
+          "Consent discussion",
+          "Blood draw",
+          "Questionnaire"
+        ]
+      },
+      {
+        "name": "Baseline visit",
+        "weekOffset": 2,
+        "onSiteHours": 2,
+        "procedures": [
+          "Blood draw",
+          "Questionnaire",
+          "Study app setup"
+        ]
+      },
+      {
+        "name": "Month 3 follow-up",
+        "weekOffset": 14,
+        "onSiteHours": 2,
+        "procedures": [
+          "Blood draw",
+          "Questionnaire"
+        ]
+      },
+      {
+        "name": "Month 6 follow-up",
+        "weekOffset": 27,
+        "onSiteHours": 2,
+        "procedures": [
+          "Blood draw",
+          "Questionnaire",
+          "Exit interview"
+        ]
+      }
     ],
     "remoteContacts": [
-      { "name": "Week 6 phone check-in", "weekOffset": 6, "minutes": 20 }
+      {
+        "name": "Week 6 phone check-in",
+        "weekOffset": 6,
+        "minutes": 20
+      }
     ]
   },
   "knownLogistics": {
@@ -60,19 +104,39 @@
   },
   "cannedAnswers": [
     {
-      "matches": ["parking", "park", "garage"],
+      "matches": [
+        "parking",
+        "park",
+        "garage"
+      ],
       "answer": "Parking is validated at the Harborview garage for all scheduled study visits, so there is no out-of-pocket parking cost. This is not stated in the study's public listing, which is why it needs to be asked. Mileage is not reimbursed.",
       "citation": "Site policy confirmed by coordinator on 2026-09-02 (fictional fixture)."
     },
     {
-      "matches": ["travel", "mileage", "ride", "transport"],
+      "matches": [
+        "travel",
+        "mileage",
+        "ride",
+        "transport"
+      ],
       "answer": "The study does not reimburse mileage. The site can arrange a rideshare voucher for participants who tell us in advance that travel is a barrier. Please flag this on your inquiry and we will set it up before the screening visit.",
       "citation": "Site policy confirmed by coordinator on 2026-09-02 (fictional fixture)."
     },
     {
-      "matches": ["work", "time off", "employer", "hours"],
+      "matches": [
+        "work",
+        "time off",
+        "employer",
+        "hours"
+      ],
       "answer": "All four on-site visits can be scheduled starting at 7:30am, which most participants find easier to fit around work. Visit windows are +/- 7 days except the screening visit.",
       "citation": "Site policy confirmed by coordinator on 2026-09-02 (fictional fixture)."
+    }
+  ],
+  "interventions": [
+    {
+      "type": "BEHAVIORAL",
+      "name": "Adjuvant endocrine therapy adherence"
     }
   ]
 }

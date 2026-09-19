@@ -211,6 +211,17 @@ CREATE TABLE IF NOT EXISTS question_drafts (
   updated_at TEXT NOT NULL
 );
 
+-- A site's reusable answers to questions that recur across participants. A reply
+-- is only ever offered as a starting draft; a person still edits and sends it.
+CREATE TABLE IF NOT EXISTS saved_replies (
+  id TEXT PRIMARY KEY,
+  trial_id TEXT NOT NULL,
+  keywords TEXT NOT NULL,
+  answer TEXT NOT NULL,
+  citation TEXT,
+  created_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS audit_events (
   id TEXT PRIMARY KEY,
   actor TEXT NOT NULL,
@@ -446,6 +457,12 @@ export function seedIfEmpty(db: Database.Database, force = false) {
       }
     }
 
+    // The fixture's site-policy answers become the site's starting reply library.
+    const insertReply = db.prepare("INSERT OR REPLACE INTO saved_replies (id, trial_id, keywords, answer, citation, created_at) VALUES (?,?,?,?,?,?)");
+    (fixture?.cannedAnswers ?? []).forEach((reply: any, index: number) => {
+      insertReply.run(`seed-${index}`, fixture.studyId, JSON.stringify(reply.matches ?? []), reply.answer, reply.citation ?? null, new Date().toISOString());
+    });
+
     db.prepare("INSERT OR REPLACE INTO meta (key, value) VALUES ('seeded_at', ?)").run(
       new Date().toISOString()
     );
@@ -488,7 +505,7 @@ export function resetDemoData() {
     db.exec(`
       DELETE FROM inquiries; DELETE FROM questions; DELETE FROM grants;
       DELETE FROM milestones; DELETE FROM enrollments; DELETE FROM saved_trials;
-      DELETE FROM todos; DELETE FROM inquiry_reads; DELETE FROM question_drafts;
+      DELETE FROM todos; DELETE FROM inquiry_reads; DELETE FROM question_drafts; DELETE FROM saved_replies;
       DELETE FROM audit_events; DELETE FROM participants;
     `);
     db.prepare("DELETE FROM meta WHERE key = 'seeded_at'").run();

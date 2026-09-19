@@ -123,34 +123,71 @@ function spanExists(span: string, docs: SourceDoc[]): SourceDoc | null {
   return null;
 }
 
-function client(): Anthropic | null {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) return null;
-  return new Anthropic({ apiKey });
+/**
+ * Which model backend is configured, if any.
+ *
+ * Two are supported. "gateway" is any OpenAI-compatible chat-completions
+ * endpoint, which covers OpenAI itself and most hosted gateways; it needs both a
+ * key and a base URL. "anthropic" uses the Anthropic SDK.
+ *
+ * A key without an endpoint selects nothing. That is deliberate: a credential is
+ * never sent to a host the operator did not name, because guessing the provider
+ * would mean posting the key to services it does not belong to.
+ */
+type Backend =
+  | { kind: "gateway"; apiKey: string; baseUrl: string; model: string }
+  | { kind: "anthropic"; apiKey: string; model: string };
+
+function backend(): Backend | null {
+  const key = process.env.LLM_API_KEY;
+  const baseUrl = process.env.LLM_BASE_URL?.replace(/\/+$/, "");
+  if (key && baseUrl && /^https:\/\//.test(baseUrl)) {
+    return { kind: "gateway", apiKey: key, baseUrl, model: process.env.LLM_MODEL || MODEL };
+  }
+  if (process.env.ANTHROPIC_API_KEY) return { kind: "anthropic", apiKey: process.env.ANTHROPIC_API_KEY, model: MODEL };
+  return null;
+}
+
+/** Pull the first JSON object out of a reply, tolerating code fences and preamble. */
+function parseJsonObject(text: string): Record<string, unknown> | null {
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start < 0 || end <= start) return null;
+  try { return JSON.parse(text.slice(start, end + 1)) as Record<string, unknown>; } catch { return null; }
 }
 
 async function callModel(system: string, user: string, schemaHint: string) {
-  const anthropic = client();
-  if (!anthropic) return null;
-  const response = await anthropic.messages.create({
-    model: MODEL,
-    max_tokens: MAX_OUTPUT_TOKENS,
-    system,
-    messages: [
-      { role: "user", content: user },
-      // Prefilling the opening brace constrains output to the schema without
-      // needing a parser that tolerates prose.
-      { role: "assistant", content: "{" },
-    ],
-  });
-  const block = response.content.find((part) => part.type === "text");
-  if (!block || block.type !== "text") return null;
-  try {
-    return JSON.parse(`{${block.text}`) as Record<string, unknown>;
-  } catch {
-    console.warn(`[ai] response failed to parse against ${schemaHint}`);
-    return null;
+  const target = backend();
+  if (!target) return null;
+
+  let text: string | null = null;
+  if (target.kind === "anthropic") {
+    const response = await new Anthropic({ apiKey: target.apiKey }).messages.create({
+      model: target.model, max_tokens: MAX_OUTPUT_TOKENS, system,
+      messages: [{ role: "user", content: user }],
+    });
+    const block = response.content.find((part) => part.type === "text");
+    text = block && block.type === "text" ? block.text : null;
+  } else {
+    // Bounded, so a slow gateway degrades to the rule-built brief rather than hanging the page.
+    const response = await fetch(`${target.baseUrl}/chat/completions`, {
+      method: "POST",
+      headers: { "content-type": "application/json", authorization: `Bearer ${target.apiKey}` },
+      body: JSON.stringify({
+        model: target.model, max_tokens: MAX_OUTPUT_TOKENS, temperature: 0.2,
+        messages: [{ role: "system", content: system }, { role: "user", content: user }],
+      }),
+      signal: AbortSignal.timeout(20_000),
+    });
+    // The status is logged; the body is not, because error bodies can echo the request.
+    if (!response.ok) { console.warn(`[ai] gateway returned ${response.status}`); return null; }
+    const body = await response.json() as { choices?: { message?: { content?: string } }[] };
+    text = body.choices?.[0]?.message?.content ?? null;
   }
+
+  const parsed = text ? parseJsonObject(text) : null;
+  if (!parsed) console.warn(`[ai] response failed to parse against ${schemaHint}`);
+  return parsed;
 }
 
 const SYSTEM = `You are a careful explainer inside Mozaic, a tool that helps a person prepare for a conversation with a clinical research coordinator.
@@ -524,7 +561,9 @@ export function draftInquiry(input: {
 }
 
 export const AI_METADATA = {
-  model: MODEL,
+  model: backend()?.model ?? MODEL,
   promptVersion: PROMPT_VERSION,
-  configured: Boolean(process.env.ANTHROPIC_API_KEY),
+  configured: backend() !== null,
+  /** A key is present but no endpoint names where it belongs, so it is unused. */
+  keyWithoutEndpoint: Boolean(process.env.LLM_API_KEY) && backend() === null,
 };

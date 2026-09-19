@@ -8,7 +8,7 @@ const ITEMS = [
   { href: "/", label: "Home", Icon: House, match: ["/", "/timeline"] },
   { href: "/explore", label: "Trials", Icon: ClipboardText, match: ["/explore", "/trial"] },
   { href: "/passport", label: "Passport", Icon: QrCode, match: ["/passport"], centre: true },
-  { href: "/inbox", label: "Inbox", Icon: ChatCircle, match: ["/inbox", "/inquiry", "/coordinator"] },
+  { href: "/inbox", label: "Inbox", Icon: ChatCircle, match: ["/inbox", "/inquiry"] },
   { href: "/profile", label: "Profile", Icon: User, match: ["/profile", "/questions", "/about", "/access-gaps"] },
 ];
 

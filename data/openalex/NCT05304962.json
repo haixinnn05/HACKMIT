@@ -1,0 +1,101 @@
+{
+  "works": [
+    {
+      "id": "https://openalex.org/W4392603632",
+      "title": "Cyclin-dependent kinase 2 (CDK2) inhibitors and others novel CDK inhibitors (CDKi) in breast cancer: clinical trials, current impact, and future directions",
+      "publicationYear": 2024,
+      "publicationDate": "2024-03-08",
+      "citedByCount": 92,
+      "authors": [
+        "Riccardo Gerosa",
+        "Rita De Sanctis",
+        "Flavia Jacobs"
+      ],
+      "venue": "Critical Reviews in Oncology/Hematology",
+      "doiUrl": "https://doi.org/10.1016/j.critrevonc.2024.104324",
+      "isOpenAccess": true,
+      "openAccessUrl": "https://ars.els-cdn.com/content/image/1-s2.0-S1040842824000672-ga1_lrg.jpg",
+      "isReview": false,
+      "abstractExcerpt": "Breast cancer (BC) Cyclin-dependent kinase 2 inhibitor (CDK2i) Cyclin-dependent Kinase 4 inhibitor (CDK4i) Pan-Cyclin-dependent kinase inhibitor (Pan-CDKi) Cyclindependent Kinase 2/4/6 inhibitor (CDK2/4/6i) Metastatic breast cancer (mBC)A B S T R A C T Aberrant cyclin-dependent kinase 2 (CDK2) activation has been identified as a main resistance mechanism to ...",
+      "topicId": "T12829"
+    },
+    {
+      "id": "https://openalex.org/W4411482795",
+      "title": "After a CDK4/6 Inhibitor: State of the Art in Hormone Receptor–Positive Metastatic Breast Cancer",
+      "publicationYear": 2025,
+      "publicationDate": "2025-06-01",
+      "citedByCount": 11,
+      "authors": [
+        "Jimmitti Teysir",
+        "Maxwell R. Lloyd",
+        "Samer Alkassis"
+      ],
+      "venue": "American Society of Clinical Oncology Educational Book",
+      "doiUrl": "https://doi.org/10.1200/edbk-25-473372",
+      "isOpenAccess": true,
+      "openAccessUrl": "https://ascopubs.org/doi/pdfdirect/10.1200/EDBK-25-473372",
+      "isReview": false,
+      "abstractExcerpt": "CDK 4/6 inhibitors (CDK4/6i) remain part of the standard first-line treatment for patients with hormone receptor–positive metastatic breast cancer, offering demonstrable improvements in both progression-free survival and overall survival.",
+      "topicId": "T12829"
+    },
+    {
+      "id": "https://openalex.org/W4413803808",
+      "title": "Emerging opportunities to treat drug-resistant breast cancer: Discovery of novel small-molecule inhibitors against different targets",
+      "publicationYear": 2025,
+      "publicationDate": "2025-08-29",
+      "citedByCount": 4,
+      "authors": [
+        "Ruixian Chen",
+        "Zhi-Lan Zhou",
+        "Xiangyue Meng"
+      ],
+      "venue": "Frontiers in Pharmacology",
+      "doiUrl": "https://doi.org/10.3389/fphar.2025.1578342",
+      "isOpenAccess": true,
+      "openAccessUrl": "https://www.frontiersin.org/journals/pharmacology/articles/10.3389/fphar.2025.1578342/pdf",
+      "isReview": false,
+      "abstractExcerpt": "Breast cancer is now the most common malignancy among females. Numerous highly effective small-molecule inhibitors, such as tamoxifen and fulvestrant, have received clinical approval, significantly enhancing the therapeutic landscape of breast cancer. However, the emergence of drug resistance in some patients presents an unmet clinical need.",
+      "topicId": "T12829"
+    },
+    {
+      "id": "https://openalex.org/W7170902509",
+      "title": "From CDK4/6 to CDK2 and KAT: Evolving therapeutic approaches in HR+/HER2– breast cancer",
+      "publicationYear": 2026,
+      "publicationDate": "2026-07-24",
+      "citedByCount": 1,
+      "authors": [
+        "Paulina Stachyra",
+        "Cristina Hernando Meliá",
+        "José Antonio López-Guerrero"
+      ],
+      "venue": "The Breast",
+      "doiUrl": "https://doi.org/10.1016/j.breast.2026.104806",
+      "isOpenAccess": true,
+      "openAccessUrl": "https://www.thebreastonline.com/article/S0960-9776(26)00116-5/pdf",
+      "isReview": false,
+      "abstractExcerpt": "Despite the initial clinical success of CDK4/6 inhibitors in combination with endocrine therapy, the development of resistance (intrinsic and acquired) remains a significant challenge in the treatment of hormone receptor-positive, human epidermal growth factor receptor 2-negative (HR+/HER2–) metastatic breast cancer (mBC).",
+      "topicId": "T12829"
+    }
+  ],
+  "topic": {
+    "id": "T12829",
+    "name": "Advanced Breast Cancer Therapies",
+    "description": "This cluster of papers focuses on the use of cyclin-dependent kinase 4/6 (CDK4/6) inhibitors, such as palbociclib, letrozole, ribociclib, and abemaciclib, in the treatment of hormone receptor-positive metastatic breast cancer. The papers cover various aspects including clinical trials, mechanisms of action, therapeutic resistance, combination strategies, and potential biomarkers.",
+    "keywords": [
+      "CDK4/6 Inhibitors",
+      "Breast Cancer",
+      "Palbociclib",
+      "Letrozole",
+      "Ribociclib",
+      "Abemaciclib",
+      "Hormone Receptor-Positive",
+      "Metastatic Breast Cancer"
+    ],
+    "field": "Medicine",
+    "worksCount": 35513
+  },
+  "query": "NCT05304962",
+  "matchKind": "trial_id",
+  "fetchedAt": "2026-09-19T23:37:07.039Z",
+  "fromSnapshot": false
+}

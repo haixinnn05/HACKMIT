@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mozaic</title>
+<style>
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #fafbfe;
+         font: 16px/1.55 -apple-system, system-ui, sans-serif; color: #0e0d63; }
+  main { max-width: 20rem; padding: 2rem; text-align: center; }
+  h1 { font-size: 1.35rem; margin: 0 0 .5rem; letter-spacing: -0.02em; }
+  p { margin: 0 0 1rem; color: #5f6390; font-size: .95rem; }
+  button { font: inherit; font-weight: 700; color: #fff; border: 0; border-radius: 999px; padding: .85rem 1.6rem;
+           background: linear-gradient(180deg, #6f55fc, #5a3ef8); }
+  small { display: block; margin-top: 1.25rem; color: #72769f; font-size: .8rem; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Mozaic can't reach its server</h1>
+  <p>The app loads from a computer on this network, and that computer isn't answering right now.</p>
+  <button id="retry">Try again</button>
+  <small>Check that the computer is awake and running, and that this phone is on the same Wi-Fi.
+  If its address changed, the app needs rebuilding with <code>npm run ios:sync</code>.</small>
+</main>
+<!-- Written by `npm run ios:sync`. Reloading this page would only reload the error,
+     so the button goes back to the server the app was built for. -->
+<script src="server-url.js"></script>
+<script>
+  document.getElementById("retry").addEventListener("click", function () {
+    if (window.MOZAIC_SERVER_URL) location.replace(window.MOZAIC_SERVER_URL);
+    else location.reload();
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+{
+  "works": [
+    {
+      "id": "https://openalex.org/W7203600415",
+      "title": "Cyclins and Cyclin‐Dependent Kinases: Structure, Biological Functions, and Innovative Targeting Strategies in Cancer",
+      "publicationYear": 2026,
+      "publicationDate": "2026-08-16",
+      "citedByCount": 0,
+      "authors": [
+        "Suya Zheng",
+        "Zhipeng Shen",
+        "Yuanfang Wu"
+      ],
+      "venue": "MedComm",
+      "doiUrl": "https://doi.org/10.1002/mco2.70898",
+      "isOpenAccess": true,
+      "openAccessUrl": "https://doi.org/10.1002/mco2.70898",
+      "isReview": false,
+      "abstractExcerpt": "Cyclins and cyclin-dependent kinases (CDKs) are frequently dysregulated in human cancers and represent compelling therapeutic targets. Beyond their well-recognized roles in cell cycle control, CDK/cyclin complexes orchestrate diverse oncogenic processes, including transcription, genome maintenance, epigenetics, metabolism, and immune regulation.",
+      "topicId": "T12534"
+    }
+  ],
+  "topic": {
+    "id": "T12829",
+    "name": "Advanced Breast Cancer Therapies",
+    "description": "This cluster of papers focuses on the use of cyclin-dependent kinase 4/6 (CDK4/6) inhibitors, such as palbociclib, letrozole, ribociclib, and abemaciclib, in the treatment of hormone receptor-positive metastatic breast cancer. The papers cover various aspects including clinical trials, mechanisms of action, therapeutic resistance, combination strategies, and potential biomarkers.",
+    "keywords": [
+      "CDK4/6 Inhibitors",
+      "Breast Cancer",
+      "Palbociclib",
+      "Letrozole",
+      "Ribociclib",
+      "Abemaciclib",
+      "Hormone Receptor-Positive",
+      "Metastatic Breast Cancer"
+    ],
+    "field": "Medicine",
+    "worksCount": 35513
+  },
+  "query": "NCT07492641",
+  "matchKind": "trial_id",
+  "fetchedAt": "2026-09-19T23:37:04.834Z",
+  "fromSnapshot": false
+}

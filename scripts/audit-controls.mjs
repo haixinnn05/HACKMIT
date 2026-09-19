@@ -31,8 +31,8 @@ await go("/inquiry/new/TP-FIX-001");
 await page.click('button:has-text("Share Inquiry")');
 await page.waitForURL(/\/inquiry\/[0-9a-f-]{36}/);
 const inquiryPath = new URL(page.url()).pathname;
-await go("/coordinator");
-const coordinatorPath = await page.locator('#main a[href^="/coordinator/"]').first().getAttribute("href");
+await go("/clinic/inbox");
+const coordinatorPath = await page.locator('#main a[href^="/clinic/inbox/"]').first().getAttribute("href");
 await go(coordinatorPath);
 await page.locator('button:has-text("Send this answer")').first().click();
 await page.waitForSelector("text=Sent by R. Alvarez");
@@ -41,10 +41,10 @@ await page.click('button:has-text("I have agreed to take part")');
 await page.waitForURL(/\/timeline/);
 
 const screens = [
-  "/", "/explore", "/trial/TP-FIX-001", "/trial/TP-FIX-001?tab=eligibility", "/trial/TP-FIX-001?tab=expect",
+  "/", "/explore", "/trial/TP-FIX-001", "/trial/TP-FIX-001?tab=eligibility", "/trial/TP-FIX-001?tab=expect", "/trial/TP-FIX-001?tab=insight",
   "/trial/TP-FIX-001/preview", "/trial/NCT06185205", "/questions", "/questions?add=1", "/passport",
   "/inquiry/new/TP-FIX-001", "/inbox", inquiryPath, "/profile", "/profile/edit", "/profile/saved",
-  "/coordinator", coordinatorPath, "/timeline", "/timeline?view=calendar", "/about", "/access-gaps",
+  "/clinic", "/clinic/inbox", coordinatorPath, "/clinic/patients", "/clinic/scan", "/clinic/studies", "/clinic/activity", "/welcome", "/timeline", "/timeline?view=calendar", "/about", "/access-gaps",
 ];
 
 const problems = [];

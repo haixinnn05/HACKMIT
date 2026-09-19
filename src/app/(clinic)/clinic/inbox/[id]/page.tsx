@@ -3,8 +3,7 @@ import { ChatCircleDots, CheckCircle, FileText, Question, WarningCircle } from "
 import type { ReactNode } from "react";
 import { Callout, Card, DataRow, FictionBanner, Pill, ScreenHeader, SectionHeading, StickyAction } from "@/components/ui";
 import { assessTrial } from "@/lib/assess";
-import { getFictionalFixture } from "@/lib/db";
-import { getGrant, getInquiry, getParticipant, getQuestionDraft, getTrial, isGrantActive, listQuestions } from "@/lib/repo";
+import { getGrant, getInquiry, getParticipant, getQuestionDraft, getTrial, isGrantActive, listQuestions, listSavedReplies } from "@/lib/repo";
 import { coordinatorAcknowledgeAction, coordinatorAnswerAction, coordinatorAssignAction, coordinatorRequestInfoAction } from "@/app/actions";
 import type { CriterionAssessment } from "@/lib/types";
 import { isAnswered, QUESTION_STATE_LABEL, SITE_STAFF } from "@/lib/questions";
@@ -30,7 +29,7 @@ export default async function CoordinatorInquiryPage({ params }: { params: Promi
   if (!isGrantActive(grant)) {
     return (
       <div className="space-y-4">
-        <ScreenHeader back="/coordinator" title="No longer available" />
+        <ScreenHeader back="/clinic/inbox" title="No longer available" />
         <Card className="p-5 text-[13.5px] leading-relaxed text-ink-soft">
           The participant revoked access, or the sharing grant expired. Nothing further can be read
           here. If you already recorded details elsewhere, your institution&rsquo;s retention rules apply
@@ -49,7 +48,8 @@ export default async function CoordinatorInquiryPage({ params }: { params: Promi
   const name = allowed.has("basics") ? participant.displayName.replace(/\s*\(synthetic\)$/, "") : "Participant";
   const assessment = assessTrial(trial, participant);
   const questions = listQuestions({ inquiryId: inquiry.id });
-  const canned = trial.isFictional ? getFictionalFixture()?.cannedAnswers ?? [] : [];
+  // The site's own reply library, managed under Studies.
+  const canned = listSavedReplies(trial.id);
   const note = inquiry.message.split("\n\n")[0];
 
   const by = (status: CriterionAssessment["status"]) => assessment.assessments.filter((a) => a.status === status);
@@ -61,7 +61,7 @@ export default async function CoordinatorInquiryPage({ params }: { params: Promi
 
   return (
     <div className="space-y-4">
-      <ScreenHeader back="/coordinator" title={name} sub={trial.briefTitle ?? trial.id} />
+      <ScreenHeader back="/clinic/inbox" title={name} sub={trial.briefTitle ?? trial.id} />
 
       {trial.isFictional ? <FictionBanner /> : null}
 
@@ -147,7 +147,7 @@ export default async function CoordinatorInquiryPage({ params }: { params: Promi
         <ul className="space-y-3">
           {questions.length === 0 ? <Card as="li" className="p-4 text-[13px] text-ink-soft">This person did not attach any questions.</Card> : null}
           {questions.map((question) => {
-            const suggestion = canned.find((entry) => entry.matches.some((keyword) => question.text.toLowerCase().includes(keyword)));
+            const suggestion = canned.find((entry) => entry.keywords.some((keyword) => question.text.toLowerCase().includes(keyword)));
             const draft = getQuestionDraft(question.id);
             const answered = isAnswered(question);
             const reopened = !answered && Boolean(question.answer);

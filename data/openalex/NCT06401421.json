@@ -1,0 +1,101 @@
+{
+  "works": [
+    {
+      "id": "https://openalex.org/W7129584685",
+      "title": "Abstract PS5-08-21: Prospective breast cancer clinical validation study of an ultrasensitive, tumor-informed, whole genome, circulating tumor DNA assay to detect molecular residual disease and predict recurrence of high-risk early breast cancer treated with standard (neo)adjuvant therapy; NSABP B-64/EXActDNA/003/NCT06401421",
+      "publicationYear": 2026,
+      "publicationDate": "2026-02-17",
+      "citedByCount": 0,
+      "authors": [
+        "Mark Basik",
+        "Emilia J. Diego",
+        "G. Tang"
+      ],
+      "venue": "Clinical Cancer Research",
+      "doiUrl": "https://doi.org/10.1158/1557-3265.sabcs25-ps5-08-21",
+      "isOpenAccess": false,
+      "openAccessUrl": null,
+      "isReview": false,
+      "abstractExcerpt": "Background: Detection of occult micrometastatic cancer—molecular residual disease (MRD)—in patients following treatment for high-risk phenotypes of early breast cancer using circulating tumor DNA (ctDNA) is associated with a high risk of recurrence.",
+      "topicId": "T11287"
+    },
+    {
+      "id": "https://openalex.org/W7125951174",
+      "title": "Minimal residual disease in solid tumors: Clinical applications and future directions",
+      "publicationYear": 2026,
+      "publicationDate": "2026-01-28",
+      "citedByCount": 11,
+      "authors": [
+        "Theresa Abdo",
+        "Ahmad Alhalabi",
+        "Sacha Yaghi"
+      ],
+      "venue": "Cancer",
+      "doiUrl": "https://doi.org/10.1002/cncr.70286",
+      "isOpenAccess": true,
+      "openAccessUrl": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1002/cncr.70286",
+      "isReview": false,
+      "abstractExcerpt": "Minimal residual disease (MRD) refers to the presence of residual cancer cells or tumor-derived fragments that persist after treatment and remain undetectable by conventional imaging or protein-based assays. Circulating tumor DNA (ctDNA) has emerged as a dynamic biomarker for MRD detection.",
+      "topicId": "T11287"
+    },
+    {
+      "id": "https://openalex.org/W4409962552",
+      "title": "Liquid Biopsy Approaches for Cancer Characterization, Residual Disease Detection, and Therapy Monitoring",
+      "publicationYear": 2025,
+      "publicationDate": "2025-05-01",
+      "citedByCount": 30,
+      "authors": [
+        "Jacqueline V. Aredo",
+        "Amna Jamali",
+        "Jessica Zhu"
+      ],
+      "venue": "American Society of Clinical Oncology Educational Book",
+      "doiUrl": "https://doi.org/10.1200/edbk-25-481114",
+      "isOpenAccess": true,
+      "openAccessUrl": "https://ascopubs.org/doi/pdf/10.1200/EDBK-25-481114",
+      "isReview": false,
+      "abstractExcerpt": "Liquid biopsy encompasses a variety of molecular approaches to detect circulating tumor DNA (ctDNA) and has become a powerful tool in the diagnosis and treatment of solid tumors.",
+      "topicId": "T11287"
+    },
+    {
+      "id": "https://openalex.org/W7162494812",
+      "title": "Review of ctDNA in breast cancer — present utility and future prospective",
+      "publicationYear": 2026,
+      "publicationDate": "2026-05-27",
+      "citedByCount": 0,
+      "authors": [
+        "Moushumi Suryavanshi",
+        "Shiveta Razdan",
+        "Manoj Kumar"
+      ],
+      "venue": "Reports of Practical Oncology & Radiotherapy",
+      "doiUrl": "https://doi.org/10.5603/rpor.111323",
+      "isOpenAccess": true,
+      "openAccessUrl": "https://journals.viamedica.pl/rpor/article/download/111323/89485",
+      "isReview": false,
+      "abstractExcerpt": "Breast cancer is the second most commonly diagnosed cancer worldwide and remains a major cause of cancer-related mortality. Despite advances in treatment, challenges like tumor heterogeneity, recurrence, and drug resistance persist.",
+      "topicId": "T11287"
+    }
+  ],
+  "topic": {
+    "id": "T11287",
+    "name": "Cancer Genomics and Diagnostics",
+    "description": "This cluster of papers focuses on the genomic landscape of cancer, mutational signatures, intratumor heterogeneity, liquid biopsies, somatic mutations, tumor evolution, cell-free DNA, genomic instability, targeted therapy, and clonal evolution in various cancer types.",
+    "keywords": [
+      "Cancer Genomics",
+      "Mutational Signatures",
+      "Intratumor Heterogeneity",
+      "Liquid Biopsies",
+      "Somatic Mutations",
+      "Tumor Evolution",
+      "Cell-Free DNA",
+      "Genomic Instability"
+    ],
+    "field": "Biochemistry, Genetics and Molecular Biology",
+    "worksCount": 98717
+  },
+  "query": "NCT06401421",
+  "matchKind": "trial_id",
+  "fetchedAt": "2026-09-19T23:37:10.674Z",
+  "fromSnapshot": false
+}
