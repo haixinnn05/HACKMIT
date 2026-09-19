@@ -1,0 +1,20 @@
+{
+  "source": "ClinicalTrials.gov API v2",
+  "license": "ClinicalTrials.gov terms of use; records are public U.S. registry data.",
+  "condition": "breast cancer",
+  "queries": [
+    "https://clinicaltrials.gov/api/v2/studies?query.cond=breast+cancer&filter.overallStatus=RECRUITING%7CNOT_YET_RECRUITING&fields=protocolSection.identificationModule%7CprotocolSection.statusModule%7CprotocolSection.sponsorCollaboratorsModule%7CprotocolSection.descriptionModule%7CprotocolSection.conditionsModule%7CprotocolSection.designModule%7CprotocolSection.armsInterventionsModule%7CprotocolSection.outcomesModule%7CprotocolSection.eligibilityModule%7CprotocolSection.contactsLocationsModule%7ChasResults&pageSize=100&countTotal=true&format=json",
+    "https://clinicaltrials.gov/api/v2/studies?query.cond=breast+cancer&filter.overallStatus=RECRUITING%7CNOT_YET_RECRUITING&fields=protocolSection.identificationModule%7CprotocolSection.statusModule%7CprotocolSection.sponsorCollaboratorsModule%7CprotocolSection.descriptionModule%7CprotocolSection.conditionsModule%7CprotocolSection.designModule%7CprotocolSection.armsInterventionsModule%7CprotocolSection.outcomesModule%7CprotocolSection.eligibilityModule%7CprotocolSection.contactsLocationsModule%7ChasResults&pageSize=100&countTotal=true&format=json&pageToken=ZVNj7o2Elu8o3lpwCsjyoLmtmpOQJJxuZ_Ss2fIW",
+    "https://clinicaltrials.gov/api/v2/studies?query.cond=breast+cancer&filter.overallStatus=RECRUITING%7CNOT_YET_RECRUITING&fields=protocolSection.identificationModule%7CprotocolSection.statusModule%7CprotocolSection.sponsorCollaboratorsModule%7CprotocolSection.descriptionModule%7CprotocolSection.conditionsModule%7CprotocolSection.designModule%7CprotocolSection.armsInterventionsModule%7CprotocolSection.outcomesModule%7CprotocolSection.eligibilityModule%7CprotocolSection.contactsLocationsModule%7ChasResults&pageSize=100&countTotal=true&format=json&pageToken=ZVNj7o2Elu8o3lpwCsjyoLmtmpOQJJxtYfSj2vAW"
+  ],
+  "retrievedAt": "2026-09-19T19:21:11.758Z",
+  "recordCount": 300,
+  "totalAvailableAtQueryTime": 3268,
+  "contentHash": "be2dc67295b5a23e091fc6f4a87b7b40a1b96a36bb6b5b14986d13b6b25d8891",
+  "coverage": {
+    "recordsWithParsedCriteria": 299,
+    "recordsWithAnySiteContact": 228,
+    "recordsWithAnySiteRecruitingStatus": 217,
+    "recordsWithNoLocations": 47
+  }
+}

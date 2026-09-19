@@ -1,0 +1,94 @@
+@import "tailwindcss";
+
+/*
+ * Trial Passport visual language.
+ *
+ * Warm off-white surfaces, dark ink, one muted teal accent. Essential
+ * information comes before animation, and every status is carried by words and
+ * shape as well as colour — colour alone never encodes meaning.
+ */
+
+@theme {
+  --color-paper: #faf8f4;
+  --color-paper-raised: #ffffff;
+  --color-paper-sunken: #f2eee7;
+  --color-ink: #1c1a17;
+  --color-ink-soft: #55504a;
+  --color-ink-faint: #85807a;
+  --color-rule: #e4ded4;
+  --color-rule-strong: #cfc7ba;
+
+  --color-teal: #1f6f6b;
+  --color-teal-soft: #e3f0ee;
+  --color-teal-deep: #164e4b;
+
+  --color-amber: #8a5a10;
+  --color-amber-soft: #fbf0dc;
+  --color-clay: #9c3d2e;
+  --color-clay-soft: #fbe8e4;
+  --color-slate: #45566b;
+  --color-slate-soft: #e9eef4;
+
+  --font-sans: ui-sans-serif, -apple-system, "Segoe UI", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+}
+
+:root { color-scheme: light; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Visible focus everywhere, never removed. */
+:focus-visible {
+  outline: 2px solid var(--color-teal);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* Motion is decorative here, so it yields entirely to the user's preference. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@keyframes stamp-press {
+  0%   { transform: scale(0.7) rotate(-9deg); opacity: 0; }
+  55%  { transform: scale(1.06) rotate(2deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+.animate-stamp { animation: stamp-press 420ms cubic-bezier(0.2, 0.9, 0.3, 1) both; }
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-rise { animation: rise 260ms ease-out both; }
+
+/* Utility: quoted source text. Deliberately looks like a document, not like UI. */
+.source-quote {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  line-height: 1.65;
+  background: var(--color-paper-sunken);
+  border-left: 3px solid var(--color-rule-strong);
+  padding: 0.75rem 0.9rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+@media print {
+  .no-print { display: none !important; }
+  body { background: #fff; }
+}

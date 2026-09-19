@@ -1,0 +1,168 @@
+{
+  "_notice": "SYNTHETIC. Every person below is invented. No real patient data is present in this repository. Contact details use reserved example.com addresses and 555 numbers.",
+  "personas": [
+    {
+      "id": "p-maria",
+      "isDemoPersona": true,
+      "displayName": "Maria Restrepo (synthetic)",
+      "summary": "52, breast cancer, biomarker result unknown, needs help with travel. The primary demo persona.",
+      "ageYears": 52,
+      "sex": "FEMALE",
+      "city": "Lowell", "state": "Massachusetts", "country": "United States", "postalCode": "01852",
+      "lat": 42.6334, "lon": -71.3162,
+      "condition": "Breast cancer",
+      "conditionDetail": "Hormone receptor positive; on adjuvant endocrine therapy since March.",
+      "maxTravelMinutes": 60,
+      "canTravelOvernight": false,
+      "needsTravelHelp": true,
+      "caregiverAvailable": true,
+      "workConstraints": "Works weekdays; can take at most one morning off per month without losing pay.",
+      "oneWayTravelMinutes": 45,
+      "clinicalFacts": [
+        { "key": "stage", "label": "Cancer stage", "value": "Stage II", "provenance": "self_reported" },
+        { "key": "hormone_receptor", "label": "Hormone receptor status", "value": "positive", "provenance": "self_reported" },
+        { "key": "her2", "label": "HER2 status", "value": null, "provenance": "unknown", "note": "Maria has been told this was tested but does not have the result." },
+        { "key": "ecog", "label": "Performance status (ECOG)", "value": null, "provenance": "unknown" },
+        { "key": "metastatic", "label": "Metastatic disease", "value": "no", "provenance": "self_reported" },
+        { "key": "prior_therapy", "label": "Prior therapy", "value": "Surgery, radiation, endocrine therapy", "provenance": "self_reported" },
+        { "key": "pregnant", "label": "Pregnant or breastfeeding", "value": "no", "provenance": "self_reported" }
+      ],
+      "contact": { "email": "maria.demo@example.com", "phone": "+1-555-0142" }
+    },
+    {
+      "id": "p-dee",
+      "isDemoPersona": true,
+      "displayName": "Dee Okafor (synthetic)",
+      "summary": "39, metastatic breast cancer, HER2 positive, willing to travel overnight.",
+      "ageYears": 39,
+      "sex": "FEMALE",
+      "city": "Worcester", "state": "Massachusetts", "country": "United States", "postalCode": "01608",
+      "lat": 42.2626, "lon": -71.8023,
+      "condition": "Metastatic breast cancer",
+      "conditionDetail": "HER2 positive, two prior lines of therapy.",
+      "maxTravelMinutes": 180,
+      "canTravelOvernight": true,
+      "needsTravelHelp": false,
+      "caregiverAvailable": true,
+      "workConstraints": "Remote work, flexible schedule.",
+      "oneWayTravelMinutes": 70,
+      "clinicalFacts": [
+        { "key": "stage", "label": "Cancer stage", "value": "Stage IV", "provenance": "self_reported" },
+        { "key": "her2", "label": "HER2 status", "value": "positive", "provenance": "self_reported" },
+        { "key": "hormone_receptor", "label": "Hormone receptor status", "value": "negative", "provenance": "self_reported" },
+        { "key": "metastatic", "label": "Metastatic disease", "value": "yes", "provenance": "self_reported" },
+        { "key": "ecog", "label": "Performance status (ECOG)", "value": "1", "provenance": "self_reported" },
+        { "key": "prior_lines", "label": "Prior lines of therapy", "value": "2", "provenance": "self_reported" },
+        { "key": "brain_mets", "label": "Brain metastases", "value": null, "provenance": "unknown" }
+      ],
+      "contact": { "email": "dee.demo@example.com", "phone": "+1-555-0177" }
+    },
+    {
+      "id": "p-harold",
+      "isDemoPersona": true,
+      "displayName": "Harold Byrne (synthetic)",
+      "summary": "76, male breast cancer, above several upper age limits, no nearby recruiting site.",
+      "ageYears": 76,
+      "sex": "MALE",
+      "city": "Presque Isle", "state": "Maine", "country": "United States", "postalCode": "04769",
+      "lat": 46.6812, "lon": -68.0159,
+      "condition": "Breast cancer",
+      "conditionDetail": "Male breast cancer, recently diagnosed.",
+      "maxTravelMinutes": 90,
+      "canTravelOvernight": false,
+      "needsTravelHelp": true,
+      "caregiverAvailable": false,
+      "workConstraints": "Retired.",
+      "oneWayTravelMinutes": 150,
+      "clinicalFacts": [
+        { "key": "stage", "label": "Cancer stage", "value": "Stage I", "provenance": "self_reported" },
+        { "key": "metastatic", "label": "Metastatic disease", "value": "no", "provenance": "self_reported" },
+        { "key": "her2", "label": "HER2 status", "value": null, "provenance": "unknown" },
+        { "key": "hormone_receptor", "label": "Hormone receptor status", "value": null, "provenance": "unknown" },
+        { "key": "ecog", "label": "Performance status (ECOG)", "value": "0", "provenance": "self_reported" }
+      ],
+      "contact": { "email": "harold.demo@example.com", "phone": "+1-555-0198" }
+    },
+    {
+      "id": "p-eval-01", "displayName": "Eval 01 (synthetic)", "summary": "Age exactly at a common lower bound of 18.",
+      "ageYears": 18, "sex": "FEMALE", "city": "Boston", "state": "Massachusetts", "country": "United States", "postalCode": "02118",
+      "lat": 42.3357, "lon": -71.0723, "condition": "Breast cancer", "conditionDetail": "Newly diagnosed.",
+      "maxTravelMinutes": 60, "canTravelOvernight": false, "needsTravelHelp": false, "caregiverAvailable": true,
+      "workConstraints": "Full-time student.", "oneWayTravelMinutes": 25,
+      "clinicalFacts": [
+        { "key": "metastatic", "label": "Metastatic disease", "value": "no", "provenance": "self_reported" },
+        { "key": "ecog", "label": "Performance status (ECOG)", "value": "0", "provenance": "self_reported" }
+      ],
+      "contact": { "email": "eval01@example.com", "phone": "+1-555-0101" }
+    },
+    {
+      "id": "p-eval-02", "displayName": "Eval 02 (synthetic)", "summary": "Age 17, below the usual adult lower bound.",
+      "ageYears": 17, "sex": "FEMALE", "city": "Boston", "state": "Massachusetts", "country": "United States", "postalCode": "02118",
+      "lat": 42.3357, "lon": -71.0723, "condition": "Breast cancer", "conditionDetail": "Referred by a paediatric oncology service.",
+      "maxTravelMinutes": 60, "canTravelOvernight": false, "needsTravelHelp": false, "caregiverAvailable": true,
+      "workConstraints": "In school.", "oneWayTravelMinutes": 25,
+      "clinicalFacts": [{ "key": "metastatic", "label": "Metastatic disease", "value": "no", "provenance": "self_reported" }],
+      "contact": { "email": "eval02@example.com", "phone": "+1-555-0102" }
+    },
+    {
+      "id": "p-eval-03", "displayName": "Eval 03 (synthetic)", "summary": "Wrong condition: lung cancer, should not match breast-cancer studies.",
+      "ageYears": 61, "sex": "MALE", "city": "Providence", "state": "Rhode Island", "country": "United States", "postalCode": "02903",
+      "lat": 41.8240, "lon": -71.4128, "condition": "Non-small cell lung cancer", "conditionDetail": "Stage III.",
+      "maxTravelMinutes": 90, "canTravelOvernight": true, "needsTravelHelp": false, "caregiverAvailable": false,
+      "workConstraints": "Shift work.", "oneWayTravelMinutes": 50,
+      "clinicalFacts": [{ "key": "ecog", "label": "Performance status (ECOG)", "value": "1", "provenance": "self_reported" }],
+      "contact": { "email": "eval03@example.com", "phone": "+1-555-0103" }
+    },
+    {
+      "id": "p-eval-04", "displayName": "Eval 04 (synthetic)", "summary": "Every clinical fact unknown. Nothing may be assumed.",
+      "ageYears": 55, "sex": "FEMALE", "city": "Springfield", "state": "Massachusetts", "country": "United States", "postalCode": "01103",
+      "lat": 42.1015, "lon": -72.5898, "condition": "Breast cancer", "conditionDetail": null,
+      "maxTravelMinutes": 45, "canTravelOvernight": false, "needsTravelHelp": true, "caregiverAvailable": false,
+      "workConstraints": null, "oneWayTravelMinutes": null,
+      "clinicalFacts": [
+        { "key": "stage", "label": "Cancer stage", "value": null, "provenance": "unknown" },
+        { "key": "her2", "label": "HER2 status", "value": null, "provenance": "unknown" },
+        { "key": "hormone_receptor", "label": "Hormone receptor status", "value": null, "provenance": "unknown" },
+        { "key": "metastatic", "label": "Metastatic disease", "value": null, "provenance": "unknown" }
+      ],
+      "contact": { "email": "eval04@example.com", "phone": "+1-555-0104" }
+    },
+    {
+      "id": "p-eval-05", "displayName": "Eval 05 (synthetic)", "summary": "Pregnant; triggers a common exclusion criterion.",
+      "ageYears": 34, "sex": "FEMALE", "city": "Cambridge", "state": "Massachusetts", "country": "United States", "postalCode": "02139",
+      "lat": 42.3736, "lon": -71.1097, "condition": "Breast cancer", "conditionDetail": "Diagnosed during pregnancy.",
+      "maxTravelMinutes": 30, "canTravelOvernight": false, "needsTravelHelp": false, "caregiverAvailable": true,
+      "workConstraints": "On leave.", "oneWayTravelMinutes": 15,
+      "clinicalFacts": [
+        { "key": "pregnant", "label": "Pregnant or breastfeeding", "value": "yes", "provenance": "self_reported" },
+        { "key": "metastatic", "label": "Metastatic disease", "value": "no", "provenance": "self_reported" }
+      ],
+      "contact": { "email": "eval05@example.com", "phone": "+1-555-0105" }
+    },
+    {
+      "id": "p-eval-06", "displayName": "Eval 06 (synthetic)", "summary": "Metastatic disease; conflicts with early-stage-only studies.",
+      "ageYears": 47, "sex": "FEMALE", "city": "New Bedford", "state": "Massachusetts", "country": "United States", "postalCode": "02740",
+      "lat": 41.6362, "lon": -70.9342, "condition": "Metastatic breast cancer", "conditionDetail": "Bone and liver involvement.",
+      "maxTravelMinutes": 120, "canTravelOvernight": true, "needsTravelHelp": true, "caregiverAvailable": true,
+      "workConstraints": "Not working.", "oneWayTravelMinutes": 85,
+      "clinicalFacts": [
+        { "key": "metastatic", "label": "Metastatic disease", "value": "yes", "provenance": "self_reported" },
+        { "key": "stage", "label": "Cancer stage", "value": "Stage IV", "provenance": "self_reported" },
+        { "key": "ecog", "label": "Performance status (ECOG)", "value": "2", "provenance": "self_reported" }
+      ],
+      "contact": { "email": "eval06@example.com", "phone": "+1-555-0106" }
+    },
+    {
+      "id": "p-eval-07", "displayName": "Eval 07 (synthetic)", "summary": "Male participant; sex-restricted studies must be flagged, not silently dropped.",
+      "ageYears": 58, "sex": "MALE", "city": "Hartford", "state": "Connecticut", "country": "United States", "postalCode": "06103",
+      "lat": 41.7637, "lon": -72.6851, "condition": "Breast cancer", "conditionDetail": "Male breast cancer.",
+      "maxTravelMinutes": 75, "canTravelOvernight": false, "needsTravelHelp": false, "caregiverAvailable": true,
+      "workConstraints": "Works from home two days a week.", "oneWayTravelMinutes": 40,
+      "clinicalFacts": [
+        { "key": "metastatic", "label": "Metastatic disease", "value": "no", "provenance": "self_reported" },
+        { "key": "her2", "label": "HER2 status", "value": "negative", "provenance": "self_reported" }
+      ],
+      "contact": { "email": "eval07@example.com", "phone": "+1-555-0107" }
+    }
+  ]
+}
