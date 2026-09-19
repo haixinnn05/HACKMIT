@@ -1,4 +1,4 @@
-# Trial Passport
+# Mozaic
 
 A navigation tool for adults considering a cancer trial. It helps someone
 understand what a study would actually ask of them, see which requirements can
@@ -30,6 +30,7 @@ scholarly works from the CC0 [OpenAlex open dataset](https://registry.opendata.a
 ```bash
 npm run evaluate     # 43 checks: invariants, citations, burden, permissions
 npm run journey      # 88 checks: all twelve screens in a real browser
+npm run audit        # every button and link on every screen: reachable, uncovered, resolving
 npm run phone        # current address and a scannable code, to open the app on a phone
 npm run capture      # phone-size screenshots of all twelve screens, to .capture/
 npm run ingest       # refresh the registry snapshot from ClinicalTrials.gov
@@ -269,7 +270,7 @@ displayed; the product invents no incentives of its own.
 weight. An informed decision to decline is a successful outcome, and it costs the
 person nothing they saved.
 
-Leaving Trial Passport is not withdrawing from a study, and the interface never
+Leaving Mozaic is not withdrawing from a study, and the interface never
 suggests it is.
 
 ## Limitations

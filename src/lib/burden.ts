@@ -86,7 +86,7 @@ export function computeBurden(
     return {
       available: false,
       unavailableReason:
-        "This study's visit schedule is not published in its registry record. Trial Passport will not estimate the number of visits from the study's length, because that would be a guess. Ask the study team how many visits there are and how long each one takes.",
+        "This study's visit schedule is not published in its registry record. Mozaic will not estimate the number of visits from the study's length, because that would be a guess. Ask the study team how many visits there are and how long each one takes.",
       scheduleProvenance: "unknown",
       scheduleConfirmedOn: null,
       visitCount: null, onSiteHours: null, travelHours: null, remoteHours: null,

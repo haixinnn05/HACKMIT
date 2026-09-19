@@ -128,7 +128,7 @@ export default async function InquiryPage({ params }: { params: Promise<{ id: st
       </section>
 
       <Callout tone="neutral">
-        Leaving Trial Passport is not the same as withdrawing from a study. If you are taking part
+        Leaving Mozaic is not the same as withdrawing from a study. If you are taking part
         in research, contact that study&rsquo;s team directly. Deleting anything here does not change
         your participation or your medical records.
       </Callout>

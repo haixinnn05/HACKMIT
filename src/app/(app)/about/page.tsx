@@ -1,4 +1,5 @@
 import { X } from "@phosphor-icons/react/dist/ssr";
+import { MozaicLockup } from "@/components/Brand";
 import { Callout, Card, ScreenHeader, SectionHeading } from "@/components/ui";
 import { AI_METADATA } from "@/lib/ai";
 import { getManifest } from "@/lib/db";
@@ -21,7 +22,9 @@ export default function AboutPage() {
 
   return (
     <div className="space-y-5">
-      <ScreenHeader back="/profile" title="How this works" sub="Trial Passport helps you understand what a study would involve and prepare a first conversation with a research coordinator. That is the whole job." />
+      <ScreenHeader back="/profile" title="How this works" sub="Mozaic helps you understand what a study would involve and prepare a first conversation with a research coordinator. That is the whole job." />
+
+      <MozaicLockup className="h-9 w-auto" />
 
       <section>
         <SectionHeading>What it will not do</SectionHeading>
@@ -74,7 +77,7 @@ export default function AboutPage() {
         </Card>
       </section>
 
-      <Callout>Leaving Trial Passport is not the same as withdrawing from a study. If you are taking part in research, contact that study&rsquo;s team directly.</Callout>
+      <Callout>Leaving Mozaic is not the same as withdrawing from a study. If you are taking part in research, contact that study&rsquo;s team directly.</Callout>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 {
-  "name": "trial-passport",
+  "name": "mozaic",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -10,9 +10,10 @@
     "ingest": "node scripts/ingest.mjs",
     "evaluate": "tsx scripts/evaluate.mts",
     "journey": "node scripts/journey.mjs",
-    "reset": "rm -f data/trial-passport.db*",
+    "reset": "rm -f data/mozaic.db*",
     "capture": "node scripts/capture.mjs",
-    "phone": "node scripts/phone.mjs"
+    "phone": "node scripts/phone.mjs",
+    "audit": "node scripts/audit-controls.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.127.0",

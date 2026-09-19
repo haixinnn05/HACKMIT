@@ -1,5 +1,5 @@
 /**
- * Trial Passport domain types.
+ * Mozaic domain types.
  *
  * Two rules shape everything here:
  *  1. Clinical suitability, practical feasibility and personal preference stay

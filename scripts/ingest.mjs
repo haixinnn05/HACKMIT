@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Trial Passport — ClinicalTrials.gov ingestion.
+ * Mozaic — ClinicalTrials.gov ingestion.
  *
  * Fetches public registry records, normalizes them into the product's Trial /
  * Site / Criterion shape, and writes a reproducible snapshot plus a manifest
@@ -197,7 +197,7 @@ async function fetchPage(pageToken) {
   for (let attempt = 0; attempt < 4; attempt += 1) {
     try {
       const response = await fetch(url, {
-        headers: { accept: "application/json", "user-agent": "TrialPassport/0.1 (HackMIT prototype)" },
+        headers: { accept: "application/json", "user-agent": "Mozaic/0.1 (HackMIT prototype)" },
       });
       if (response.status === 429 || response.status >= 500) {
         throw new Error(`transient HTTP ${response.status}`);

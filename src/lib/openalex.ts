@@ -143,7 +143,7 @@ async function searchOpenAlex(query: string): Promise<OpenAlexWork[]> {
   const response = await fetch(`${OPENALEX_API}?${params}`, {
     headers: {
       Accept: "application/json",
-      "User-Agent": "TrialPassport/0.1 (OpenAlex related-research lookup)",
+      "User-Agent": "Mozaic/0.1 (OpenAlex related-research lookup)",
     },
     next: { revalidate: 60 * 60 * 24 },
     signal: AbortSignal.timeout(6_000),

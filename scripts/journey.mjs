@@ -34,7 +34,7 @@ const go = (path) => page.goto(`${BASE}${path}`, { waitUntil: "networkidle" });
 const main = () => page.locator("#main");
 const text = async () => (await main().innerText()).replace(/\s+/g, " ");
 
-console.log("\nTrial Passport: twelve-screen journey\n");
+console.log("\nMozaic: twelve-screen journey\n");
 await page.request.post(`${BASE}/api/reset`);
 await page.request.post(`${BASE}/api/persona`, { data: { id: "p-maria" } });
 

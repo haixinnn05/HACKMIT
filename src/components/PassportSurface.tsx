@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, LockKey, QrCode, ShareNetwork, X } from "@phosphor-icons/react";
-import { PassportMark } from "./Brand";
+import { MozaicMark } from "./Brand";
 
 /**
  * The passport card and the decision to present it.
@@ -112,65 +112,82 @@ export function PassportSurface({ summary }: { summary: PassportSummary }) {
 
   return (
     <>
-      <div className="relative -mt-10 rounded-[24px] border border-rule bg-surface px-5 py-4 shadow-[0_14px_36px_rgba(14,13,99,0.10)]">
-        <div className="flex items-center gap-3">
-          <PassportMark className="size-9 text-iris" />
-          <div>
-            <p className="text-[13px] font-extrabold tracking-[0.08em] text-ink">TRIAL PASSPORT</p>
-            <p className="text-[12px] text-ink-soft">{code ? "Scan to view my shared profile" : "Private until you share"}</p>
-          </div>
-        </div>
-
-        <div className="mx-auto mt-3 grid size-44 place-items-center rounded-[18px] border border-rule bg-white">
-          {code ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={code.dataUrl} alt="Scannable code linking to the information you chose to share" className="size-40 animate-rise" />
-          ) : (
-            <div className="px-5 text-center">
-              <QrCode size={52} weight="thin" className="mx-auto text-rule-strong" />
-              <p className="mt-1 text-[12px] leading-snug text-ink-faint">No code is active. Nothing is being shared.</p>
+      {/* ------------------------------------------------------------ the ticket */}
+      <div className="ticket relative -mt-10">
+        <div className="ticket-top ticket-top-fill rounded-t-[26px] px-5 pb-6 pt-4 text-white">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <MozaicMark tone="white" className="h-7 w-auto" />
+              <p className="text-[12.5px] font-extrabold tracking-[0.14em]">MOZAIC PASSPORT</p>
             </div>
-          )}
-        </div>
+            <span className={`rounded-full px-2.5 py-1 text-[10.5px] font-bold ${code ? "bg-white text-iris-deep" : "bg-white/18 text-white"}`}>
+              {code ? "Sharing now" : "Private"}
+            </span>
+          </div>
 
-        {code && minutes != null ? (
-          <p className="mt-2 text-center text-[12px] font-bold text-iris" aria-live="polite">
-            Expires in {minutes}:{seconds}
+          <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.16em] text-white/60">Passport holder</p>
+          <p className="text-[1.5rem] font-bold leading-tight tracking-[-0.02em]">
+            {summary.displayName.replace(/\s*\(synthetic\)$/, "")}
           </p>
-        ) : null}
 
-        <p className="mt-3 text-[1.25rem] font-bold tracking-[-0.02em] text-ink">
-          {summary.displayName.replace(/\s*\(synthetic\)$/, "")}
-        </p>
-        <dl className="mt-1.5 space-y-0.5 text-[13px]">
-          {[
-            ["Age", summary.ageLabel], ["Sex", summary.sexLabel], ["Location", summary.locationLabel],
-          ].map(([label, value]) => (
-            <div key={label} className="flex gap-3">
-              <dt className="w-20 shrink-0 text-ink-faint">{label}</dt>
-              <dd className={value ? "text-ink" : "italic text-ink-faint"}>{value ?? "Not recorded"}</dd>
-            </div>
-          ))}
-        </dl>
-
-        <div className="mt-3 flex items-start gap-3 rounded-[16px] bg-lavender px-3.5 py-2.5">
-          <LockKey size={20} weight="fill" className="mt-0.5 shrink-0 text-iris" />
-          <div>
-            <p className="text-[13px] font-bold text-ink">Securely share</p>
-            <p className="text-[12px] leading-relaxed text-ink-soft">
-              The code holds no health details, just a ten-minute link. You choose what it opens.
-            </p>
-          </div>
+          <dl className="mt-3.5 grid grid-cols-[auto_auto_1fr] gap-x-6">
+            {[["Age", summary.ageLabel], ["Sex", summary.sexLabel], ["From", summary.locationLabel]].map(([label, value]) => (
+              <div key={label} className="min-w-0">
+                <dt className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/60">{label}</dt>
+                <dd className={`truncate text-[14px] font-bold ${value ? "" : "italic text-white/60"}`}>{value ?? "Not set"}</dd>
+              </div>
+            ))}
+          </dl>
         </div>
 
-        <button
-          ref={openerRef} type="button" onClick={() => { setChoosing(true); setState("idle"); }}
-          aria-haspopup="dialog"
-          className="press cta mt-3 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full py-3 text-[15px] font-bold text-white"
-        >
-          <ShareNetwork size={18} weight="bold" /> {code ? "Create a new code" : "Share QR Code"}
-        </button>
+        <div className="ticket-stub -mt-px rounded-b-[26px] bg-surface px-5 pb-5">
+          {/* The tear line. */}
+          <div aria-hidden className="mx-3 border-t-2 border-dashed border-rule-strong" />
+
+          <div className="flex items-center gap-4 pt-4">
+            <div className="grid size-[8.5rem] shrink-0 place-items-center rounded-[16px] border border-rule bg-white">
+              {code ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={code.dataUrl} alt="Scannable code linking to the information you chose to share" className="size-[7.75rem] animate-rise" />
+              ) : (
+                <QrCode size={56} weight="thin" className="text-rule-strong" />
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-ink-faint">{code ? "Valid for" : "Status"}</p>
+              <p className="text-[1.35rem] font-bold leading-tight tracking-[-0.02em] text-ink" aria-live="polite">
+                {code && minutes != null ? <>Expires in {minutes}:{seconds}</> : "No code is active"}
+              </p>
+              <p className="mt-0.5 text-[12px] leading-snug text-ink-soft">
+                {code ? "Scan to view my shared profile." : "Nothing is being shared."}
+              </p>
+              <p className="mt-2.5 text-[10px] font-bold uppercase tracking-[0.16em] text-ink-faint">Pass no.</p>
+              <p className="font-mono text-[13px] font-semibold text-ink">
+                {code ? code.url.split("/").pop()!.slice(0, 8).toUpperCase() : "Not issued yet"}
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
+
+      <button
+        ref={openerRef} type="button" onClick={() => { setChoosing(true); setState("idle"); }}
+        aria-haspopup="dialog"
+        className="cta mt-4 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full py-3 text-[15px] font-bold text-white"
+      >
+        <ShareNetwork size={18} weight="bold" /> {code ? "Create a new code" : "Share QR Code"}
+      </button>
+
+      <div className="mt-3 flex items-start gap-3 rounded-[16px] bg-lavender px-3.5 py-3">
+        <LockKey size={20} weight="fill" className="mt-0.5 shrink-0 text-iris" />
+        <div>
+          <p className="text-[13px] font-bold text-ink">Securely share</p>
+          <p className="text-[12px] leading-relaxed text-ink-soft">
+            The code holds no health details, just a ten-minute link. You choose what it opens.
+          </p>
+        </div>
+      </div>
+
 
       {choosing ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40">

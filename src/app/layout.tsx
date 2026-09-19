@@ -1,15 +1,16 @@
 import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
+import { TouchActive } from "@/components/TouchActive";
 import "./globals.css";
 
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-jakarta", display: "swap" });
 
 export const metadata: Metadata = {
-  title: "Trial Passport",
+  title: "Mozaic",
   description:
     "Understand what taking part in a cancer trial would involve, and prepare a useful first conversation with a research coordinator.",
   // Launches full-screen from the iPhone home screen, without Safari's chrome.
-  appleWebApp: { capable: true, title: "Trial Passport", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: "Mozaic", statusBarStyle: "default" },
 };
 
 // viewport-fit=cover exposes the safe-area insets, so the bottom navigation
@@ -32,6 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         >
           Skip to content
         </a>
+        <TouchActive />
         {children}
       </body>
     </html>

@@ -181,7 +181,7 @@ const MATCHERS: Matcher[] = [
   // Ordering matters: the first matcher that recognises a criterion decides it.
   // Lab and organ-function checks come first deliberately. A criterion such as
   // "adequate organ function and no evidence of metastatic disease" depends on
-  // test results Trial Passport does not hold, so it must route to staff review
+  // test results Mozaic does not hold, so it must route to staff review
   // even though a later matcher could produce a confident-looking verdict on the
   // half it does recognise.
   {
@@ -193,7 +193,7 @@ const MATCHERS: Matcher[] = [
       return {
         status: "needs_clinical_review",
         rationale:
-          "This criterion depends on laboratory or organ-function test results. Trial Passport does not hold test results and will not estimate them. Screening tests answer this.",
+          "This criterion depends on laboratory or organ-function test results. Mozaic does not hold test results and will not estimate them. Screening tests answer this.",
         usedFactKeys: [],
       };
     },
@@ -560,7 +560,7 @@ export function assessTrial(trial: Trial, profile: ParticipantProfile): TrialAss
       verdict = {
         status: "unknown",
         rationale:
-          "Trial Passport could not check this criterion automatically. The original wording is shown above so you and the study team can read it together.",
+          "Mozaic could not check this criterion automatically. The original wording is shown above so you and the study team can read it together.",
         usedFactKeys: [],
       };
     }

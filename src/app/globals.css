@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /*
- * Trial Passport visual language.
+ * Mozaic visual language.
  *
  * One violet accent on a near-white canvas, navy ink, and four soft tints that
  * each carry one meaning. Colour is never the only carrier of that meaning:
@@ -81,14 +81,80 @@ body {
 }
 .animate-rise { animation: rise 300ms cubic-bezier(0.16, 1, 0.3, 1) both; }
 
-.press { transition: transform 120ms ease, background-color 160ms ease; }
-.press:active { transform: scale(0.98); }
+/*
+ * The rebound. Every control sinks quickly when pressed, then springs back past
+ * its resting size and settles, so a tap always feels acknowledged. It targets
+ * element types rather than a class, so no control can be missed.
+ *
+ * The spring is a linear() easing that overshoots to about 1.75, which turns a
+ * 4.5% press into a visible 3% bounce. A plain overshooting bezier could not:
+ * measured, it peaked at 1.006, which nobody can see. Browsers without linear()
+ * keep the bezier declared first. Only transform animates, and the
+ * reduced-motion rule above makes the change instant.
+ */
+:root {
+  --spring: cubic-bezier(0.34, 1.7, 0.64, 1);
+  --press: 0.955;
+}
+@supports (transition-timing-function: linear(0, 1)) {
+  :root { --spring: linear(0, 0.6 9%, 1.4 20%, 1.75 30%, 1.45 42%, 0.85 56%, 1.12 70%, 0.97 84%, 1); }
+}
+
+button, a[href], summary, [role="button"], [role="checkbox"], label:has(input), label:has(select) {
+  transition: transform 620ms var(--spring), background-color 160ms ease, border-color 160ms ease,
+    color 160ms ease, box-shadow 160ms ease;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+button:active, a[href]:active, summary:active, [role="button"]:active, [role="checkbox"]:active,
+label:has(input):active, label:has(select):active {
+  transform: scale(var(--press));
+  transition-duration: 90ms, 160ms, 160ms, 160ms, 160ms;
+  transition-timing-function: ease-out;
+}
+/* Full-width rows and cards press less, or the whole list appears to lurch. */
+summary, li > a[href], a[href][class*="p-4"], a[href][class*="py-4"], a[href][class*="min-h-16"],
+label:has(input[type="checkbox"]), label:has(textarea), label:has(input:not([type="checkbox"])) { --press: 0.975; }
+/* Typing into a field should not squeeze the field. */
+label:has(input:not([type="checkbox"]):not([type="radio"])):active, label:has(textarea):active { transform: none; }
+/* Inline links in running text cannot be transformed; tint them instead. */
+p a[href]:active { opacity: 0.6; }
+button:disabled:active { transform: none; }
 
 .cta {
   background-image: linear-gradient(180deg, #6f55fc 0%, #5a3ef8 100%);
   box-shadow: 0 8px 20px rgba(94, 68, 251, 0.28);
 }
 .cta:hover { background-image: linear-gradient(180deg, #6248f5 0%, #4a30e0 100%); }
+
+/*
+ * The passport ticket. The notches are real holes cut with a mask, so whatever
+ * is behind the ticket shows through them, as it would with punched card. Each
+ * mask is two half-width layers, one per corner. A drop-shadow filter on the
+ * wrapper follows the cut outline, which a box-shadow would not.
+ */
+.ticket { filter: drop-shadow(0 16px 22px rgba(14, 13, 99, 0.16)); }
+.ticket-top {
+  -webkit-mask:
+    radial-gradient(circle 13px at 0 100%, #0000 97%, #000) 0 0 / 51% 100% no-repeat,
+    radial-gradient(circle 13px at 100% 100%, #0000 97%, #000) 100% 0 / 51% 100% no-repeat;
+  mask:
+    radial-gradient(circle 13px at 0 100%, #0000 97%, #000) 0 0 / 51% 100% no-repeat,
+    radial-gradient(circle 13px at 100% 100%, #0000 97%, #000) 100% 0 / 51% 100% no-repeat;
+}
+.ticket-stub {
+  -webkit-mask:
+    radial-gradient(circle 13px at 0 0, #0000 97%, #000) 0 0 / 51% 100% no-repeat,
+    radial-gradient(circle 13px at 100% 0, #0000 97%, #000) 100% 0 / 51% 100% no-repeat;
+  mask:
+    radial-gradient(circle 13px at 0 0, #0000 97%, #000) 0 0 / 51% 100% no-repeat,
+    radial-gradient(circle 13px at 100% 0, #0000 97%, #000) 100% 0 / 51% 100% no-repeat;
+}
+.ticket-top-fill {
+  background:
+    radial-gradient(120% 90% at 100% 0%, rgba(255, 255, 255, 0.16), transparent 60%),
+    linear-gradient(155deg, #7a62fd 0%, #5235f2 55%, #4326d6 100%);
+}
 
 /* Quoted source text. Deliberately reads as a document, not as interface. */
 .source-quote {

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CaretRight, ChatCircleDots, Heart, MagnifyingGlass, MapPin, Question } from "@phosphor-icons/react/dist/ssr";
+import { CaretRight, ChatCircleDots, Heart, MagnifyingGlass, MapPin, Question, X } from "@phosphor-icons/react/dist/ssr";
 import { AutoSubmitSelect } from "@/components/AutoSubmitSelect";
 import { Card, Empty, Note, Pill, ScreenHeader } from "@/components/ui";
 import { assessTrial } from "@/lib/assess";
@@ -27,13 +27,18 @@ function cardStatus(assessment: TrialAssessment) {
 
 export default async function ExplorePage({
   searchParams,
-}: { searchParams: Promise<{ q?: string; phase?: string; near?: string; sort?: string }> }) {
+}: { searchParams: Promise<{ q?: string; phase?: string; near?: string; sort?: string; cond?: string }> }) {
   const params = await searchParams;
   const participant = await getActiveParticipant();
   const now = requestNow();
   const manifest = getManifest() as { retrievedAt?: string; recordCount?: number } | null;
 
-  const result = searchForProfile(participant, { text: params.q || null, limit: 40 });
+  // The condition chip is a real filter. Turning it off searches every record
+  // in the snapshot rather than only the person's own condition.
+  const anyCondition = params.cond === "any";
+  const result = searchForProfile(participant, {
+    text: params.q || null, limit: 40, ...(anyCondition ? { condition: null } : {}),
+  });
 
   let rows = result.hits.map((hit) => ({ hit, assessment: assessTrial(hit.trial, participant) }));
 
@@ -58,11 +63,11 @@ export default async function ExplorePage({
 
   const total = rows.length;
   rows = rows.slice(0, 12);
-  const demoStudy = !params.q && !params.phase ? getTrial("TP-FIX-001") : null;
+  const demoStudy = !params.q && !params.phase && !anyCondition ? getTrial("TP-FIX-001") : null;
 
   const keep = (extra: Record<string, string>) => {
     const next = new URLSearchParams();
-    for (const [key, value] of Object.entries({ q: params.q, phase: params.phase, near: params.near, sort: params.sort, ...extra })) {
+    for (const [key, value] of Object.entries({ q: params.q, phase: params.phase, near: params.near, sort: params.sort, cond: params.cond, ...extra })) {
       if (value) next.set(key, value);
     }
     const query = next.toString();
@@ -85,9 +90,17 @@ export default async function ExplorePage({
         </label>
 
         <div className="-mx-5 flex items-center gap-2 overflow-x-auto px-5 pb-0.5">
-          <span className="inline-flex min-h-10 shrink-0 items-center rounded-full bg-iris px-3.5 text-[13px] font-semibold text-white">
-            {participant.condition ?? "Any condition"}
-          </span>
+          <Link
+            href={keep({ cond: anyCondition ? "" : "any" })}
+            aria-pressed={!anyCondition}
+            className={`inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-semibold ${
+              anyCondition ? "border border-rule bg-surface text-ink" : "bg-iris text-white"
+            }`}
+          >
+            {anyCondition ? "Any condition" : <>{participant.condition ?? "My condition"} <X size={12} weight="bold" /></>}
+            <span className="sr-only">{anyCondition ? ", tap to search only my condition" : ", tap to search every condition"}</span>
+          </Link>
+          {anyCondition ? <input type="hidden" name="cond" value="any" /> : null}
           <AutoSubmitSelect name="near" label="Location" defaultValue={params.near ?? ""} options={[
             { value: "", label: "Location" }, { value: "50", label: "Within 50 mi" },
             { value: "150", label: "Within 150 mi" }, { value: "state", label: "My state" },

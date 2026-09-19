@@ -11,7 +11,7 @@ import path from "node:path";
  */
 
 const DATA_DIR = path.join(process.cwd(), "data");
-const DB_PATH = process.env.TRIAL_PASSPORT_DB ?? path.join(DATA_DIR, "trial-passport.db");
+const DB_PATH = process.env.MOZAIC_DB ?? path.join(DATA_DIR, "mozaic.db");
 
 let instance: Database.Database | null = null;
 

@@ -1,5 +1,5 @@
 /**
- * Trial Passport evaluation harness.
+ * Mozaic evaluation harness.
  *
  * Checks the acceptance conditions the design document commits to. Everything
  * here runs against the real 300-record registry snapshot and the synthetic
@@ -34,7 +34,7 @@ const allTrialIds = (db.prepare("SELECT id FROM trials").all() as any[]).map((r)
 const allTrials: Trial[] = allTrialIds.map((id) => getTrial(id)!).filter(Boolean);
 const personas = listParticipants();
 
-console.log(`Trial Passport evaluation\ncorpus: ${allTrials.length} trials, ${personas.length} synthetic personas\n`);
+console.log(`Mozaic evaluation\ncorpus: ${allTrials.length} trials, ${personas.length} synthetic personas\n`);
 
 /* ------------------------------------------------------------------ discovery */
 section("1. Discovery");

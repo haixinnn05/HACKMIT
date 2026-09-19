@@ -1,16 +1,33 @@
 /**
- * The Trial Passport mark: two people meeting inside one heart-shaped loop.
- * It is the single hand-drawn vector in the project; every other icon comes
- * from Phosphor so weights stay consistent.
+ * The Mozaic mark: two people joined by one continuous ribbon.
+ *
+ * The artwork is a gradient illustration, so it ships as an image rather than
+ * an inline vector. `white` is a flat silhouette for violet surfaces, where the
+ * colour version loses its contrast. Both are decorative beside a visible name,
+ * so they carry empty alt text; use `label` where the mark stands alone.
  */
-export function PassportMark({ className = "size-8" }: { className?: string }) {
+export function MozaicMark({
+  tone = "color", className = "h-8 w-auto", label,
+}: { tone?: "color" | "white"; className?: string; label?: string }) {
   return (
-    <svg viewBox="0 0 32 32" aria-hidden className={className} fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="11" cy="5" r="2.1" fill="currentColor" stroke="none" />
-      <circle cx="21" cy="5" r="2.1" fill="currentColor" stroke="none" />
-      <path d="M16 27 6.8 18.6a5.6 5.6 0 0 1 7.9-7.9L16 12l1.3-1.3a5.6 5.6 0 0 1 7.9 7.9L20 23.5" />
-      <path d="m12.5 19.5 3.5 3.5 6-7" />
-    </svg>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={tone === "white" ? "/brand/mozaic-mark-white.png" : "/brand/mozaic-mark.png"}
+      alt={label ?? ""} aria-hidden={label ? undefined : true}
+      width={570} height={512} decoding="async" draggable={false}
+      className={`select-none ${className}`}
+    />
+  );
+}
+
+/** Mark and wordmark together, as supplied. */
+export function MozaicLockup({ className = "h-7 w-auto" }: { className?: string }) {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/brand/mozaic-lockup.png" alt="Mozaic" width={863} height={240}
+      decoding="async" draggable={false} className={`select-none ${className}`}
+    />
   );
 }
 

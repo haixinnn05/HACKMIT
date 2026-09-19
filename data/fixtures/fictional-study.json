@@ -3,7 +3,7 @@
   "studyId": "TP-FIX-001",
   "isFictional": true,
   "briefTitle": "SIMULATED: Harborview Adjuvant Endocrine Therapy Adherence Study",
-  "officialTitle": "SIMULATED STUDY FIXTURE, A Demonstration Protocol Used Only to Exercise Trial Passport's Participation Preview and Coordinator Workflow",
+  "officialTitle": "SIMULATED STUDY FIXTURE, A Demonstration Protocol Used Only to Exercise Mozaic's Participation Preview and Coordinator Workflow",
   "leadSponsor": "Harborview Community Oncology Network (fictional)",
   "overallStatus": "RECRUITING",
   "phases": ["PHASE2"],
@@ -33,7 +33,7 @@
   "visitSchedule": {
     "provenance": "site_confirmed_fictional",
     "confirmedOn": "2026-09-02",
-    "notes": "Durations are scheduled clinic time only. Waiting time, unscheduled procedures and travel delays are excluded from the totals Trial Passport calculates.",
+    "notes": "Durations are scheduled clinic time only. Waiting time, unscheduled procedures and travel delays are excluded from the totals Mozaic calculates.",
     "visits": [
       { "name": "Screening visit", "weekOffset": 0, "onSiteHours": 2, "procedures": ["Consent discussion", "Blood draw", "Questionnaire"] },
       { "name": "Baseline visit", "weekOffset": 2, "onSiteHours": 2, "procedures": ["Blood draw", "Questionnaire", "Study app setup"] },
