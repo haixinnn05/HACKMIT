@@ -11,7 +11,8 @@
     "evaluate": "tsx scripts/evaluate.mts",
     "journey": "node scripts/journey.mjs",
     "reset": "rm -f data/trial-passport.db*",
-    "capture": "node scripts/capture.mjs"
+    "capture": "node scripts/capture.mjs",
+    "phone": "node scripts/phone.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.127.0",
