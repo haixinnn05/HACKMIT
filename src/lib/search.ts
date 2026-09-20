@@ -1,5 +1,5 @@
 import { getDb } from "./db";
-import { elasticConfigured, elasticRankings } from "./elastic";
+import { elasticConfigured, elasticRankings, elasticReady } from "./elastic";
 import { getTrials } from "./repo";
 import type { ParticipantProfile, Trial } from "./types";
 
@@ -229,7 +229,7 @@ export function search(filters: SearchFilters): SearchResult {
  */
 export async function searchAsync(filters: SearchFilters): Promise<SearchResult> {
   const started = Date.now();
-  if (elasticConfigured()) {
+  if (elasticConfigured() && elasticReady(getDb())) {
     const terms = queryTerms(queryTextOf(filters));
     try {
       const rankings = terms.length ? await elasticRankings(terms, poolSizeOf(filters)) : { trialRanking: [], criterionRanking: [] };

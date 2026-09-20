@@ -189,3 +189,44 @@ export async function syncStudy(db: Database.Database, id: string): Promise<void
     console.warn("[search] could not sync study to Elasticsearch; SQLite remains correct:", error);
   }
 }
+
+/* ------------------------------------------------------------ self-loading */
+
+let ready = false;
+let loading: Promise<void> | null = null;
+let retryAfter = 0;
+
+/**
+ * True once the index is known to hold what the database holds.
+ *
+ * A host only has to be given a URL and a key: the first search after start
+ * checks the index and, if it is missing, empty or behind, loads it from the
+ * database the app is already running on. That happens in the background, and
+ * until it has finished the caller is told "not ready" and searches SQLite, so
+ * nobody is ever shown results from a half-filled index.
+ */
+export function elasticReady(db: Database.Database): boolean {
+  if (ready) return true;
+  if (!elasticConfigured() || loading || Date.now() < retryAfter) return false;
+  loading = (async () => {
+    try {
+      await ensureIndices(false);
+      const count = async (index: string) => (await elasticRequest("GET", `/${index}/_count`, undefined, 10000)).count as number;
+      const want = (sql: string) => (db.prepare(sql).get() as { c: number }).c;
+      const [trials, passages] = await Promise.all([count(TRIALS_INDEX), count(PASSAGES_INDEX)]);
+      if (trials < want("SELECT COUNT(*) c FROM trials") || passages < want("SELECT COUNT(*) c FROM criteria")) {
+        const started = Date.now();
+        const sent = await indexAll(db, false);
+        console.log(`[search] loaded Elasticsearch: ${sent.trials} studies, ${sent.passages} passages in ${((Date.now() - started) / 1000).toFixed(1)}s`);
+      }
+      ready = true;
+    } catch (error) {
+      // Try again in a minute rather than on every request.
+      retryAfter = Date.now() + 60_000;
+      console.warn("[search] Elasticsearch is not ready; using SQLite FTS5:", error instanceof Error ? error.message : error);
+    } finally {
+      loading = null;
+    }
+  })();
+  return false;
+}

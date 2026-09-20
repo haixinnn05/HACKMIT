@@ -15,7 +15,7 @@ for (const line of existsSync(".env.local") ? readFileSync(".env.local", "utf8")
   if (match && process.env[match[1]] === undefined) process.env[match[1]] = match[2].replace(/^["']|["']$/g, "");
 }
 const { getDb } = await import("../src/lib/db");
-const { elasticConfigured, elasticRequest, indexAll, PASSAGES_INDEX, TRIALS_INDEX } = await import("../src/lib/elastic");
+const { elasticConfigured, elasticReady, elasticRequest, indexAll, PASSAGES_INDEX, TRIALS_INDEX } = await import("../src/lib/elastic");
 const { search, searchAsync } = await import("../src/lib/search");
 
 if (!elasticConfigured()) {
@@ -33,6 +33,7 @@ if (!process.argv.includes("--check")) {
   console.log(`\n  Indexed ${sent.trials} studies and ${sent.passages} passages into ${host} in ${((Date.now() - started) / 1000).toFixed(1)}s\n`);
 }
 
+for (let i = 0; i < 120 && !elasticReady(db); i++) await new Promise((r) => setTimeout(r, 500));
 const count = async (index: string) => (await elasticRequest("GET", `/${index}/_count`, undefined, 10000)).count as number;
 const inDb = (sql: string) => (db.prepare(sql).get() as { c: number }).c;
 check("every study in the database is in the index", (await count(TRIALS_INDEX)) === inDb("SELECT COUNT(*) c FROM trials"), `${await count(TRIALS_INDEX)} of ${inDb("SELECT COUNT(*) c FROM trials")}`);

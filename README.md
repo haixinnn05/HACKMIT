@@ -330,8 +330,10 @@ semantic ranking is added.
 Set `ELASTICSEARCH_URL` (with `ELASTICSEARCH_API_KEY`, or a username and password)
 and Elasticsearch produces those two rankings instead of SQLite. Fusion, filters
 and explanations are shared code, so results are judged the same way whichever
-backend answered. Run `npm run es:index` once to load it; the command then verifies
-what it loaded.
+backend answered. There is nothing to run: the first search after start checks the
+index and, if it is missing, empty or behind the database, loads it in the
+background. Until that finishes, searches run on SQLite, so nobody sees results from
+a half-filled index. `npm run es:index` rebuilds it by hand and verifies it.
 
 - **Two indices.** `mozaic-trials` holds one document per public registry record.
   `mozaic-passages` holds one per eligibility criterion: a passage of the public
