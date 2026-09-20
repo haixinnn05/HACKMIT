@@ -2,14 +2,14 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import {
-  ArrowSquareOut, CaretLeft, CaretRight, Check, Heart, Minus,
+  ArrowSquareOut, CaretLeft, CaretRight, Check, Heart, Minus, Sparkle,
 } from "@phosphor-icons/react/dist/ssr";
 import { OpenAlexResearch, OpenAlexResearchSkeleton } from "@/components/OpenAlexResearch";
 import { Hills } from "@/components/Brand";
 import {
-  Card, DataAge, LinkButton, SectionHeading, StickyAction, Tabs,
+  Card, DataAge, LinkButton, MenuRow, SectionHeading, StickyAction, Tabs,
 } from "@/components/ui";
-import { AI_METADATA, answerFromSources, composeOfflineBrief, generateTrialBrief } from "@/lib/ai";
+import { AI_METADATA, answerFromSources, cachedTrialBrief, composeOfflineBrief, generateTrialBrief, type TrialBrief } from "@/lib/ai";
 import { assessTrial } from "@/lib/assess";
 import { computeBurden } from "@/lib/burden";
 import { requestNow } from "@/lib/clock";
@@ -26,9 +26,12 @@ const KM_PER_MILE = 1.609;
 
 export default async function TrialPage({
   params, searchParams,
-}: { params: Promise<{ id: string }>; searchParams: Promise<{ tab?: string; ask?: string; from?: string; visits?: string; travel?: string }> }) {
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string; ask?: string; from?: string; visits?: string; travel?: string; plain?: string }>;
+}) {
   const { id } = await params;
-  const { tab: rawTab, ask, from, visits, travel } = await searchParams;
+  const { tab: rawTab, ask, from, visits, travel, plain } = await searchParams;
   const tab = rawTab === "eligibility" || rawTab === "expect" || rawTab === "insight" ? rawTab : "overview";
 
   const trial = getTrial(decodeURIComponent(id));
@@ -115,7 +118,7 @@ export default async function TrialPage({
         ]}
       />
 
-      {tab === "overview" ? <Overview trial={trial} assessment={assessment} nearestCity={site?.city ?? null} now={now} ask={ask?.slice(0, 200) ?? null} /> : null}
+      {tab === "overview" ? <Overview trial={trial} assessment={assessment} nearestCity={site?.city ?? null} now={now} ask={ask?.slice(0, 200) ?? null} plain={plain === "1"} /> : null}
       {tab === "eligibility" ? <Eligibility assessment={assessment} /> : null}
       {tab === "expect" ? <Expect trial={trial} burden={burden} miles={miles} /> : null}
       {tab === "insight" ? (
@@ -123,6 +126,11 @@ export default async function TrialPage({
           <OpenAlexResearch trial={trial} />
         </Suspense>
       ) : null}
+
+      <Card className="overflow-hidden [&>a]:border-b [&>a]:border-rule [&>a:last-child]:border-0">
+        <MenuRow href={`/apply/${trial.id}`} title="Application form" />
+        <MenuRow href={`/peers?trial=${trial.id}`} title="Talk with someone weighing this too" />
+      </Card>
 
       <StickyAction>
         {enrollment?.status === "participating" ? (
@@ -149,14 +157,14 @@ export default async function TrialPage({
 }
 
 async function Overview({
-  trial: t, assessment, nearestCity, now, ask,
-}: { trial: Trial; assessment: TrialAssessment; nearestCity: string | null; now: number; ask: string | null }) {
-  const reply = ask?.trim() ? await answerFromSources(t, ask.trim()) : null;
-  // The brief degrades rather than blocks: with no model configured the same
-  // shape is assembled deterministically from the record itself.
-  const brief = AI_METADATA.configured
-    ? await generateTrialBrief(t, assessment).catch(() => composeOfflineBrief(t, assessment))
-    : composeOfflineBrief(t, assessment);
+  trial: t, assessment, nearestCity, now, ask, plain,
+}: { trial: Trial; assessment: TrialAssessment; nearestCity: string | null; now: number; ask: string | null; plain: boolean }) {
+  // The rule-built brief is instant and always available. It is what the page
+  // shows first, and what it keeps showing if the model is slow or fails.
+  const instant = composeOfflineBrief(t, assessment);
+  // A model-written brief is shown by itself only when it already exists. Writing
+  // a new one takes up to a minute and costs money, so that waits for a tap.
+  const ready = AI_METADATA.configured ? await cachedTrialBrief(t, assessment) : null;
 
   const facts = [
     { label: "Condition", value: t.conditions.slice(0, 2).join(", ") || "Not stated" },
@@ -167,27 +175,22 @@ async function Overview({
 
   return (
     <section className="space-y-4">
-      <div>
-        <SectionHeading>Study summary</SectionHeading>
-        <p className="line-clamp-4 text-[13px] leading-relaxed text-ink-soft">{brief.purpose}</p>
-        <details className="group mt-1">
-          <summary className="flex min-h-11 cursor-pointer list-none items-center justify-center gap-1 text-[12.5px] font-bold text-ink">
-            Show more <CaretRight size={12} weight="bold" className="rotate-90 transition-transform group-open:-rotate-90" />
-          </summary>
-          <div className="space-y-3 pb-1">
-            <p className="text-[13px] leading-relaxed text-ink-soft">{brief.purpose}</p>
-            <p className="text-[13px] leading-relaxed text-ink-soft">{brief.whatParticipationInvolves}</p>
-            {brief.claims.map((claim, index) => (
-              <div key={index} className="rounded-[16px] border border-rule p-3.5">
-                <p className="text-[13px] font-bold text-ink">{claim.claim}</p>
-                {claim.interpretation ? (
-                  <p className="mt-0.5 text-[12.5px] leading-relaxed text-ink-soft">{claim.interpretation}</p>
-                ) : null}
-                <blockquote className="source-quote mt-2">{claim.supportingSpan}</blockquote>
-              </div>
-            ))}
-          </div>
-        </details>
+      <div id="summary" className="scroll-mt-6">
+        {ready ? <BriefView brief={ready} /> : plain && AI_METADATA.configured ? (
+          <Suspense fallback={<BriefView brief={instant} writing />}>
+            <ModelBrief trial={t} assessment={assessment} instant={instant} />
+          </Suspense>
+        ) : (
+          <>
+            <BriefView brief={instant} />
+            {AI_METADATA.configured ? (
+              <Link href={`/trial/${t.id}?plain=1#summary`} scroll={false}
+                className="mt-1 flex min-h-12 items-center justify-center gap-2 rounded-full border border-iris bg-iris-soft text-[13.5px] font-bold text-iris-deep hover:bg-iris hover:text-white">
+                <Sparkle size={16} weight="fill" /> Explain this in plain language
+              </Link>
+            ) : null}
+          </>
+        )}
       </div>
 
       <Card className="px-4">
@@ -210,35 +213,85 @@ async function Overview({
           <button type="submit" className="press min-h-12 shrink-0 rounded-full border border-iris bg-iris-soft px-5 text-[13.5px] font-bold text-iris-deep hover:bg-iris hover:text-white">Ask</button>
         </form>
 
-        {reply ? (
-          <Card className="animate-rise mt-2.5 p-4" >
-            <p className="text-[12px] font-bold text-ink-soft">&ldquo;{ask}&rdquo;</p>
-            <p className="mt-1 text-[13.5px] font-semibold leading-relaxed text-ink">{reply.answer}</p>
-            {reply.supportingSpan ? (
-              <blockquote className="source-quote mt-2">{reply.supportingSpan}</blockquote>
-            ) : null}
-            <p className="mt-2 text-[11.5px] leading-relaxed text-ink-faint">{reply.uncertainty}</p>
-            <form action={addQuestionAction} className="mt-3">
-              <input type="hidden" name="trialId" value={t.id} />
-              <input type="hidden" name="text" value={ask ?? ""} />
-              <input type="hidden" name="returnTo" value={`/questions?trial=${t.id}`} />
-              <button type="submit" className={`press min-h-11 w-full rounded-full text-[13px] font-bold ${reply.answered ? "border border-rule-strong bg-surface text-ink hover:bg-sunken" : "cta text-white"}`}>
-                Save this question
-              </button>
-            </form>
-          </Card>
+        {ask?.trim() ? (
+          <Suspense key={ask} fallback={
+            <Card className="mt-2.5 space-y-2 p-4" >
+              <p className="text-[12px] font-bold text-ink-soft">&ldquo;{ask}&rdquo;</p>
+              <p className="text-[13px] text-ink-soft">Reading this study&rsquo;s record&hellip;</p>
+              <div className="h-3 w-11/12 animate-pulse rounded-full bg-sunken" /><div className="h-3 w-2/3 animate-pulse rounded-full bg-sunken" />
+            </Card>
+          }>
+            <AskAnswer trial={t} ask={ask.trim()} />
+          </Suspense>
         ) : null}
       </section>
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         <DataAge date={t.lastUpdatePostDate} now={now} />
         {t.sourceUrl && !t.isFictional ? (
-          <a href={t.sourceUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center gap-1 text-[12.5px] font-bold text-iris hover:underline">
+          <a href={t.sourceUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center justify-center gap-1 text-[12.5px] font-bold text-iris hover:underline">
             ClinicalTrials.gov record <ArrowSquareOut size={14} />
           </a>
         ) : null}
       </div>
     </section>
+  );
+}
+
+/** The model-written brief. If it fails or is slow, the instant one simply stays. */
+async function ModelBrief({ trial, assessment, instant }: { trial: Trial; assessment: TrialAssessment; instant: TrialBrief }) {
+  const brief = await generateTrialBrief(trial, assessment).catch(() => instant);
+  return <BriefView brief={brief} />;
+}
+
+function BriefView({ brief, writing = false }: { brief: TrialBrief; writing?: boolean }) {
+  return (
+    <div>
+      <SectionHeading trailing={writing ? "Writing a plain-language version" : undefined}>Study summary</SectionHeading>
+      <p className="line-clamp-4 text-[13px] leading-relaxed text-ink-soft">{brief.purpose}</p>
+      <details className="group mt-1">
+        <summary className="flex min-h-11 cursor-pointer list-none items-center justify-center gap-1 text-[12.5px] font-bold text-ink">
+          Show more <CaretRight size={12} weight="bold" className="rotate-90 transition-transform group-open:-rotate-90" />
+        </summary>
+        <div className="space-y-3 pb-1">
+          <p className="text-[13px] leading-relaxed text-ink-soft">{brief.purpose}</p>
+          <p className="text-[13px] leading-relaxed text-ink-soft">{brief.whatParticipationInvolves}</p>
+          {brief.claims.map((claim, index) => (
+            <div key={index} className="rounded-[16px] border border-rule p-3.5">
+              <p className="text-[13px] font-bold text-ink">{claim.claim}</p>
+              {claim.interpretation ? (
+                <p className="mt-0.5 text-[12.5px] leading-relaxed text-ink-soft">{claim.interpretation}</p>
+              ) : null}
+              <blockquote className="source-quote mt-2">{claim.supportingSpan}</blockquote>
+            </div>
+          ))}
+        </div>
+      </details>
+    </div>
+  );
+}
+
+async function AskAnswer({ trial, ask }: { trial: Trial; ask: string }) {
+  const reply = await answerFromSources(trial, ask);
+  return (
+    <Card className="animate-rise mt-2.5 p-4" >
+      <p className="text-[12px] font-bold text-ink-soft">&ldquo;{ask}&rdquo;</p>
+      <p className="mt-1 text-[13.5px] font-semibold leading-relaxed text-ink">{reply.answer}</p>
+      {reply.supportingSpan ? (
+        <blockquote className="source-quote mt-2">{reply.supportingSpan}</blockquote>
+      ) : null}
+      {reply.uncertainty ? (
+        <p className="mt-2 text-[11.5px] leading-relaxed text-ink-faint">{reply.uncertainty}</p>
+      ) : null}
+      <form action={addQuestionAction} className="mt-3">
+        <input type="hidden" name="trialId" value={trial.id} />
+        <input type="hidden" name="text" value={ask} />
+        <input type="hidden" name="returnTo" value={`/questions?trial=${trial.id}`} />
+        <button type="submit" className={`press min-h-11 w-full rounded-full text-[13px] font-bold ${reply.answered ? "border border-rule-strong bg-surface text-ink hover:bg-sunken" : "cta text-white"}`}>
+          Save this question
+        </button>
+      </form>
+    </Card>
   );
 }
 

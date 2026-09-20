@@ -3,6 +3,7 @@ import Link from "next/link";
 import { PersonaSwitcher } from "@/components/PersonaSwitcher";
 import { Avatar, Card, MenuRow, ScreenHeader } from "@/components/ui";
 import { getPersonalNote, listParticipants, listQuestions, listSavedTrialIds } from "@/lib/repo";
+import { getPeerOptIn } from "@/lib/peer-repo";
 import { getActiveParticipant } from "@/lib/session";
 import { chooseRoleAction, resetDemoAction } from "@/app/actions";
 import { isAnswered } from "@/lib/questions";
@@ -17,6 +18,7 @@ export default async function ProfilePage() {
   const open = listQuestions({ participantId: participant.id }).filter((q) => !isAnswered(q)).length;
   const saved = listSavedTrialIds(participant.id).length;
   const note = getPersonalNote(participant.id);
+  const peerOn = Boolean(getPeerOptIn(participant.id));
 
   return (
     <div className="space-y-5">
@@ -57,6 +59,7 @@ export default async function ProfilePage() {
         <MenuRow href="/passport" title="My Trial Passport" />
         <MenuRow href="/profile/edit" title="Personal Information" />
         <MenuRow href="/questions" title="Saved Questions" sub={open ? `${open} waiting` : undefined} />
+        <MenuRow href="/peers" title="Talk with someone like you" sub={peerOn ? "Matching is on" : undefined} />
         <MenuRow href="/timeline" title="Visits & Timeline" />
         <MenuRow href="/passport#access" title="Privacy & Security" />
         <MenuRow href="/profile/saved" title="Past / Saved Trials" sub={saved ? `${saved} saved` : undefined} />

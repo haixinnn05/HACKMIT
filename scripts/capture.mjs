@@ -13,7 +13,7 @@ mkdirSync(OUT, { recursive: true });
 const browser = await chromium.launch();
 const context = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
 const page = await context.newPage();
-const go = (path) => page.goto(`${BASE}${path}`, { waitUntil: "networkidle" });
+const go = async (path) => { await page.goto(`${BASE}${path}`, { waitUntil: "domcontentloaded" }); await page.waitForLoadState("networkidle", { timeout: 3500 }).catch(() => {}); };
 const snap = (n, target = page) => target.screenshot({ path: `${OUT}/${String(n).padStart(2, "0")}.png` });
 
 await page.request.post(`${BASE}/api/reset`);
@@ -61,7 +61,7 @@ await go("/questions"); await snap(5);
 await go("/inbox"); await snap(9);
 await go("/profile"); await snap(10);
 
-await page.goto(inquiryUrl, { waitUntil: "networkidle" });
+await page.goto(inquiryUrl, { waitUntil: "domcontentloaded" });
 await page.click('button:has-text("I have agreed to take part")');
 await page.waitForURL(/\/timeline/);
 await page.waitForLoadState("networkidle");
@@ -81,7 +81,7 @@ await page.evaluate(() => window.scrollTo(0, 0));
 await snap(6);
 
 const scanner = await context.newPage();
-await scanner.goto(url, { waitUntil: "networkidle" });
+await scanner.goto(url, { waitUntil: "domcontentloaded" });
 await snap(7, scanner);
 
 await browser.close();

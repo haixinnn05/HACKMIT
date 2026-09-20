@@ -56,44 +56,42 @@
       "topicId": "T10183"
     },
     {
-      "id": "https://openalex.org/W2171958606",
-      "title": "Neoadjuvant Versus Adjuvant Systemic Treatment in Breast Cancer: A Meta-Analysis",
-      "publicationYear": 2005,
-      "publicationDate": "2005-02-01",
-      "citedByCount": 1218,
+      "id": "https://openalex.org/W2214665719",
+      "title": "Aromatase inhibitors versus tamoxifen in early breast cancer: patient-level meta-analysis of the randomised trials",
+      "publicationYear": 2015,
+      "publicationDate": "2015-07-23",
+      "citedByCount": 1551,
       "authors": [
-        "Davide Mauri",
-        "N. Pavlidis",
-        "John P. A. Ioannidis"
+        "†"
       ],
-      "venue": "JNCI Journal of the National Cancer Institute",
-      "doiUrl": "https://doi.org/10.1093/jnci/dji021",
-      "isOpenAccess": false,
-      "openAccessUrl": null,
+      "venue": "The Lancet",
+      "doiUrl": "https://doi.org/10.1016/s0140-6736(15)61074-1",
+      "isOpenAccess": true,
+      "openAccessUrl": "http://www.thelancet.com/article/S0140673615610741/pdf",
       "isReview": true,
-      "abstractExcerpt": "Interest in the use of preoperative systemic treatment in the management of breast cancer has increased because such neoadjuvant therapy appears to reduce the extent of local surgery required.",
-      "topicId": "T10183"
+      "abstractExcerpt": "The optimal ways of using aromatase inhibitors or tamoxifen as endocrine treatment for early breast cancer remains uncertain.",
+      "topicId": "T10756"
     }
   ],
   "topic": {
-    "id": "T10183",
-    "name": "Breast Cancer Treatment Studies",
-    "description": "This cluster of papers focuses on molecular research, treatment response, and prognostic markers in breast cancer. It covers topics such as gene expression patterns, molecular subtypes, neoadjuvant therapy, radiotherapy, and the impact of hormone receptors on survival. The papers also discuss the development of clinical practice guidelines for breast cancer management.",
+    "id": "T10756",
+    "name": "Estrogen and related hormone effects",
+    "description": "This cluster of papers explores the mechanisms of estrogen receptor signaling, with a focus on its role in breast cancer, interactions with glucocorticoids, and the effects of various drugs such as tamoxifen and aromatase inhibitors. It delves into the molecular pathways, gene regulation, and coactivator/coregulator dynamics involved in estrogen signaling.",
     "keywords": [
-      "Gene Expression",
-      "Breast Tumours",
-      "Treatment Response",
-      "Molecular Subtypes",
-      "Prognostic Markers",
-      "Neoadjuvant Therapy",
-      "Radiotherapy",
-      "Hormone Receptors"
+      "Estrogen",
+      "Receptor",
+      "Signaling",
+      "Breast Cancer",
+      "Glucocorticoids",
+      "Nuclear Receptors",
+      "Tamoxifen",
+      "Aromatase Inhibitors"
     ],
     "field": "Biochemistry, Genetics and Molecular Biology",
-    "worksCount": 119994
+    "worksCount": 121919
   },
   "query": "Breast Cancer",
   "matchKind": "topic",
-  "fetchedAt": "2026-09-19T23:37:08.548Z",
+  "fetchedAt": "2026-09-20T00:29:23.927Z",
   "fromSnapshot": false
 }

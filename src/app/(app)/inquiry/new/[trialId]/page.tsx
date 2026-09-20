@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
 import { CountedTextarea, PrintButton } from "@/components/CountedTextarea";
-import { Card, ScreenHeader, StickyAction } from "@/components/ui";
+import { Card, MenuRow, ScreenHeader, StickyAction } from "@/components/ui";
 import { getInquiryForTrial, getTrial, listQuestions } from "@/lib/repo";
 import { getActiveParticipant } from "@/lib/session";
 import { buildDraft, shareInquiryAction } from "@/app/actions";
@@ -44,6 +44,10 @@ export default async function NewInquiryPage({ params }: { params: Promise<{ tri
         back={`/trial/${trial.id}`}
         title="Review Your Inquiry"
       />
+
+      <Card className="overflow-hidden">
+        <MenuRow href={`/apply/${trial.id}`} title="Fill in the application form" />
+      </Card>
 
       <form action={shareInquiryAction} className="space-y-4">
         <input type="hidden" name="trialId" value={trial.id} />

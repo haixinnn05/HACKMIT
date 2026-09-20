@@ -15,7 +15,7 @@ const BASE = process.env.BASE_URL ?? "http://localhost:3000";
 const browser = await chromium.launch();
 const context = await browser.newContext({ ...devices["iPhone 14 Pro"] });
 const page = await context.newPage();
-const go = (path) => page.goto(`${BASE}${path}`, { waitUntil: "networkidle" });
+const go = async (path) => { await page.goto(`${BASE}${path}`, { waitUntil: "domcontentloaded" }); await page.waitForLoadState("networkidle", { timeout: 3500 }).catch(() => {}); };
 
 // Populate: saved trial, questions, a shared and answered inquiry, a decision.
 await page.request.post(`${BASE}/api/reset`);
@@ -44,7 +44,7 @@ const screens = [
   "/", "/explore", "/trial/TP-FIX-001", "/trial/TP-FIX-001?tab=eligibility", "/trial/TP-FIX-001?tab=expect", "/trial/TP-FIX-001?tab=insight",
   "/trial/TP-FIX-001/preview", "/trial/NCT06185205", "/questions", "/questions?add=1", "/passport",
   "/inquiry/new/TP-FIX-001", "/inbox", inquiryPath, "/profile", "/profile/edit", "/profile/saved",
-  "/clinic", "/clinic/inbox", coordinatorPath, "/clinic/patients", "/clinic/scan", "/clinic/studies", "/clinic/activity", "/welcome", "/timeline", "/timeline?view=calendar", "/about", "/access-gaps",
+  "/clinic", "/clinic/inbox", coordinatorPath, "/clinic/patients", "/clinic/scan", "/clinic/studies", "/clinic/activity", "/welcome", "/apply/TP-FIX-001", "/peers", "/peers/settings", "/timeline", "/timeline?view=calendar", "/about", "/access-gaps",
 ];
 
 const problems = [];

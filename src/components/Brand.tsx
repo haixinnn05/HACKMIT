@@ -48,3 +48,33 @@ export function Hills({ className = "" }: { className?: string }) {
     </svg>
   );
 }
+
+/**
+ * A mountain range along the bottom edge of the passport ticket, echoing the
+ * hills in the screen headers. It is tonal, not coloured: lighter and darker
+ * violets only, so it reads as texture and the white text above it stays the
+ * brightest thing on the ticket. The peaks rise toward the right, where the
+ * ticket is empty, and stay low under the holder's details on the left.
+ */
+export function TicketRange() {
+  return (
+    <svg
+      viewBox="0 0 400 96" preserveAspectRatio="none" aria-hidden
+      className="pointer-events-none absolute inset-x-0 bottom-0 h-24 w-full"
+    >
+      <defs>
+        <linearGradient id="ticket-haze" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#ffffff" stopOpacity="0.20" />
+          <stop offset="1" stopColor="#ffffff" stopOpacity="0.04" />
+        </linearGradient>
+      </defs>
+      <circle cx="352" cy="26" r="12" fill="#ffffff" opacity="0.16" />
+      {/* far range */}
+      <path d="M0 96V84l40-6 44 5 46-9 44 6 46-10 40 6 34-34 30 22 28-20 26 18 22-8v46z" fill="url(#ticket-haze)" />
+      {/* middle range */}
+      <path d="M0 96v-7l52-5 50 4 56-7 52 5 50-8 34-24 32 20 30-14 44 16v20z" fill="#ffffff" opacity="0.10" />
+      {/* near range, darker than the ticket so the scene has depth */}
+      <path d="M0 96v-5l70-4 66 3 72-5 62 3 46-14 40 12 44-8v18z" fill="#2a1596" opacity="0.38" />
+    </svg>
+  );
+}

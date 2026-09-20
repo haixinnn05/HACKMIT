@@ -6,10 +6,10 @@ import { ChatCircle, ClipboardText, House, QrCode, User } from "@phosphor-icons/
 
 const ITEMS = [
   { href: "/", label: "Home", Icon: House, match: ["/"] },
-  { href: "/explore", label: "Trials", Icon: ClipboardText, match: ["/explore", "/trial"] },
+  { href: "/explore", label: "Trials", Icon: ClipboardText, match: ["/explore", "/trial", "/apply"] },
   { href: "/passport", label: "Passport", Icon: QrCode, match: ["/passport"], centre: true },
   { href: "/inbox", label: "Inbox", Icon: ChatCircle, match: ["/inbox", "/inquiry"] },
-  { href: "/profile", label: "Profile", Icon: User, match: ["/profile", "/questions", "/about", "/access-gaps"] },
+  { href: "/profile", label: "Profile", Icon: User, match: ["/profile", "/questions", "/peers", "/about", "/access-gaps"] },
 ];
 
 /**

@@ -43,6 +43,7 @@ export default async function CoordinatorInquiryPage({ params }: { params: Promi
 
   const allowed = new Set(grant!.allowedFields);
   const shared = inquiry.sharedFields as Record<string, unknown>;
+  const application = Array.isArray(shared.application) ? shared.application as { id: string; label: string; value: string; origin: string }[] : [];
   const name = allowed.has("basics") ? participant.displayName.replace(/\s*\(synthetic\)$/, "") : "Participant";
   const assessment = assessTrial(trial, participant);
   const questions = listQuestions({ inquiryId: inquiry.id });
@@ -119,11 +120,23 @@ export default async function CoordinatorInquiryPage({ params }: { params: Promi
         <SectionHeading>Shared information</SectionHeading>
         <Card className="px-4">
           <dl>
-            {Object.entries(shared).map(([key, value]) => (
+            {Object.entries(shared).filter(([key, value]) => key !== "application" && value != null).map(([key, value]) => (
               <DataRow key={key} label={humanize(key)} value={renderValue(value)} />
             ))}
           </dl>
         </Card>
+        {application.length ? (
+          <Card className="mt-2.5 px-4">
+            <p className="border-b border-rule py-3 text-[13.5px] font-bold text-ink">Application answers ({application.length})</p>
+            {application.map((answer) => (
+              <div key={answer.id} className="border-b border-rule py-2.5 last:border-0">
+                <p className="text-[12px] text-ink-soft">{answer.label}</p>
+                <p className="text-[13.5px] font-semibold text-ink">{answer.value}</p>
+                <p className="text-[11px] text-ink-faint">{answer.origin}, self-reported</p>
+              </div>
+            ))}
+          </Card>
+        ) : null}
         {!allowed.has("contact") ? (
           <p className="mt-2 text-[12px] text-ink-faint">Contact details not shared.</p>
         ) : null}

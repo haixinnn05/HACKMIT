@@ -30,7 +30,7 @@ for (const file of all) {
   let text;
   try { text = readFileSync(file, "utf8"); } catch { continue; }
   for (const secret of secrets) if (text.includes(secret.value)) leaks.push(`${file} contains the value of ${secret.name}`);
-  if (/\b(sk-[A-Za-z0-9_-]{20,}|sk-ant-[A-Za-z0-9_-]{20,}|AKIA[0-9A-Z]{16}|LLM_\d{8,}_[A-Za-z0-9]{16,})\b/.test(text)) leaks.push(`${file} contains something shaped like an API key`);
+  if (/\b(sk-[A-Za-z0-9_-]{20,}|sk-ant-[A-Za-z0-9_-]{20,}|AKIA[0-9A-Z]{16}|LLM[|_]\d{8,}[|_][A-Za-z0-9_-]{16,})\b/.test(text)) leaks.push(`${file} contains something shaped like an API key`);
 }
 
 if (leaks.length) {

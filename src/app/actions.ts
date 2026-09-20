@@ -11,6 +11,8 @@ import { assessTrial } from "@/lib/assess";
 import { computeBurden } from "@/lib/burden";
 import { draftInquiry } from "@/lib/ai";
 import { getActiveParticipant, setRole, STAFF } from "@/lib/session";
+import { autofill, formFor } from "@/lib/application";
+import { getFictionalFixture } from "@/lib/db";
 import type { ClinicalFact } from "@/lib/types";
 
 /* Server actions. Every outbound or state-changing step is an explicit user
@@ -406,4 +408,143 @@ export async function deleteSavedReplyAction(formData: FormData) {
   deleteSavedReply(String(formData.get("replyId")));
   audit(STAFF.id, "reply.deleted", String(formData.get("replyId")));
   revalidatePath("/clinic/studies");
+}
+
+/* --------------------------------------------------------------- application */
+
+/**
+ * Submits a study's application form.
+ *
+ * Only what is in the submitted form is shared, so every value was on screen and
+ * editable first. Blank fields are dropped rather than sent as empty. Contact
+ * details go only if the person ticked them. Each answer keeps a note of whether
+ * it came from the passport or was typed here, which the coordinator can see.
+ */
+export async function submitApplicationAction(formData: FormData) {
+  const participant = await getActiveParticipant();
+  const trialId = String(formData.get("trialId"));
+  const trial = getTrial(trialId);
+  if (!trial) return;
+
+  const form = formFor(trial, getFictionalFixture()?.applicationForm);
+  const filled = autofill(participant, form);
+  const includeContact = formData.get("includeContact") === "on";
+
+  const answers = filled
+    .filter((field) => field.section !== "Contact" || includeContact)
+    .map((field) => {
+      const value = String(formData.get(`f_${field.id}`) ?? "").trim().slice(0, 600);
+      return { id: field.id, label: field.label, value, section: field.section,
+        origin: value && value === field.value ? "from passport" : "typed on the form" };
+    })
+    .filter((answer) => answer.value !== "");
+
+  // Reusable information: new answers can flow back so the next form is fuller.
+  if (formData.get("saveBack") === "on") {
+    const facts = participant.clinicalFacts.map((fact) => {
+      const field = filled.find((f) => f.source === `fact:${fact.key}`);
+      const typed = field ? String(formData.get(`f_${field.id}`) ?? "").trim() : "";
+      return typed && typed !== fact.value ? { ...fact, value: typed, provenance: "self_reported" as const } : fact;
+    });
+    const minutes = Number(formData.get("f_travel_minutes"));
+    updateParticipant(participant.id, {
+      clinicalFacts: facts,
+      oneWayTravelMinutes: Number.isFinite(minutes) && minutes > 0 ? minutes : participant.oneWayTravelMinutes,
+      workConstraints: String(formData.get("f_work") ?? "").trim() || participant.workConstraints,
+    });
+  }
+
+  const byId = Object.fromEntries(answers.map((answer) => [answer.id, answer.value]));
+  const grant = createGrant({
+    participantId: participant.id,
+    recipientLabel: trial.isFictional ? "Harborview Cancer Center, Cambridge (simulated site account)" : `${trial.leadSponsor ?? "Study team"} (${trial.id})`,
+    trialId,
+    allowedFields: ["basics", "application", ...(includeContact ? ["contact"] : [])],
+    purpose: `Application: ${form.title}`,
+  });
+  const inquiry = createInquiry({
+    participantId: participant.id, trialId, grantId: grant.id,
+    message: `Submitted the ${form.title}, with ${answers.length} answers.`,
+    sharedFields: { displayName: byId.name ?? null, ageYears: byId.age ?? null, location: byId.location ?? null, application: answers },
+  });
+  audit(participant.id, "application.submitted", trialId, `${answers.length} answers`);
+  revalidatePath("/inbox");
+  revalidatePath("/clinic", "layout");
+  redirect(`/inquiry/${inquiry.id}`);
+}
+
+/* --------------------------------------------------------------------- peers */
+
+export async function savePeerOptInAction(formData: FormData) {
+  const participant = await getActiveParticipant();
+  const { savePeerOptIn, removePeerOptIn } = await import("@/lib/peer-repo");
+  const { PEER_FIELDS } = await import("@/lib/peers");
+  if (formData.get("intent") === "leave") {
+    removePeerOptIn(participant.id);
+    audit(participant.id, "peers.opted_out", participant.id);
+  } else {
+    const allowed = new Set<string>(PEER_FIELDS.map((field) => field.id));
+    const offers = formData.getAll("offer").map(String).filter((id) => allowed.has(id));
+    // An alias, never the real name: connecting reveals what each person offered and nothing else.
+    const alias = String(formData.get("alias") ?? "").trim().slice(0, 24) || "A fellow patient";
+    savePeerOptIn({
+      participantId: participant.id, alias, offers: offers as never,
+      about: String(formData.get("about") ?? "").trim().slice(0, 160) || null,
+    });
+    audit(participant.id, "peers.opted_in", participant.id, offers.join(", "));
+  }
+  revalidatePath("/peers");
+  redirect(String(formData.get("returnTo") ?? "/peers").startsWith("/peers") ? String(formData.get("returnTo") ?? "/peers") : "/peers");
+}
+
+export async function requestPeerAction(formData: FormData) {
+  const participant = await getActiveParticipant();
+  const { createPeerConnection, findPeerMatches } = await import("@/lib/peer-repo");
+  const trialId = String(formData.get("trialId") ?? "") || null;
+  const toId = String(formData.get("toId"));
+  // Re-run the match on the server. A request is only possible to someone the
+  // matcher actually suggested, so the form cannot be used to reach anyone else.
+  const outcome = findPeerMatches(participant.id, trialId);
+  const match = outcome.status === "ok" ? outcome.matches.find((m) => m.participantId === toId) : null;
+  if (!match) return;
+  const connection = createPeerConnection({
+    trialId, fromId: participant.id, toId, reasons: match.reasons,
+    note: String(formData.get("note") ?? "").trim().slice(0, 240) || null,
+  });
+  audit(participant.id, "peers.requested", connection.id);
+  revalidatePath("/peers");
+  redirect(`/peers/${connection.id}`);
+}
+
+export async function respondPeerAction(formData: FormData) {
+  const participant = await getActiveParticipant();
+  const { getPeerConnection, setPeerConnectionState } = await import("@/lib/peer-repo");
+  const connection = getPeerConnection(String(formData.get("connectionId")));
+  if (!connection || (connection.fromId !== participant.id && connection.toId !== participant.id)) return;
+  const intent = String(formData.get("intent"));
+
+  if (intent === "accept" && connection.toId === participant.id && connection.state === "pending") setPeerConnectionState(connection.id, "accepted");
+  else if (intent === "decline" && connection.toId === participant.id && connection.state === "pending") setPeerConnectionState(connection.id, "declined");
+  else if (intent === "end") setPeerConnectionState(connection.id, "ended");
+  else if (intent === "report") setPeerConnectionState(connection.id, "reported");
+  else return;
+
+  audit(participant.id, `peers.${intent}`, connection.id);
+  revalidatePath("/peers");
+  revalidatePath(`/peers/${connection.id}`);
+  if (intent !== "accept") redirect("/peers");
+}
+
+export async function sendPeerMessageAction(formData: FormData) {
+  const participant = await getActiveParticipant();
+  const { addPeerMessage, getPeerConnection } = await import("@/lib/peer-repo");
+  const connection = getPeerConnection(String(formData.get("connectionId")));
+  const text = String(formData.get("text") ?? "").trim();
+  // Only the two people in an accepted connection can write to it.
+  if (!connection || connection.state !== "accepted" || !text) return;
+  if (connection.fromId !== participant.id && connection.toId !== participant.id) return;
+  addPeerMessage(connection.id, participant.id, text);
+  revalidatePath(`/peers/${connection.id}`);
+  // Back to the bare URL, so a suggested starter does not linger in the box and get sent twice.
+  redirect(`/peers/${connection.id}#compose`);
 }
