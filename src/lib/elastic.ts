@@ -117,7 +117,8 @@ export async function ensureIndices(recreate = false) {
     if (recreate) await elasticRequest("DELETE", `/${index}?ignore_unavailable=true`, undefined, 20000);
     const exists = await fetch(`${process.env.ELASTICSEARCH_URL!.replace(/\/+$/, "")}/${index}`, { method: "HEAD", headers: headers(), signal: AbortSignal.timeout(10000) });
     if (exists.status === 404) {
-      await elasticRequest("PUT", `/${index}`, { settings: { number_of_shards: 1, number_of_replicas: 0 }, mappings }, 20000);
+      // No shard or replica settings: Elastic Cloud Serverless manages those itself and rejects them.
+      await elasticRequest("PUT", `/${index}`, { mappings }, 20000);
     }
   }
 }
