@@ -14,7 +14,7 @@ export function MozaicMark({
     <img
       src={tone === "white" ? "/brand/mozaic-mark-white.png" : "/brand/mozaic-mark.png"}
       alt={label ?? ""} aria-hidden={label ? undefined : true}
-      width={570} height={512} decoding="async" draggable={false}
+      width={628} height={512} decoding="async" draggable={false}
       className={`select-none ${className}`}
     />
   );
@@ -25,7 +25,7 @@ export function MozaicLockup({ className = "h-7 w-auto" }: { className?: string 
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src="/brand/mozaic-lockup.png" alt="Mozaic" width={863} height={240}
+      src="/brand/mozaic-lockup.png" alt="Mozaic" width={1136} height={240}
       decoding="async" draggable={false} className={`select-none ${className}`}
     />
   );
