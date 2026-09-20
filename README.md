@@ -325,6 +325,36 @@ of normalized scores gives **100% recall@10** on the same probes.
 `reciprocalRankFusion` remains exported for the day a genuinely incomparable
 semantic ranking is added.
 
+#### Elasticsearch
+
+Set `ELASTICSEARCH_URL` (with `ELASTICSEARCH_API_KEY`, or a username and password)
+and Elasticsearch produces those two rankings instead of SQLite. Fusion, filters
+and explanations are shared code, so results are judged the same way whichever
+backend answered. Run `npm run es:index` once to load it; the command then verifies
+what it loaded.
+
+- **Two indices.** `mozaic-trials` holds one document per public registry record.
+  `mozaic-passages` holds one per eligibility criterion: a passage of the public
+  record, collapsed by study at query time with Elasticsearch's field collapsing.
+- **Source ids and version metadata sit next to the search text.** Every document
+  carries its registry id, source URL, the time the record was retrieved, the hash
+  of the record it came from and the registry's own last-update date. A passage also
+  carries the character offsets it was cut from, and the indexing command checks
+  that those offsets point at exactly that text in the stored record. So a hit can
+  be traced to the exact version of the exact record it quotes.
+- **Public text only.** Nothing about a participant is indexed, and a query carries
+  search words and nothing else. The indexing command asserts that no participant
+  field exists in either mapping.
+- **Kept in step.** A study a research team posts, pauses or removes is written to
+  the index in the same action.
+- **Fails safe.** If Elasticsearch does not answer within 2.5 seconds, the same
+  search runs on SQLite, and Find Clinical Trials says which backend answered. It
+  never claims a backend that did not run.
+
+Measured against a local Elasticsearch 8.15: 301 studies and 5,530 passages indexed
+in about 7 seconds; the right study in the top ten for 40 of 40 title searches, the
+same as SQLite; about 15 ms per query.
+
 Structured filters only remove a record when its own metadata *positively*
 conflicts. Missing metadata keeps the record and surfaces an unknown — dropping
 it would hide an option the person then cannot ask about.

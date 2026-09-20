@@ -51,7 +51,7 @@ export default function AboutPage() {
       <section>
         <SectionHeading>How the matching works</SectionHeading>
         <Card className={prose}>
-          <p>Search combines two keyword rankings, one over study titles and conditions and one over individual eligibility criteria, and reports which backend answered and how long it took.</p>
+          <p>Search combines two keyword rankings, one over study titles and conditions and one over individual eligibility criteria, and reports which backend answered and how long it took. The backend is Elasticsearch when one is connected and SQLite full-text search otherwise; both index public study text only, never anything about you.</p>
           <p>The criterion observations come from a rule engine, not a language model, so they are reproducible and can be checked. A model is only used to put a study&rsquo;s own words into plainer language, and every quote it produces is verified against the source before it is shown.</p>
           <p>An exclusion criterion that applies to you is reported as something to review, never as a match. Anything that depends on laboratory results or organ function always goes to staff review.</p>
           <p className="text-[11.5px] text-ink-faint">Language model: {AI_METADATA.configured ? `${AI_METADATA.model}, prompt version ${AI_METADATA.promptVersion}` : "none configured. Briefs are assembled by rule, directly from the records."}</p>

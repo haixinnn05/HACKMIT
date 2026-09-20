@@ -12,6 +12,7 @@ import { computeBurden } from "@/lib/burden";
 import { draftInquiry } from "@/lib/ai";
 import { getActiveParticipant, setRole, clearRole, STAFF } from "@/lib/session";
 import { autofill, formFor } from "@/lib/application";
+import { syncStudy } from "@/lib/elastic";
 import { randomBytes } from "node:crypto";
 import { deleteSiteStudy, getDb, getFictionalFixture, saveSiteStudy } from "@/lib/db";
 import type { ClinicalFact } from "@/lib/types";
@@ -774,6 +775,7 @@ export async function postStudyAction(formData: FormData) {
       caregiverAccommodationStated: ticked("caregiverWelcome"), remoteVisitOptionStated: ticked("remoteOption"),
     },
   });
+  await syncStudy(getDb(), studyId);
   audit(STAFF.id, "study.posted", studyId, title);
   revalidatePath("/clinic/studies");
   revalidatePath("/explore");
@@ -787,6 +789,7 @@ export async function setStudyRecruitingAction(formData: FormData) {
   const recruiting = formData.get("recruiting") === "1";
   getDb().prepare("UPDATE trials SET overall_status = ?, last_update_post_date = ? WHERE id = ? AND is_fictional = 1")
     .run(recruiting ? "RECRUITING" : "ACTIVE_NOT_RECRUITING", new Date().toLocaleDateString("en-CA"), id);
+  await syncStudy(getDb(), id);
   audit(STAFF.id, recruiting ? "study.resumed" : "study.paused", id);
   revalidatePath("/clinic/studies"); revalidatePath("/explore"); revalidatePath(`/trial/${id}`);
 }
@@ -798,6 +801,7 @@ export async function removeStudyAction(formData: FormData) {
   const inUse = getDb().prepare("SELECT COUNT(*) c FROM inquiries WHERE trial_id = ?").get(id) as { c: number };
   if (inUse.c > 0) redirect("/clinic/studies?kept=1");
   deleteSiteStudy(id);
+  await syncStudy(getDb(), id);
   audit(STAFF.id, "study.removed", id);
   revalidatePath("/clinic/studies"); revalidatePath("/explore");
   redirect("/clinic/studies");
