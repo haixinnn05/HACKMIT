@@ -374,6 +374,16 @@ export function getInquiryForTrial(participantId: string, trialId: string): Inqu
   return row ? rowToInquiry(row) : null;
 }
 
+/** Open inquiry for a study, if there is one. Closed ones do not count: the
+ *  person has to send a new application to start again. */
+export function getOpenInquiryForTrial(participantId: string, trialId: string): Inquiry | null {
+  const row = getDb()
+    .prepare(`SELECT * FROM inquiries WHERE participant_id = ? AND trial_id = ? AND state != 'closed'
+              ORDER BY updated_at DESC LIMIT 1`)
+    .get(participantId, trialId);
+  return row ? rowToInquiry(row) : null;
+}
+
 /** The coordinator inbox. Only inquiries backed by an active grant are visible;
  *  a revoked grant removes the item rather than merely hiding a field. */
 export function listInquiriesForCoordinator(): Inquiry[] {
@@ -486,6 +496,10 @@ export function listEnrollments(participantId: string): EnrollmentEntry[] {
   return (getDb()
     .prepare("SELECT * FROM enrollments WHERE participant_id = ? ORDER BY created_at")
     .all(participantId) as any[]).map(rowToEnrollment);
+}
+
+export function clearEnrollment(participantId: string, trialId: string) {
+  getDb().prepare("DELETE FROM enrollments WHERE participant_id = ? AND trial_id = ?").run(participantId, trialId);
 }
 
 /* --------------------------------------------------------------------- todos */

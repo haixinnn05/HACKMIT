@@ -3,14 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
-  addSavedReply, audit, clearTodos, createGrant, deleteSavedReply, findHandoffTokenByPassNumber, deleteQuestionDraft, getQuestion, saveQuestionDraft, createInquiry, createQuestion, ensureTodo, getInquiryForTrial, getParticipant, getTrial,
-  listQuestions, recordMilestone, setPersonalNote, revokeGrant, saveTrial, setInquiryState, toggleTodo,
+  addSavedReply, audit, clearEnrollment, clearTodos, createGrant, deleteSavedReply, findHandoffTokenByPassNumber, deleteQuestionDraft, getQuestion, saveQuestionDraft, createInquiry, createQuestion, ensureTodo, getInquiry, getOpenInquiryForTrial, getParticipant, getTrial,
+  listEnrollments, listQuestions, recordMilestone, setPersonalNote, revokeGrant, saveTrial, setInquiryState, toggleTodo,
   unsaveTrial, updateParticipant, updateQuestion, upsertEnrollment,
 } from "@/lib/repo";
 import { assessTrial } from "@/lib/assess";
 import { computeBurden } from "@/lib/burden";
 import { draftInquiry } from "@/lib/ai";
-import { getActiveParticipant, setRole, STAFF } from "@/lib/session";
+import { getActiveParticipant, setRole, clearRole, STAFF } from "@/lib/session";
 import { autofill, formFor } from "@/lib/application";
 import { getFictionalFixture } from "@/lib/db";
 import type { ClinicalFact } from "@/lib/types";
@@ -83,7 +83,7 @@ export async function shareInquiryAction(formData: FormData) {
   const message = [note, packet].filter(Boolean).join("\n\n");
   const trial = getTrial(trialId);
   if (!trial) return;
-  const existing = getInquiryForTrial(participant.id, trialId);
+  const existing = getOpenInquiryForTrial(participant.id, trialId);
   if (existing) redirect(`/inquiry/${existing.id}`);
 
   const selected = formData.getAll("field").map(String);
@@ -258,11 +258,15 @@ export async function decideAction(formData: FormData) {
   const decision = String(formData.get("decision"));
   const trial = getTrial(trialId);
   if (!trial) return;
+  const inquiryId = String(formData.get("inquiryId") ?? "");
+  const inquiry = inquiryId ? getInquiry(inquiryId) : null;
+  // A closed inquiry is finished. Taking part or contacting the team again
+  // means sending a new application, not flipping this one back open.
+  if (inquiry?.state === "closed") return;
 
   if (decision === "declined") {
     upsertEnrollment({ participantId: participant.id, trialId, status: "declined", visits: [] });
     clearTodos(participant.id, trialId);
-    const inquiryId = String(formData.get("inquiryId") ?? "");
     if (inquiryId) setInquiryState(inquiryId, "closed", "Participant decided not to continue.");
   } else if (decision === "participating") {
     // Visit dates come from the confirmed schedule only. Without one there is no
@@ -295,8 +299,6 @@ export async function decideAction(formData: FormData) {
       text: "Please help me contact the study team directly.",
       inquiryId: String(formData.get("inquiryId") ?? "") || null,
     });
-    upsertEnrollment({ participantId: participant.id, trialId, status: "considering", visits: [] });
-  } else {
     upsertEnrollment({ participantId: participant.id, trialId, status: "considering", visits: [] });
   }
 
@@ -381,6 +383,11 @@ export async function chooseRoleAction(formData: FormData) {
   redirect(role === "clinic" ? "/clinic" : "/");
 }
 
+export async function signOutAction() {
+  await clearRole();
+  redirect("/login");
+}
+
 /**
  * Opens a participant's in-person passport from the pass number on their ticket.
  * A wrong, expired and revoked number all fail the same way, so the form cannot
@@ -425,6 +432,8 @@ export async function submitApplicationAction(formData: FormData) {
   const trialId = String(formData.get("trialId"));
   const trial = getTrial(trialId);
   if (!trial) return;
+  const existing = getOpenInquiryForTrial(participant.id, trialId);
+  if (existing) redirect(`/inquiry/${existing.id}`);
 
   const form = formFor(trial, getFictionalFixture()?.applicationForm);
   const filled = autofill(participant, form);
@@ -459,15 +468,21 @@ export async function submitApplicationAction(formData: FormData) {
     participantId: participant.id,
     recipientLabel: trial.isFictional ? "Harborview Cancer Center, Cambridge (simulated site account)" : `${trial.leadSponsor ?? "Study team"} (${trial.id})`,
     trialId,
-    allowedFields: ["basics", "application", ...(includeContact ? ["contact"] : [])],
-    purpose: `Application: ${form.title}`,
+    allowedFields: ["basics", "application", "questions", ...(includeContact ? ["contact"] : [])],
+    purpose: "Inquiry about taking part",
   });
   const inquiry = createInquiry({
     participantId: participant.id, trialId, grantId: grant.id,
     message: `Submitted the ${form.title}, with ${answers.length} answers.`,
     sharedFields: { displayName: byId.name ?? null, ageYears: byId.age ?? null, location: byId.location ?? null, application: answers },
   });
-  audit(participant.id, "application.submitted", trialId, `${answers.length} answers`);
+  const declined = listEnrollments(participant.id).find((entry) => entry.trialId === trialId);
+  if (declined?.status === "declined") clearEnrollment(participant.id, trialId);
+  const { getDb } = await import("@/lib/db");
+  getDb()
+    .prepare("UPDATE questions SET inquiry_id = ? WHERE participant_id = ? AND trial_id = ? AND inquiry_id IS NULL")
+    .run(inquiry.id, participant.id, trialId);
+  audit(participant.id, "inquiry.shared", trialId, `${answers.length} answers`);
   revalidatePath("/inbox");
   revalidatePath("/clinic", "layout");
   redirect(`/inquiry/${inquiry.id}`);

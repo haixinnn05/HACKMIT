@@ -18,19 +18,35 @@ const STATE = {
  * Talk with someone in a similar situation, about a study you are both weighing.
  * A few suggestions for a purpose, never a list of people to browse.
  */
-export default async function PeersPage({ searchParams }: { searchParams: Promise<{ trial?: string }> }) {
-  const { trial: trialId } = await searchParams;
+export default async function PeersPage({ searchParams }: { searchParams: Promise<{ trial?: string; tab?: string; from?: string }> }) {
+  const { trial: trialId, tab: rawTab, from } = await searchParams;
   const participant = await getActiveParticipant();
   const trial = trialId ? getTrial(trialId) : null;
   const optIn = getPeerOptIn(participant.id);
   const outcome = findPeerMatches(participant.id, trial?.id ?? null);
   const connections = listPeerConnections(participant.id);
-  const here = `/peers${trial ? `?trial=${trial.id}` : ""}`;
+  const tab = rawTab === "eligibility" || rawTab === "expect" || rawTab === "insight" ? rawTab : undefined;
+  const fromMap = from === "map";
+  const peersQuery = new URLSearchParams({
+    ...(trial ? { trial: trial.id } : {}),
+    ...(tab ? { tab } : {}),
+    ...(fromMap ? { from: "map" } : {}),
+  });
+  const here = `/peers${peersQuery.toString() ? `?${peersQuery}` : ""}`;
+  const trialBack = trial
+    ? (() => {
+        const query = new URLSearchParams();
+        if (tab) query.set("tab", tab);
+        if (fromMap) query.set("from", "map");
+        const suffix = query.toString();
+        return suffix ? `/trial/${trial.id}?${suffix}` : `/trial/${trial.id}`;
+      })()
+    : "/profile";
 
   return (
     <div className="space-y-4">
       <ScreenHeader
-        back={trial ? `/trial/${trial.id}?tab=expect` : "/profile"}
+        back={trialBack}
         title="Talk with someone like you"
         sub={trial ? `About: ${trial.briefTitle}` : "People in a similar situation, who are also weighing a study."}
         action={optIn ? (

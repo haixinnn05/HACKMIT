@@ -5,12 +5,10 @@ import type { ParticipantProfile } from "./types";
 /**
  * Demo session handling.
  *
- * There is no authentication in the prototype and there should not be the
- * appearance of one. The active identity is a cookie naming one of the prepared
- * synthetic personas, and the UI says so on every screen. A real deployment
- * replaces this with server-side auth and role checks; the read path below is
- * the single place that decides "who is asking", which is what makes that
- * replacement tractable.
+ * Login chooses a role — patient or clinic — with no password. The active
+ * patient identity is a cookie naming one of the prepared personas. A real
+ * deployment replaces both with server-side auth; the read path below is the
+ * single place that decides "who is asking".
  */
 
 const COOKIE = "tp_persona";
@@ -32,10 +30,7 @@ export async function setActiveParticipant(id: string) {
 export const PERSONA_COOKIE = COOKIE;
 
 /**
- * Which face of the app this browser is using. Like the persona, this is a demo
- * affordance and not authentication: the research-team face is a simulated staff
- * account and says so on every screen. A real deployment replaces it with
- * server-side roles and site membership checks.
+ * Which face of the app this browser is using, set at login.
  */
 export type Role = "participant" | "clinic";
 const ROLE_COOKIE = "mz_role";
@@ -47,6 +42,10 @@ export async function getRole(): Promise<Role | null> {
 
 export async function setRole(role: Role) {
   (await cookies()).set(ROLE_COOKIE, role, { httpOnly: true, sameSite: "lax", path: "/" });
+}
+
+export async function clearRole() {
+  (await cookies()).delete(ROLE_COOKIE);
 }
 
 export async function hasChosenPersona(): Promise<boolean> {

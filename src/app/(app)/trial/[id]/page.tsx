@@ -7,13 +7,13 @@ import {
 import { OpenAlexResearch, OpenAlexResearchSkeleton } from "@/components/OpenAlexResearch";
 import { Hills } from "@/components/Brand";
 import {
-  Card, DataAge, LinkButton, MenuRow, SectionHeading, StickyAction, Tabs,
+  Card, DataAge, LinkButton, SectionHeading, StickyAction, Tabs,
 } from "@/components/ui";
 import { AI_METADATA, answerFromSources, cachedTrialBrief, composeOfflineBrief, generateTrialBrief, type TrialBrief } from "@/lib/ai";
 import { assessTrial } from "@/lib/assess";
 import { computeBurden } from "@/lib/burden";
 import { requestNow } from "@/lib/clock";
-import { getInquiryForTrial, getTrial, listEnrollments, listSavedTrialIds, recordMilestone } from "@/lib/repo";
+import { getOpenInquiryForTrial, getTrial, listEnrollments, listSavedTrialIds, recordMilestone } from "@/lib/repo";
 import { getActiveParticipant } from "@/lib/session";
 import { openedFromMap } from "@/lib/map-return";
 import { addQuestionAction, toggleSaveAction } from "@/app/actions";
@@ -46,7 +46,7 @@ export default async function TrialPage({
     travelOverrideMinutes: travel ? Number(travel) : null,
   });
   const saved = listSavedTrialIds(participant.id).includes(trial.id);
-  const inquiry = getInquiryForTrial(participant.id, trial.id);
+  const inquiry = getOpenInquiryForTrial(participant.id, trial.id);
   const enrollment = listEnrollments(participant.id).find((entry) => entry.trialId === trial.id);
 
   // Going past the overview is what "reviewed" means. The stamp is earned once.
@@ -67,11 +67,19 @@ export default async function TrialPage({
     const suffix = query.toString();
     return suffix ? `${base}?${suffix}` : base;
   };
+  const peersHref = (() => {
+    const query = new URLSearchParams({ trial: trial.id });
+    if (tab !== "overview") query.set("tab", tab);
+    if (fromMap) query.set("from", "map");
+    return `/peers?${query}`;
+  })();
 
-  const headline =
-    assessment.overall === "likely_conflict" ? "Things to review"
-      : assessment.overall === "needs_more_information" ? "Questions remain"
-      : "Potential option";
+  const fit =
+    assessment.overall === "likely_conflict"
+      ? { title: "Things to review", body: "Some listed requirements don't match what you've recorded.", box: "bg-blush-soft", titleClass: "text-blush" }
+      : assessment.overall === "needs_more_information"
+        ? { title: "Questions remain", body: "More information is needed before this study can be checked.", box: "bg-peach-soft", titleClass: "text-peach" }
+        : { title: "Potential option", body: "What you've recorded so far lines up with the listed requirements.", box: "bg-mint-soft", titleClass: "text-mint" };
 
   return (
     <div className="space-y-4">
@@ -106,7 +114,21 @@ export default async function TrialPage({
         </p>
       </header>
 
-      <p className="text-[13px] font-semibold text-ink">{headline}</p>
+      <Link href={tabHref("eligibility")} className={`block rounded-[16px] px-3.5 py-2.5 ${fit.box}`}>
+        <p className={`text-[12.5px] font-bold ${fit.titleClass}`}>{fit.title}</p>
+        <p className="mt-0.5 text-[11.5px] leading-snug text-ink">{fit.body}</p>
+      </Link>
+
+      <Card className="overflow-hidden [&>a]:border-b [&>a]:border-rule [&>a:last-child]:border-0">
+        <Link href={`/apply/${trial.id}`} className="press flex min-h-11 items-center gap-2 px-3.5 py-2 hover:bg-sunken">
+          <span className="min-w-0 flex-1 text-[13px] font-bold text-ink">Application form</span>
+          <CaretRight size={14} weight="bold" className="shrink-0 text-ink-faint" />
+        </Link>
+        <Link href={peersHref} className="press flex min-h-11 items-center gap-2 px-3.5 py-2 hover:bg-sunken">
+          <span className="min-w-0 flex-1 text-[13px] font-bold text-ink">Talk with someone weighing this too</span>
+          <CaretRight size={14} weight="bold" className="shrink-0 text-ink-faint" />
+        </Link>
+      </Card>
 
       <Tabs
         variant="underline" current={tab}
@@ -127,11 +149,6 @@ export default async function TrialPage({
         </Suspense>
       ) : null}
 
-      <Card className="overflow-hidden [&>a]:border-b [&>a]:border-rule [&>a:last-child]:border-0">
-        <MenuRow href={`/apply/${trial.id}`} title="Application form" />
-        <MenuRow href={`/peers?trial=${trial.id}`} title="Talk with someone weighing this too" />
-      </Card>
-
       <StickyAction>
         {enrollment?.status === "participating" ? (
           <LinkButton href="/" variant="registered" className="w-full">Open your path</LinkButton>
@@ -140,7 +157,7 @@ export default async function TrialPage({
             {inquiry.state === "answered" ? "View reply" : "Open inquiry"}
           </LinkButton>
         ) : saved ? (
-          <LinkButton href={`/inquiry/new/${trial.id}`} className="w-full">Prepare an inquiry</LinkButton>
+          <LinkButton href={`/apply/${trial.id}`} className="w-full">Apply</LinkButton>
         ) : (
           <form action={toggleSaveAction}>
             <input type="hidden" name="trialId" value={trial.id} />

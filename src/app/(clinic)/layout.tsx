@@ -1,9 +1,10 @@
-import Link from "next/link";
-import { ArrowsLeftRight } from "@phosphor-icons/react/dist/ssr";
+import { SignOut } from "@phosphor-icons/react/dist/ssr";
 import { MozaicMark } from "@/components/Brand";
 import { ClinicNav } from "@/components/ClinicNav";
 import { listInquiriesForCoordinator } from "@/lib/repo";
-import { STAFF } from "@/lib/session";
+import { getRole, STAFF } from "@/lib/session";
+import { signOutAction } from "@/app/actions";
+import { redirect } from "next/navigation";
 
 /**
  * The research-team face.
@@ -16,7 +17,12 @@ import { STAFF } from "@/lib/session";
  * The signed-in person is a simulated staff account, and the header says so on
  * every screen. Nothing here reaches a real site.
  */
-export default function ClinicLayout({ children }: { children: React.ReactNode }) {
+export default async function ClinicLayout({ children }: { children: React.ReactNode }) {
+  const role = await getRole();
+  if (role !== "clinic") {
+    redirect(role === "participant" ? "/" : "/login");
+  }
+
   const needsReview = listInquiriesForCoordinator().filter((inquiry) => ["shared", "acknowledged"].includes(inquiry.state)).length;
 
   return (
@@ -30,9 +36,11 @@ export default function ClinicLayout({ children }: { children: React.ReactNode }
               <p className="truncate text-[11px] leading-tight text-white/65">{STAFF.site}</p>
             </div>
           </div>
-          <Link href="/welcome" className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full bg-white/12 px-3 text-[11.5px] font-bold hover:bg-white/20">
-            <ArrowsLeftRight size={14} weight="bold" /> Switch
-          </Link>
+          <form action={signOutAction}>
+            <button type="submit" className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full bg-white/12 px-3 text-[11.5px] font-bold hover:bg-white/20">
+              <SignOut size={14} weight="bold" /> Log out
+            </button>
+          </form>
         </div>
         <p className="mt-1.5 text-center text-[10.5px] font-semibold leading-snug text-white/70">
           Simulated staff account. No real site or patient. Nothing leaves this app.

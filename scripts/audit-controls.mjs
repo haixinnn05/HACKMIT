@@ -20,22 +20,25 @@ const go = async (path) => { await page.goto(`${BASE}${path}`, { waitUntil: "dom
 // Populate: saved trial, questions, a shared and answered inquiry, a decision.
 await page.request.post(`${BASE}/api/reset`);
 await page.request.post(`${BASE}/api/persona`, { data: { id: "p-maria" } });
+await page.request.post(`${BASE}/api/role`, { data: { role: "participant" } });
 await go("/trial/TP-FIX-001");
 await page.locator('button:has-text("Save Trial")').click();
-await page.waitForSelector('a:has-text("Prepare an inquiry")');
+await page.waitForSelector('a:has-text("Apply")');
 await go("/questions?add=1&trial=TP-FIX-001");
 await page.fill('textarea[name="text"]', "Is parking covered at the study site?");
 await page.click('button:has-text("Save question")');
 await page.waitForURL(/\/questions/);
 await go("/inquiry/new/TP-FIX-001");
-await page.click('button:has-text("Share Inquiry")');
+await page.click('button:has-text("Send application")');
 await page.waitForURL(/\/inquiry\/[0-9a-f-]{36}/);
 const inquiryPath = new URL(page.url()).pathname;
+await page.request.post(`${BASE}/api/role`, { data: { role: "clinic" } });
 await go("/clinic/inbox");
 const coordinatorPath = await page.locator('#main a[href^="/clinic/inbox/"]').first().getAttribute("href");
 await go(coordinatorPath);
 await page.locator('button:has-text("Send this answer")').first().click();
 await page.waitForSelector("text=Sent by R. Alvarez");
+await page.request.post(`${BASE}/api/role`, { data: { role: "participant" } });
 await go(inquiryPath);
 await page.click('button:has-text("I have agreed to take part")');
 await page.waitForURL(/\/timeline/);
@@ -44,7 +47,7 @@ const screens = [
   "/", "/explore", "/trial/TP-FIX-001", "/trial/TP-FIX-001?tab=eligibility", "/trial/TP-FIX-001?tab=expect", "/trial/TP-FIX-001?tab=insight",
   "/trial/TP-FIX-001/preview", "/trial/NCT06185205", "/questions", "/questions?add=1", "/passport",
   "/inquiry/new/TP-FIX-001", "/inbox", inquiryPath, "/profile", "/profile/edit", "/profile/saved",
-  "/clinic", "/clinic/inbox", coordinatorPath, "/clinic/patients", "/clinic/scan", "/clinic/studies", "/clinic/activity", "/welcome", "/apply/TP-FIX-001", "/peers", "/peers/settings", "/timeline", "/timeline?view=calendar", "/about", "/access-gaps",
+  "/clinic", "/clinic/inbox", coordinatorPath, "/clinic/patients", "/clinic/scan", "/clinic/studies", "/clinic/activity", "/login", "/apply/TP-FIX-001", "/peers", "/peers/settings", "/timeline", "/timeline?view=calendar", "/about", "/access-gaps",
 ];
 
 const problems = [];
@@ -52,6 +55,10 @@ const links = new Set();
 let total = 0;
 
 for (const path of screens) {
+  const clinic = path.startsWith("/clinic") || path.startsWith("/coordinator");
+  if (path !== "/login") {
+    await page.request.post(`${BASE}/api/role`, { data: { role: clinic ? "clinic" : "participant" } });
+  }
   await go(path);
   // Open every disclosure so controls inside are audited too.
   await page.evaluate(() => document.querySelectorAll("details").forEach((d) => { d.open = true; }));

@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { CaretRight } from "@phosphor-icons/react/dist/ssr";
-import { Card, Empty, Pill, ScreenHeader, Tabs } from "@/components/ui";
+import { Empty, Pill, ScreenHeader, Tabs } from "@/components/ui";
 import { getGrant, getTrial, isInquiryUnread, listInquiriesForParticipant, listQuestions } from "@/lib/repo";
 import { getActiveParticipant } from "@/lib/session";
-import { chooseRoleAction } from "@/app/actions";
 import type { InquiryState } from "@/lib/types";
 import { isAnswered } from "@/lib/questions";
 
@@ -93,18 +92,6 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
           })}
         </ul>
       )}
-
-      <Card>
-        <form action={chooseRoleAction}>
-          <input type="hidden" name="role" value="clinic" />
-          <button type="submit" className="press flex w-full items-center gap-3.5 p-4 text-left">
-            <span className="min-w-0 flex-1">
-              <span className="block text-[14px] font-bold text-ink">Research team</span>
-            </span>
-            <CaretRight size={16} weight="bold" className="text-ink-faint" />
-          </button>
-        </form>
-      </Card>
     </div>
   );
 }

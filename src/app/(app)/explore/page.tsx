@@ -15,9 +15,9 @@ const KM_PER_MILE = 1.609;
 
 /** The label on a card. None of these is a verdict, and none says "you qualify". */
 function cardStatus(assessment: TrialAssessment) {
-  if (assessment.overall === "likely_conflict") return { label: "Things to review", tone: "iris" as const };
-  if (assessment.overall === "needs_more_information") return { label: "Questions remain", tone: "neutral" as const };
-  return { label: "Potential option", tone: "iris" as const };
+  if (assessment.overall === "likely_conflict") return { label: "Things to review", tone: "blush" as const };
+  if (assessment.overall === "needs_more_information") return { label: "Questions remain", tone: "peach" as const };
+  return { label: "Potential option", tone: "mint" as const };
 }
 
 export default async function ExplorePage({

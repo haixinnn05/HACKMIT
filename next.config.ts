@@ -11,6 +11,7 @@ const nextConfig: NextConfig = {
     return [
       { source: "/coordinator", destination: "/clinic/inbox", permanent: false },
       { source: "/coordinator/:id", destination: "/clinic/inbox/:id", permanent: false },
+      { source: "/welcome", destination: "/login", permanent: false },
     ];
   },
   // Lets a phone on the same network use the dev server. Next blocks its dev

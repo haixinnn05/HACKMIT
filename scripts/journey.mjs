@@ -34,6 +34,7 @@ const shot = async (name, target = page) => {
 // the document, then give hydration a moment, without requiring the network to go quiet.
 const settle = async (target) => { await target.waitForLoadState("networkidle", { timeout: 3500 }).catch(() => {}); };
 const go = async (path) => { await page.goto(`${BASE}${path}`, { waitUntil: "domcontentloaded" }); await settle(page); };
+const asRole = async (role) => { await page.request.post(`${BASE}/api/role`, { data: { role } }); };
 const main = () => page.locator("#main");
 const text = async () => (await main().innerText()).replace(/\s+/g, " ");
 
@@ -45,12 +46,14 @@ await page.request.post(`${BASE}/api/persona`, { data: { id: "p-maria" } });
 const fresh = await browser.newContext({ viewport: { width: 430, height: 932 } });
 const door = await fresh.newPage();
 await door.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
-assert("0 A first-time visitor is asked which side they are on", door.url().endsWith("/welcome") && (await door.locator("#main").innerText()).includes("I'm on a research team"));
-await door.click('button:has-text("I\'m on a research team")');
+assert("0 A first-time visitor is asked to log in as a patient or clinic", door.url().endsWith("/login") && (await door.locator("#main").innerText()).includes("Clinic / researcher"));
+await door.click('button:has-text("Clinic / researcher")');
 await door.waitForURL(/\/clinic$/);
 assert("0 Choosing the research team opens a separate app with its own navigation",
   (await door.locator('nav[aria-label="Research team"]').count()) === 1 && (await door.locator('nav[aria-label="Main"]').count()) === 0);
 await fresh.close();
+
+await page.request.post(`${BASE}/api/role`, { data: { role: "participant" } });
 
 /* 1. Home */
 await go("/");
@@ -103,8 +106,8 @@ assert("3 A real record refuses to estimate a time commitment", (await text()).i
 await go("/trial/TP-FIX-001");
 assert("3 The fictional study is labelled fictional", (await text()).includes("Fictional study"));
 await page.locator('button:has-text("Save Trial")').click();
-await page.waitForSelector('a:has-text("Prepare an inquiry")');
-assert("3 Saving swaps the primary action to preparing an inquiry", true);
+await page.waitForSelector('a:has-text("Apply")');
+assert("3 Saving swaps the primary action to applying", true);
 await go("/trial/TP-FIX-001?ask=" + encodeURIComponent("Do I get paid for taking part?"));
 await page.waitForSelector("text=Keep in mind:", { timeout: 90000 });
 const quoted = ((await page.locator("#ask blockquote").first().textContent()) ?? "").replace(/\s+/g, " ").trim();
@@ -152,20 +155,24 @@ t = await text();
 assert("5 Questions are saved and counted", t.includes("All (2)") && t.includes("Need to ask (2)"));
 await shot("questions");
 
-/* 8. Inquiry review */
-await go("/inquiry/new/TP-FIX-001");
+/* 8. Application form */
+await go("/apply/TP-FIX-001");
 t = await text();
-assert("8 Inquiry review lists what would be shared", ["Personal information", "Relevant medical history", "Travel preferences", "Saved questions"].every((l) => t.includes(l)));
-assert("8 Contact details start unticked", !(await page.locator('input[value="contact"]').isChecked()));
-assert("8 The message has a live character count", /\d+\/500/.test(t));
-assert("8 The autofilled packet carries the burden figure", (await page.locator("#packet").inputValue()).includes("14.3 hours"));
+assert("8 The application form is filled from the passport", /\d+ of \d+ answers filled from your passport/.test(t));
+assert("8 Each answer shows where it came from", t.includes("From your passport") && t.includes("You marked this unknown") && t.includes("Only you can answer"));
+assert("8 A fact marked unknown is left blank, not guessed", (await page.locator('input[name="f_her2"]').inputValue()) === "");
+assert("8 Known facts are prefilled", (await page.locator('input[name="f_stage"]').inputValue()) === "Stage II" && (await page.locator('input[name="f_name"]').inputValue()) === "Maria Restrepo");
+assert("8 Contact details start unticked", !(await page.locator('input[name="includeContact"]').isChecked()));
+await page.fill('input[name="f_oncologist"]', "Dr. Patel, Lowell General");
+await page.fill('input[name="f_her2"]', "negative");
 await shot("inquiry-review");
-await page.click('button:has-text("Share Inquiry")');
+await page.click('button:has-text("Send application")');
 await page.waitForURL(/\/inquiry\/[0-9a-f-]{36}/, { timeout: 20000 });
 const inquiryUrl = page.url();
 assert("8 Sharing is not presented as enrolment", (await text()).includes("Shared, waiting to be picked up"));
 
 /* 11. Research Team Inbox */
+await asRole("clinic");
 await go("/clinic/inbox");
 t = await text();
 const items = page.locator('#main a[href^="/clinic/inbox/"]');
@@ -180,6 +187,7 @@ t = await text();
 assert("11 Eligibility considerations are marked not a decision", t.includes("not a decision"));
 assert("11 Considerations group as Supported, Unknown, Needs review", ["Supported", "Unknown", "Needs review"].every((l) => t.includes(l)));
 assert("11 Unshared contact details are absent and explained", !t.includes("maria.demo@example.com") && t.includes("did not share contact details"));
+assert("11 The coordinator sees the application answers with their origin", t.includes("Application answers") && t.includes("Dr. Patel, Lowell General") && t.includes("typed on the form") && t.includes("from passport"));
 assert("11 Missing information is listed to request", t.includes("Missing information to request"));
 assert("11 A saved site answer is pre-filled and flagged for review", t.includes("You are the author"));
 assert("11 A Reply action stays in reach", (await page.locator('a:has-text("Reply to Maria")').count()) === 1);
@@ -194,15 +202,18 @@ await parking().locator('button:has-text("Save draft")').click();
 await page.waitForSelector("text=A saved draft");
 assert("11 A draft is saved with its own state", (await parking().innerText()).includes("Draft answer"));
 const peek = await context.newPage();
+await asRole("participant");
 await peek.goto(inquiryUrl, { waitUntil: "domcontentloaded" });
 assert("11 A draft is never visible to the participant", !(await peek.locator("#main").innerText()).includes("validated at the Harborview garage"));
 await peek.close();
 
+await asRole("clinic");
 await parking().locator('button:has-text("Send this answer")').click();
 await page.waitForSelector("text=Sent by R. Alvarez", { timeout: 20000 });
 assert("11 The reply is attributed to the person who sent it", true);
 
 /* 9. Inbox */
+await asRole("participant");
 await go("/inbox");
 t = await text();
 assert("9 Inbox shows the reply as unread", t.includes("Unread (1)") && t.includes("Answered"));
@@ -212,12 +223,13 @@ assert("1 Home surfaces the reply", (await text()).includes("You have a reply"))
 await page.goto(inquiryUrl, { waitUntil: "domcontentloaded" });
 t = await text();
 assert("9 The thread shows the full answer and its author", t.includes("validated at the Harborview garage") && t.includes("R. Alvarez"));
-assert("9 All four choices are offered, including declining and asking for help",
-  ["I have agreed to take part", "I need more time", "Please help me contact the study team", "I am not interested"].every((l) => t.includes(l)));
+assert("9 Choices include taking part, declining, and asking for help",
+  ["I have agreed to take part", "Please help me contact the study team", "I am not interested"].every((l) => t.includes(l)));
 await shot("thread");
 await page.click('button:has-text("I still have a question")');
 await page.waitForSelector("text=Reopened");
 assert("9 The participant can reopen an answered question", true);
+await asRole("clinic");
 await go("/clinic/inbox");
 await page.locator('#main a[href^="/clinic/inbox/"]').first().click();
 await page.waitForURL(/\/clinic\/inbox\/[0-9a-f-]{36}/);
@@ -226,6 +238,7 @@ assert("11 The team sees it reopened, with the earlier answer kept as history",
   (await text()).includes("Reopened") && (await text()).includes("Earlier answer"));
 await page.locator("li", { hasText: "Is parking covered" }).locator('button:has-text("Send this answer")').click();
 await page.waitForSelector("text=Sent by R. Alvarez", { timeout: 20000 });
+await asRole("participant");
 await page.goto(inquiryUrl, { waitUntil: "domcontentloaded" });
 await page.click('button:has-text("This answers it")');
 await page.waitForSelector("text=You marked this resolved");
@@ -301,6 +314,7 @@ await shot("shared-profile", scanner);
 /* 13. Research team: open the passport by its pass number */
 const staff = await context.newPage();
 const staffText = async () => (await staff.locator("#main").innerText()).replace(/\s+/g, " ");
+await asRole("clinic");
 await staff.goto(`${BASE}/clinic/scan`, { waitUntil: "domcontentloaded" });
 await staff.fill('input[name="pass"]', "00000000");
 await staff.click('button:has-text("Open passport")');
@@ -365,9 +379,11 @@ assert("7 A revoked code stops resolving and leaks nothing", s.includes("This co
 await scanner.close();
 
 /* Revoking the inquiry grant removes it from the team. */
+await asRole("participant");
 await go("/passport");
 await page.locator('button:has-text("Revoke")').first().click();
 await settle(page);
+await asRole("clinic");
 await go("/clinic/inbox");
 assert("11 Revoking access empties the research team inbox", (await page.locator('#main a[href^="/clinic/inbox/"]').count()) === 0);
 await staff.goto(`${BASE}/clinic/patients`, { waitUntil: "domcontentloaded" });
@@ -376,36 +392,17 @@ await staff.goto(patientUrl, { waitUntil: "domcontentloaded" });
 assert("14 A kept link to a revoked patient shows nothing", (await staffText()).includes("not sharing anything with your site") && !(await staffText()).includes("Stage II"));
 await staff.close();
 
+await asRole("participant");
 await go("/access-gaps");
 assert("Gaps are reported with denominators and not as discrimination", /\d+ \/ \d+/.test(await text()) && (await text()).includes("not evidence that a site turns anyone away"));
 await shot("access-gaps");
 
-/* 15. Application form, filled from the passport */
-await go(`/apply/TP-FIX-001`);
-t = await text();
-assert("15 The application is filled in from the passport, and says how much", /We filled in \d+ of \d+ answers for you/.test(t));
-assert("15 Each answer shows where it came from", t.includes("From your passport") && t.includes("You marked this unknown") && t.includes("Only you can answer"));
-assert("15 A fact marked unknown is left blank, not guessed", (await page.locator('input[name="f_her2"]').inputValue()) === "");
-assert("15 Known facts are prefilled", (await page.locator('input[name="f_stage"]').inputValue()) === "Stage II" && (await page.locator('input[name="f_name"]').inputValue()) === "Maria Restrepo");
-assert("15 Contact details wait for an explicit tick", !(await page.locator('input[name="includeContact"]').isChecked()));
-await page.fill('input[name="f_oncologist"]', "Dr. Patel, Lowell General");
-await page.fill('input[name="f_her2"]', "negative");
-await shot("application");
-await page.click('button:has-text("Send application")');
-await page.waitForURL(/\/inquiry\/[0-9a-f-]{36}/, { timeout: 20000 });
+/* 15. New answers from the inquiry are saved back to the passport */
 await go("/profile/edit");
 assert("15 A new answer is saved back to the passport for next time", (await page.locator('input[name="fact_her2"]').inputValue()) === "negative");
-const desk = await context.newPage();
-await desk.goto(`${BASE}/clinic/inbox`, { waitUntil: "domcontentloaded" });
-await desk.locator('#main a[href^="/clinic/inbox/"]').first().click();
-await desk.waitForURL(/\/clinic\/inbox\/[0-9a-f-]{36}/);
-await settle(desk);
-const deskText = (await desk.locator("#main").innerText()).replace(/\s+/g, " ");
-assert("15 The coordinator sees the answers with their origin, and no contact details",
-  deskText.includes("Application answers") && deskText.includes("Dr. Patel, Lowell General") && deskText.includes("typed on the form") && deskText.includes("from passport") && !deskText.includes("example.com"));
-await desk.close();
 
 /* 16. Talking with a peer */
+await asRole("participant");
 await go("/peers");
 assert("16 Peer matching is off until the person turns it on", (await text()).includes("This is off until you turn it on"));
 await go("/peers?trial=TP-FIX-001");

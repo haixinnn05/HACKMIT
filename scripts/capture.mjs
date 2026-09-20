@@ -28,7 +28,7 @@ const ask = async (text) => {
 
 await go("/trial/TP-FIX-001");
 await page.locator('button:has-text("Save Trial")').click();
-await page.waitForSelector('a:has-text("Prepare an inquiry")');
+await page.waitForSelector('a:has-text("Apply")');
 await go("/trial/TP-FIX-001?tab=eligibility");
 for (const q of ["Is parking covered at the study site?", "Is travel assistance available?", "Can visits start early so I lose less work time?"]) await ask(q);
 
@@ -38,7 +38,7 @@ await go("/trial/TP-FIX-001"); await snap(3);
 await go("/trial/TP-FIX-001/preview"); await snap(4);
 await go("/inquiry/new/TP-FIX-001"); await snap(8);
 
-await page.click('button:has-text("Share Inquiry")');
+await page.click('button:has-text("Send application")');
 await page.waitForURL(/\/inquiry\/[0-9a-f-]{36}/);
 const inquiryUrl = page.url();
 

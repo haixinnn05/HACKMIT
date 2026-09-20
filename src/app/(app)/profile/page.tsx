@@ -5,7 +5,7 @@ import { Avatar, Card, MenuRow, ScreenHeader } from "@/components/ui";
 import { getPersonalNote, listParticipants, listQuestions, listSavedTrialIds } from "@/lib/repo";
 import { getPeerOptIn } from "@/lib/peer-repo";
 import { getActiveParticipant } from "@/lib/session";
-import { chooseRoleAction, resetDemoAction } from "@/app/actions";
+import { resetDemoAction, signOutAction } from "@/app/actions";
 import { isAnswered } from "@/lib/questions";
 
 export const dynamic = "force-dynamic";
@@ -73,10 +73,9 @@ export default async function ProfilePage() {
       <section>
         <Card className="space-y-3 p-4">
           <PersonaSwitcher currentId={participant.id} personas={personas.map((p) => ({ id: p.id, displayName: p.displayName }))} />
-          <form action={chooseRoleAction}>
-            <input type="hidden" name="role" value="clinic" />
-            <button type="submit" className="min-h-11 w-full rounded-full bg-ink px-4 text-[13px] font-bold text-white">
-              Switch to the research team side
+          <form action={signOutAction}>
+            <button type="submit" className="press min-h-11 w-full rounded-full bg-ink px-4 text-[13px] font-bold text-white">
+              Log out
             </button>
           </form>
           <form action={resetDemoAction}>

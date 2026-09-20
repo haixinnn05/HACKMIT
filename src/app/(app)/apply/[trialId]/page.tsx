@@ -1,10 +1,10 @@
-import { notFound } from "next/navigation";
-import { LockKey, PaperPlaneTilt } from "@phosphor-icons/react/dist/ssr";
+import { notFound, redirect } from "next/navigation";
+import { LockKey } from "@phosphor-icons/react/dist/ssr";
 import { PrintButton } from "@/components/CountedTextarea";
 import { Callout, Card, Pill, ScreenHeader, StickyAction } from "@/components/ui";
 import { autofill, formFor, type ResolvedField } from "@/lib/application";
 import { getFictionalFixture } from "@/lib/db";
-import { getTrial } from "@/lib/repo";
+import { getOpenInquiryForTrial, getTrial } from "@/lib/repo";
 import { getActiveParticipant } from "@/lib/session";
 import { submitApplicationAction } from "@/app/actions";
 
@@ -29,6 +29,8 @@ export default async function ApplyPage({ params }: { params: Promise<{ trialId:
   if (!trial) notFound();
 
   const participant = await getActiveParticipant();
+  const existing = getOpenInquiryForTrial(participant.id, trial.id);
+  if (existing) redirect(`/inquiry/${existing.id}`);
   const form = formFor(trial, getFictionalFixture()?.applicationForm);
   const fields = autofill(participant, form);
 
@@ -57,7 +59,7 @@ export default async function ApplyPage({ params }: { params: Promise<{ trialId:
 
   return (
     <div className="space-y-4">
-      <ScreenHeader back={`/trial/${trial.id}`} title={form.title} sub={trial.briefTitle ?? trial.id} action={<PrintButton />} />
+      <ScreenHeader back={`/trial/${trial.id}`} title="Application form" sub={trial.briefTitle ?? trial.id} action={<PrintButton />} />
 
       {form.notice ? <p className="text-[13px] leading-relaxed text-ink-soft">{form.notice}</p> : null}
 
@@ -117,8 +119,8 @@ export default async function ApplyPage({ params }: { params: Promise<{ trialId:
         </Callout>
 
         <StickyAction>
-          <button type="submit" className="cta inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full text-[15px] font-bold text-white">
-            <PaperPlaneTilt size={18} weight="bold" /> Send application
+          <button type="submit" className="press cta inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full text-[15px] font-bold text-white">
+            Send application
           </button>
         </StickyAction>
       </form>
