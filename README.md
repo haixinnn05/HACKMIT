@@ -188,6 +188,12 @@ Two indices, public text only:
 - `mozaic-passages` — one document per eligibility criterion, collapsed by study
   at query time
 
+Source ids and version metadata sit next to the search text: every document
+carries its registry id, source URL, retrieval time, record hash and the
+registry's last-update date, and each passage keeps the character offsets it was
+cut from. `npm run es:index` checks that those offsets re-read the exact text in
+the stored record, so a hit traces to one version of one record.
+
 Title/condition ranking and criterion ranking are min–max normalized and fused
 (not RRF: both rankings are bm25 over the same corpus). On 40 title probes,
 normalized fusion keeps **100% recall@10**; RRF lost the right record for 22.5%
