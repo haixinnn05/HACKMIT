@@ -1,6 +1,6 @@
 # Mozaic
 
-A navigation tool for adults considering a cancer trial. It helps someone
+A navigation tool for adults considering a clinical trials. It helps someone
 understand what a study would actually ask of them, see which requirements can
 and cannot be checked against what they know, and prepare a first conversation
 with a research coordinator.
