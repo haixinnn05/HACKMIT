@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, LockKey, QrCode, ShareNetwork, X } from "@phosphor-icons/react";
-import { MozaicMark } from "./Brand";
+import { MozaicMark, TicketRange } from "./Brand";
 
 /**
  * The passport card and the decision to present it.
@@ -114,8 +114,10 @@ export function PassportSurface({ summary }: { summary: PassportSummary }) {
     <>
       {/* ------------------------------------------------------------ the ticket */}
       <div className="ticket relative -mt-10">
-        <div className="ticket-top ticket-top-fill rounded-t-[26px] px-5 pb-6 pt-4 text-white">
-          <div className="flex items-center justify-between gap-3">
+        <div className="ticket-top ticket-top-fill relative overflow-hidden rounded-t-[26px] px-5 pb-7 pt-4 text-white">
+          <TicketRange />
+          {/* Everything below sits above the artwork. */}
+          <div className="relative flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
               <MozaicMark tone="white" className="h-7 w-auto" />
               <p className="text-[12.5px] font-extrabold tracking-[0.14em]">MOZAIC PASSPORT</p>
@@ -125,15 +127,15 @@ export function PassportSurface({ summary }: { summary: PassportSummary }) {
             </span>
           </div>
 
-          <p className="mt-4 text-[10px] font-bold uppercase tracking-[0.16em] text-white/60">Passport holder</p>
-          <p className="text-[1.5rem] font-bold leading-tight tracking-[-0.02em]">
+          <p className="relative mt-4 text-[10px] font-bold uppercase tracking-[0.16em] text-white/70">Passport holder</p>
+          <p className="relative text-[1.5rem] font-bold leading-tight tracking-[-0.02em]">
             {summary.displayName.replace(/\s*\(synthetic\)$/, "")}
           </p>
 
-          <dl className="mt-3.5 grid grid-cols-[auto_auto_1fr] gap-x-6">
+          <dl className="relative mt-3.5 grid grid-cols-[auto_auto_1fr] gap-x-6">
             {[["Age", summary.ageLabel], ["Sex", summary.sexLabel], ["From", summary.locationLabel]].map(([label, value]) => (
               <div key={label} className="min-w-0">
-                <dt className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/60">{label}</dt>
+                <dt className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/75">{label}</dt>
                 <dd className={`truncate text-[14px] font-bold ${value ? "" : "italic text-white/60"}`}>{value ?? "Not set"}</dd>
               </div>
             ))}

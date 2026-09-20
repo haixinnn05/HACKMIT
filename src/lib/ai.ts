@@ -29,7 +29,7 @@ import type { ParticipantProfile, Trial, TrialAssessment } from "./types";
 
 const MODEL = process.env.MOZAIC_MODEL ?? "claude-sonnet-5";
 const MAX_OUTPUT_TOKENS = 1400;
-const PROMPT_VERSION = "2026-09-19.2";
+const PROMPT_VERSION = "2026-09-19.3";
 
 export type AnswerMode = "model" | "offline_template";
 
@@ -219,15 +219,18 @@ async function callModel(system: string, user: string, schemaHint: string, speed
       method: "POST",
       headers: { "content-type": "application/json", authorization: `Bearer ${target.apiKey}` },
       body: JSON.stringify({
-        model: target.model, max_completion_tokens: 6000,
-        // Ask for valid JSON rather than hoping prose parses.
-        ...(structured ? { response_format: { type: "json_object" } } : {}),
+        model: target.model, max_completion_tokens: 12000,
+        // Ask for valid JSON rather than hoping prose parses. Reasoning is kept
+        // low: rewriting and quoting a source needs little of it, and at the
+        // default level the model could spend its whole budget thinking and
+        // return JSON cut off mid-sentence.
+        ...(structured ? { response_format: { type: "json_object" }, reasoning_effort: "low" } : {}),
         messages: [{ role: "system", content: system }, { role: "user", content: user }],
       }),
       signal: AbortSignal.timeout(75_000),
     });
     let response = await request(true);
-    // Some OpenAI-compatible gateways reject response_format. Try once without it.
+    // Some OpenAI-compatible gateways reject these options. Try once without them.
     if (response.status === 400) response = await request(false);
     // The status is logged; the body is not, because error bodies can echo the request.
     if (!response.ok) { console.warn(`[ai] gateway returned ${response.status}`); return null; }
