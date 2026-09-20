@@ -46,11 +46,11 @@ export function PersonaSwitcher({
         onChange={(event) => change(event.target.value)}
         className="mt-1 min-h-12 w-full rounded-[14px] border border-rule bg-surface px-3 text-[14px] font-semibold text-ink"
       >
-        {personas.map((persona) => (
-          <option key={persona.id} value={persona.id}>
-            {persona.displayName}
-          </option>
-        ))}
+          {personas.map((persona) => (
+            <option key={persona.id} value={persona.id}>
+              {persona.displayName.replace(/\s*\(synthetic\)$/, "")}
+            </option>
+          ))}
       </select>
     </label>
   );

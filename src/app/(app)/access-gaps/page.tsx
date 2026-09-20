@@ -1,5 +1,5 @@
-import { Callout, Card, ScreenHeader, SectionHeading } from "@/components/ui";
-import { getDb, getManifest } from "@/lib/db";
+import { Card, ScreenHeader, SectionHeading } from "@/components/ui";
+import { getDb } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -12,22 +12,21 @@ export const dynamic = "force-dynamic";
  */
 export default function AccessGapsPage() {
   const db = getDb();
-  const manifest = getManifest() as any;
   const count = (sql: string) => (db.prepare(sql).get() as any).c as number;
 
   const total = count("SELECT COUNT(*) c FROM trials WHERE is_fictional = 0");
   const noLocations = count("SELECT COUNT(*) c FROM trials t WHERE t.is_fictional=0 AND NOT EXISTS (SELECT 1 FROM sites s WHERE s.trial_id=t.id)");
 
   const gaps = [
-    { label: "No published visit schedule", n: total, d: total, meaning: "Nobody can work out the time commitment before contacting the site. This is the largest gap." },
-    { label: "Record not updated in over a year", d: total, meaning: "Recruiting status may have changed without the record being revised.",
+    { label: "No published visit schedule", n: total, d: total },
+    { label: "Record not updated in over a year", d: total,
       n: count("SELECT COUNT(*) c FROM trials WHERE is_fictional=0 AND last_update_post_date IS NOT NULL AND julianday('now') - julianday(last_update_post_date) > 365") },
-    { label: "No contact listed at any site", d: total, meaning: "A person with a question has nobody published to ask.",
+    { label: "No contact listed at any site", d: total,
       n: count("SELECT COUNT(*) c FROM trials t WHERE t.is_fictional=0 AND NOT EXISTS (SELECT 1 FROM sites s WHERE s.trial_id=t.id AND s.has_contact=1)") },
-    { label: "No study locations listed", n: noLocations, d: total, meaning: "There is no published place to go, so reachability cannot be judged." },
-    { label: "No site-level recruiting status", d: total - noLocations, meaning: "The study says it is recruiting, but not whether a given location is.",
+    { label: "No study locations listed", n: noLocations, d: total },
+    { label: "No site-level recruiting status", d: total - noLocations,
       n: count("SELECT COUNT(*) c FROM trials t WHERE t.is_fictional=0 AND EXISTS (SELECT 1 FROM sites s WHERE s.trial_id=t.id) AND NOT EXISTS (SELECT 1 FROM sites s WHERE s.trial_id=t.id AND s.site_status IS NOT NULL)") },
-    { label: "No age bounds stated", d: total, meaning: "Age eligibility has to be read from prose, or asked about.",
+    { label: "No age bounds stated", d: total,
       n: count("SELECT COUNT(*) c FROM trials WHERE is_fictional=0 AND min_age_years IS NULL AND max_age_years IS NULL") },
   ];
 
@@ -35,17 +34,10 @@ export default function AccessGapsPage() {
     `SELECT s.state, COUNT(DISTINCT s.trial_id) c FROM sites s JOIN trials t ON t.id = s.trial_id
      WHERE t.is_fictional=0 AND s.country='United States' AND s.state IS NOT NULL GROUP BY s.state ORDER BY c DESC`
   ).all() as { state: string; c: number }[];
-  const coverage = states.reduce((sum, entry) => sum + entry.c, 0) || 1;
-  const top5 = Math.round((states.slice(0, 5).reduce((sum, entry) => sum + entry.c, 0) / coverage) * 100);
 
   return (
     <div className="space-y-4">
-      <ScreenHeader back="/profile" title="What the public data does not say" sub={`Measured across the ${total} public ClinicalTrials.gov records in this snapshot.`} />
-
-      <Callout tone="caution">
-        These are gaps in published information, not evidence that a site turns anyone away. A
-        study with missing details is not necessarily worse run. Its record is simply less complete.
-      </Callout>
+      <ScreenHeader back="/profile" title="What the public data does not say" />
 
       <ul className="space-y-2.5">
         {gaps.map((gap) => {
@@ -59,14 +51,13 @@ export default function AccessGapsPage() {
               <div className="mt-2 h-1.5 overflow-hidden rounded-full" role="img" aria-label={`${share.toFixed(1)} percent of records`}>
                 <div className="h-full rounded-full bg-iris" style={{ width: `${Math.max(2, Math.min(100, share))}%` }} />
               </div>
-              <p className="mt-2 text-[12.5px] leading-relaxed text-ink-soft">{gap.meaning}</p>
             </Card>
           );
         })}
       </ul>
 
       <section>
-        <SectionHeading hint={`Studies with at least one listed site per US state. ${top5}% of state-level coverage sits in the top five.`}>Where the listed sites are</SectionHeading>
+        <SectionHeading>Where the listed sites are</SectionHeading>
         <Card className="p-4">
           <ul className="space-y-2">
             {states.slice(0, 10).map((entry) => (
@@ -77,21 +68,8 @@ export default function AccessGapsPage() {
               </li>
             ))}
           </ul>
-          <p className="mt-3 text-[11.5px] leading-relaxed text-ink-faint">
-            A state with few listed studies may reflect where sponsors opened sites, where research
-            infrastructure exists, or how completely records were filled in. This measurement cannot
-            tell those apart.
-          </p>
         </Card>
       </section>
-
-      <Card className="p-4 text-[12px] leading-relaxed text-ink-soft">
-        <p className="mb-1 text-[13.5px] font-bold text-ink">About this snapshot</p>
-        <p>Source: {manifest?.source ?? "ClinicalTrials.gov API v2"}. Condition queried: {manifest?.condition ?? "breast cancer"}.</p>
-        <p>Retrieved {manifest?.retrievedAt ?? "unknown"}. {manifest?.recordCount ?? total} of {manifest?.totalAvailableAtQueryTime ?? "unknown"} matching records.</p>
-        <p className="break-all font-mono text-[10.5px] text-ink-faint">{manifest?.contentHash ?? ""}</p>
-        <p className="mt-1.5 text-ink-faint">A partial snapshot of one condition area, not a census. Percentages describe these records only.</p>
-      </Card>
     </div>
   );
 }

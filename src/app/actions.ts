@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
-  audit, clearTodos, createGrant, deleteQuestionDraft, getQuestion, saveQuestionDraft, createInquiry, createQuestion, ensureTodo, getParticipant, getTrial,
+  audit, clearTodos, createGrant, deleteQuestionDraft, getQuestion, saveQuestionDraft, createInquiry, createQuestion, ensureTodo, getInquiryForTrial, getParticipant, getTrial,
   listQuestions, recordMilestone, setPersonalNote, revokeGrant, saveTrial, setInquiryState, toggleTodo,
   unsaveTrial, updateParticipant, updateQuestion, upsertEnrollment,
 } from "@/lib/repo";
@@ -81,6 +81,8 @@ export async function shareInquiryAction(formData: FormData) {
   const message = [note, packet].filter(Boolean).join("\n\n");
   const trial = getTrial(trialId);
   if (!trial) return;
+  const existing = getInquiryForTrial(participant.id, trialId);
+  if (existing) redirect(`/inquiry/${existing.id}`);
 
   const selected = formData.getAll("field").map(String);
   const payload: Record<string, unknown> = {};
@@ -106,7 +108,7 @@ export async function shareInquiryAction(formData: FormData) {
   const grant = createGrant({
     participantId: participant.id,
     recipientLabel: trial.isFictional
-      ? "Harborview Cancer Center, Cambridge (simulated site account)"
+      ? "Harborview Cancer Center, Cambridge"
       : `${trial.leadSponsor ?? "Study team"}, ${trial.id}`,
     trialId,
     allowedFields: selected,
@@ -128,9 +130,10 @@ export async function shareInquiryAction(formData: FormData) {
   }
   revalidatePath("/inbox");
   revalidatePath("/questions");
-
   revalidatePath("/passport");
   revalidatePath("/coordinator");
+  revalidatePath(`/trial/${trialId}`);
+  revalidatePath("/profile/saved");
   redirect(`/inquiry/${inquiry.id}`);
 }
 
@@ -217,7 +220,7 @@ export async function coordinatorAnswerAction(formData: FormData) {
   } else {
     updateQuestion(questionId, {
       state: "reviewed_answer", answer, answerCitation: citation,
-      answeredBy: "R. Alvarez, Research Coordinator (simulated staff account)",
+      answeredBy: "R. Alvarez, Research Coordinator",
     });
     deleteQuestionDraft(questionId);
     setInquiryState(inquiryId, "answered");
@@ -301,8 +304,7 @@ export async function decideAction(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/passport");
   revalidatePath(`/trial/${trialId}`);
-  // Agreeing leads straight to the visits it created.
-  if (decision === "participating") redirect("/timeline");
+  if (decision === "participating") redirect("/");
   if (decision === "declined") redirect("/inbox?tab=archived");
 }
 
@@ -322,6 +324,7 @@ export async function toggleTodoAction(formData: FormData) {
   const participant = await getActiveParticipant();
   toggleTodo(String(formData.get("todoId")), participant.id);
   revalidatePath("/timeline");
+  revalidatePath("/");
 }
 
 /**

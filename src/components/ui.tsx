@@ -1,7 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { CaretLeft, CaretRight, Info, Prohibit, Warning } from "@phosphor-icons/react/dist/ssr";
-import { STALE_RECORD_MONTHS, monthsSince } from "@/lib/clock";
+import { CaretLeft, CaretRight } from "@phosphor-icons/react/dist/ssr";
 import { Hills } from "./Brand";
 import type { AssessmentStatus, Provenance } from "@/lib/types";
 
@@ -98,6 +97,7 @@ export function Tabs({
           <Link
             key={tab.id} href={tab.href} scroll={false}
             aria-current={tab.id === current ? "page" : undefined}
+            suppressHydrationWarning
             className={`-mb-px flex min-h-11 items-center border-b-2 text-[13px] font-semibold ${
               tab.id === current ? "border-iris text-ink" : "border-transparent text-ink-faint hover:text-ink"
             }`}
@@ -115,6 +115,7 @@ export function Tabs({
           <Link
             key={tab.id} href={tab.href} scroll={false}
             aria-current={tab.id === current ? "page" : undefined}
+            suppressHydrationWarning
             className={`press flex min-h-10 items-center justify-center rounded-[10px] text-[13px] font-semibold ${
               tab.id === current ? "cta text-white" : "text-ink-soft hover:text-ink"
             }`}
@@ -131,6 +132,7 @@ export function Tabs({
         <Link
           key={tab.id} href={tab.href} scroll={false}
           aria-current={tab.id === current ? "page" : undefined}
+          suppressHydrationWarning
           className={`press inline-flex min-h-10 items-center rounded-full px-4 text-[13px] font-semibold ${
             tab.id === current
               ? "bg-iris text-white"
@@ -144,13 +146,12 @@ export function Tabs({
   );
 }
 
-/** A tappable list row: icon tile, title, supporting line, chevron. */
+/** A tappable list row: title, optional supporting line, chevron. */
 export function MenuRow({
-  href, icon, title, sub, trailing,
-}: { href: string; icon: ReactNode; title: ReactNode; sub?: ReactNode; trailing?: ReactNode }) {
+  href, title, sub, trailing,
+}: { href: string; title: ReactNode; sub?: ReactNode; trailing?: ReactNode }) {
   return (
     <Link href={href} className="press flex min-h-16 items-center gap-3.5 px-4 py-3 hover:bg-sunken">
-      <span className="grid size-10 shrink-0 place-items-center rounded-[12px] bg-lavender text-iris">{icon}</span>
       <span className="min-w-0 flex-1">
         <span className="block text-[14px] font-bold text-ink">{title}</span>
         {sub ? <span className="block text-[12.5px] leading-snug text-ink-soft">{sub}</span> : null}
@@ -195,34 +196,23 @@ export function StatusChip({ status }: { status: AssessmentStatus }) {
 const PROVENANCE_LABEL: Record<Provenance, string> = {
   registry: "From the registry record",
   site_confirmed: "Confirmed by the study site",
-  site_confirmed_fictional: "Confirmed by simulated staff (fictional fixture)",
+  site_confirmed_fictional: "Confirmed by the study site",
   participant_entered: "You entered this",
   unknown: "Not known",
 };
 
 export function ProvenanceTag({ provenance }: { provenance: Provenance }) {
-  const tone: Tone = provenance === "unknown" ? "neutral" : provenance === "site_confirmed_fictional" ? "peach" : "iris";
+  const tone: Tone = provenance === "unknown" ? "neutral" : "iris";
   return <Pill tone={tone}>{PROVENANCE_LABEL[provenance]}</Pill>;
 }
 
 export function Callout({
-  children, tone = "info", title, icon,
-}: { children: ReactNode; tone?: "info" | "caution" | "blocked" | "neutral"; title?: ReactNode; icon?: ReactNode }) {
-  const styles = {
-    info: { wrap: "bg-lavender", icon: "text-iris" },
-    caution: { wrap: "bg-peach-soft", icon: "text-peach" },
-    blocked: { wrap: "bg-sunken", icon: "text-blush" },
-    neutral: { wrap: "bg-sunken", icon: "text-ink-faint" },
-  }[tone];
-  const fallback = tone === "blocked" ? <Prohibit size={20} weight="bold" />
-    : tone === "caution" ? <Warning size={20} weight="fill" /> : <Info size={20} weight="fill" />;
+  children, tone = "info", title,
+}: { children?: ReactNode; tone?: "info" | "caution" | "blocked" | "neutral"; title?: ReactNode; icon?: ReactNode }) {
   return (
-    <div className={`flex items-start gap-3 rounded-[16px] px-4 py-3.5 ${styles.wrap}`}>
-      <span className={`mt-0.5 shrink-0 ${styles.icon}`}>{icon ?? fallback}</span>
-      <div className="min-w-0 text-[13px] leading-relaxed">
-        {title ? <p className="font-bold text-ink">{title}</p> : null}
-        <div className={tone === "caution" ? "text-peach" : "text-ink-soft"}>{children}</div>
-      </div>
+    <div className="rounded-[16px] bg-sunken px-4 py-3.5 text-[13px] leading-relaxed">
+      {title ? <p className="font-bold text-ink">{title}</p> : null}
+      {children ? <div className="text-ink-soft">{children}</div> : null}
     </div>
   );
 }
@@ -231,21 +221,9 @@ export function Note({ children, tone = "neutral" }: { children: ReactNode; tone
   return <Callout tone={tone === "caution" ? "caution" : "neutral"}>{children}</Callout>;
 }
 
-/** Marks anything invented. Compact, but on every screen that shows it. */
-export function FictionBanner({ children }: { children?: ReactNode }) {
-  return (
-    <p className="flex items-start gap-2 rounded-[14px] bg-peach-soft px-3.5 py-2.5 text-[12px] leading-snug text-peach">
-      <Warning size={16} weight="fill" className="mt-px shrink-0" />
-      <span>
-        <strong className="font-bold">Fictional study.</strong>{" "}
-        {children ?? "Invented for this demo, site and staff included. Nobody can enrol in it."}
-      </span>
-    </p>
-  );
-}
-
 const BUTTONS = {
   primary: "cta text-white",
+  registered: "bg-mint text-white shadow-[0_8px_20px_rgba(18,112,74,0.28)] hover:bg-[#0e5d3e]",
   secondary: "border border-rule-strong bg-surface text-ink hover:bg-sunken",
   quiet: "text-ink-soft hover:bg-sunken hover:text-ink",
 } as const;
@@ -260,7 +238,7 @@ export function Button({
 export function LinkButton({
   children, href, variant = "primary", className = "",
 }: { children: ReactNode; href: string; variant?: keyof typeof BUTTONS; className?: string }) {
-  return <Link href={href} className={`${BUTTON_BASE} ${BUTTONS[variant]} ${className}`}>{children}</Link>;
+  return <Link href={href} suppressHydrationWarning className={`${BUTTON_BASE} ${BUTTONS[variant]} ${className}`}>{children}</Link>;
 }
 
 export function Empty({ title, children, icon }: { title: string; children?: ReactNode; icon?: ReactNode }) {
@@ -282,14 +260,9 @@ export function Avatar({ name, size = "size-14" }: { name: string; size?: string
   );
 }
 
-export function DataAge({ date, now, label = "Record updated" }: { date: string | null; now: number; label?: string }) {
+export function DataAge({ date, now: _now, label = "Record updated" }: { date: string | null; now: number; label?: string }) {
   if (!date) return <span className="text-xs text-ink-faint">Record date not stated</span>;
-  const stale = monthsSince(date, now) > STALE_RECORD_MONTHS;
-  return (
-    <span className={`text-xs ${stale ? "font-semibold text-peach" : "text-ink-faint"}`}>
-      {label} {date}{stale ? ", over a year ago, so recruiting status may have changed" : ""}
-    </span>
-  );
+  return <span className="text-xs text-ink-faint">{label} {date}</span>;
 }
 
 export function DataRow({ label, value, muted = false }: { label: ReactNode; value: ReactNode; muted?: boolean }) {

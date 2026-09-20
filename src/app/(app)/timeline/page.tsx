@@ -1,24 +1,12 @@
-import {
-  CalendarBlank, Car, Check, ClipboardText, Flask, Heart, MapPin, PaperPlaneTilt, Phone, User,
-} from "@phosphor-icons/react/dist/ssr";
-import { Callout, Card, Empty, FictionBanner, LinkButton, ScreenHeader, SectionHeading, Tabs } from "@/components/ui";
+import { Check } from "@phosphor-icons/react/dist/ssr";
+import { Card, Empty, LinkButton, ScreenHeader, SectionHeading, Tabs } from "@/components/ui";
 import { requestNow } from "@/lib/clock";
-import { getTrial, listEnrollments, listTodos } from "@/lib/repo";
+import { openedFromMap } from "@/lib/map-return";
+import { listEnrollments, listTodos } from "@/lib/repo";
 import { getActiveParticipant } from "@/lib/session";
 import { requestVisitHelpAction, toggleTodoAction } from "@/app/actions";
 
 export const dynamic = "force-dynamic";
-
-const TODO_ICON: Record<string, React.ReactNode> = {
-  parking: <Car size={18} />, travel: <PaperPlaneTilt size={18} />, bring: <ClipboardText size={18} />,
-};
-
-function visitIcon(name: string) {
-  if (/phone|remote|call/i.test(name)) return <Phone size={20} />;
-  if (/lab|baseline|blood/i.test(name)) return <Flask size={20} />;
-  if (/screen|consult/i.test(name)) return <CalendarBlank size={20} />;
-  return <User size={20} />;
-}
 
 /**
  * Visits & Timeline, for studies the person has said yes to.
@@ -28,9 +16,12 @@ function visitIcon(name: string) {
  * times are not shown for the same reason: the fixture confirms visit length,
  * not appointment slots.
  */
-export default async function TimelinePage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
-  const { view: rawView } = await searchParams;
+export default async function TimelinePage({ searchParams }: { searchParams: Promise<{ view?: string; from?: string }> }) {
+  const { view: rawView, from } = await searchParams;
   const view = rawView === "calendar" ? "calendar" : "timeline";
+  const fromMap = openedFromMap(from);
+  const timelineHref = fromMap ? "/timeline?from=map" : "/timeline";
+  const calendarHref = fromMap ? "/timeline?view=calendar&from=map" : "/timeline?view=calendar";
   const participant = await getActiveParticipant();
   const now = requestNow();
   const today = new Date(now).toISOString().slice(0, 10);
@@ -41,30 +32,25 @@ export default async function TimelinePage({ searchParams }: { searchParams: Pro
     .sort((a, b) => a.date.localeCompare(b.date));
   const todos = listTodos(participant.id);
   const nextVisit = visits.find((visit) => visit.date >= today);
-  const fictional = active.some((entry) => getTrial(entry.trialId)?.isFictional);
 
   return (
     <div className="space-y-4">
-      <ScreenHeader art title="Visits & Timeline" sub="Keep track of your upcoming visits and important milestones." />
+      <ScreenHeader art title="Visits & Timeline" back={fromMap ? "/" : undefined} />
 
       <Tabs
         variant="segment" current={view}
         tabs={[
-          { id: "timeline", label: "Timeline", href: "/timeline" },
-          { id: "calendar", label: "Calendar", href: "/timeline?view=calendar" },
+          { id: "timeline", label: "Timeline", href: timelineHref },
+          { id: "calendar", label: "Calendar", href: calendarHref },
         ]}
       />
 
       {visits.length === 0 ? (
-        <Empty title="No visits yet" icon={<CalendarBlank size={22} />}>
-          When you agree to take part in a study that has a confirmed visit schedule, its visits
-          appear here.
+        <Empty title="No visits yet">
           <LinkButton href="/explore" variant="secondary" className="mt-3.5">Find trials</LinkButton>
         </Empty>
       ) : (
         <>
-          {fictional ? <FictionBanner>These visits come from the demo study. The dates count from the day you agreed and are not real appointments.</FictionBanner> : null}
-
           {view === "timeline" ? (
             <ol className="relative ml-2 border-l-2 border-iris/30 pl-6">
               {visits.map((visit, index) => {
@@ -73,12 +59,11 @@ export default async function TimelinePage({ searchParams }: { searchParams: Pro
                 return (
                   <li key={`${visit.trialId}-${index}`} className="relative pb-2.5 last:pb-0">
                     <span aria-hidden className={`absolute -left-[33px] top-5 size-3.5 rounded-full border-2 border-canvas ${past ? "bg-rule-strong" : "bg-iris"}`} />
-                    <Card className={`flex items-start gap-3.5 px-4 py-3 ${past ? "opacity-60" : ""}`}>
-                      <span className="grid size-11 shrink-0 place-items-center rounded-[12px] bg-lavender text-iris">{visitIcon(visit.name)}</span>
+                    <Card id={`visit-${visit.trialId}-${index}`} className={`scroll-mt-4 px-4 py-3 target:ring-2 target:ring-iris ${past ? "opacity-60" : ""}`}>
                       <div className="min-w-0">
                         <p className="text-[12px] text-ink-soft">{date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}{past ? " (past)" : ""}</p>
                         <p className="text-[14.5px] font-bold text-ink">{visit.name}</p>
-                        {visit.location ? <p className="flex items-center gap-1 text-[12.5px] text-ink-soft"><MapPin size={14} className="shrink-0 text-iris" /><span className="truncate">{visit.location.split(",")[0]}</span></p> : null}
+                        {visit.location ? <p className="text-[12.5px] text-ink-soft">{visit.location.split(",")[0]}</p> : null}
                         <p className="text-[12.5px] text-ink-soft">About {visit.onSiteHours} hours. Time to be confirmed.</p>
                       </div>
                     </Card>
@@ -94,7 +79,7 @@ export default async function TimelinePage({ searchParams }: { searchParams: Pro
 
       {todos.length ? (
         <section aria-labelledby="todo-heading">
-          <SectionHeading id="todo-heading" hint="Prompts to ask about, based on what the study has not stated. They are not promises from the site.">To Do</SectionHeading>
+          <SectionHeading id="todo-heading">To Do</SectionHeading>
           <ul className="space-y-2">
             {todos.map((todo) => (
               <li key={todo.id}>
@@ -105,7 +90,6 @@ export default async function TimelinePage({ searchParams }: { searchParams: Pro
                     <span aria-hidden className={`grid size-6 shrink-0 place-items-center rounded-[8px] border-2 ${todo.done ? "border-iris bg-iris text-white" : "border-rule-strong text-transparent"}`}>
                       <Check size={14} weight="bold" />
                     </span>
-                    <span className="text-iris">{TODO_ICON[todo.kind] ?? <ClipboardText size={18} />}</span>
                     <span className={`text-[13.5px] font-semibold ${todo.done ? "text-ink-faint line-through" : "text-ink"}`}>{todo.label}</span>
                   </button>
                 </form>
@@ -120,21 +104,12 @@ export default async function TimelinePage({ searchParams }: { searchParams: Pro
           <form action={requestVisitHelpAction} className="space-y-2.5">
             <input type="hidden" name="trialId" value={nextVisit.trialId} />
             <label htmlFor="visit-help" className="block text-[14px] font-bold text-ink">Is anything making your next visit difficult?</label>
-            <p className="text-[12.5px] leading-relaxed text-ink-soft">
-              Tell the study team and they can try to help. This goes to a coordinator as a
-              question. It is optional, and nothing happens if you leave it blank.
-            </p>
             <textarea id="visit-help" name="text" rows={2} required placeholder="e.g. I do not have a ride on that day."
               className="w-full rounded-[14px] border border-rule bg-surface px-3.5 py-2.5 text-[13.5px] text-ink placeholder:text-ink-faint" />
             <button type="submit" className="press min-h-11 rounded-full border border-rule-strong bg-surface px-5 text-[13px] font-bold text-ink hover:bg-sunken">Ask for help</button>
           </form>
         </Card>
       ) : null}
-
-      <Callout icon={<Heart size={20} weight="fill" />} title={"You’re doing the hard part."}>
-        We&rsquo;re here for the planning. We can&rsquo;t watch for emergencies, so if something feels
-        wrong, call your care team. And you can stop taking part at any time by telling the study team.
-      </Callout>
     </div>
   );
 }

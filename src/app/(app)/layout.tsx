@@ -10,11 +10,7 @@ import { BottomNav } from "@/components/NavLink";
  */
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mx-auto min-h-dvh w-full max-w-[430px] bg-canvas shadow-[0_0_60px_rgba(14,13,99,0.08)]">
-      {/* The prototype must never be mistaken for a live service. */}
-      <p className="no-print bg-peach-soft px-4 pb-1 pt-[max(0.25rem,env(safe-area-inset-top))] text-center text-[10.5px] font-semibold leading-snug text-peach">
-        Prototype. Synthetic people, public registry records. Not a medical device.
-      </p>
+    <div className="mx-auto min-h-dvh w-full max-w-[430px] bg-canvas pt-[env(safe-area-inset-top)] shadow-[0_0_60px_rgba(14,13,99,0.08)]">
       <main id="main" className="px-5 pb-32 pt-5">{children}</main>
       <BottomNav />
     </div>

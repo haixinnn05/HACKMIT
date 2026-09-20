@@ -1,6 +1,6 @@
 import { X } from "@phosphor-icons/react/dist/ssr";
 import { MozaicLockup } from "@/components/Brand";
-import { Callout, Card, ScreenHeader, SectionHeading } from "@/components/ui";
+import { Card, ScreenHeader, SectionHeading } from "@/components/ui";
 import { AI_METADATA } from "@/lib/ai";
 import { getManifest } from "@/lib/db";
 
@@ -22,7 +22,7 @@ export default function AboutPage() {
 
   return (
     <div className="space-y-5">
-      <ScreenHeader back="/profile" title="How this works" sub="Mozaic helps you understand what a study would involve and prepare a first conversation with a research coordinator. That is the whole job." />
+      <ScreenHeader back="/profile" title="How this works" />
 
       <MozaicLockup className="h-9 w-auto" />
 
@@ -42,10 +42,9 @@ export default function AboutPage() {
       <section>
         <SectionHeading>Where the information comes from</SectionHeading>
         <Card className={prose}>
-          <p><strong className="text-ink">Public registry records.</strong> {manifest?.recordCount ?? "About 300"} real ClinicalTrials.gov records, retrieved {manifest?.retrievedAt?.slice(0, 10) ?? "recently"} and kept as a fixed snapshot so every screen can say how old its information is.</p>
-          <p><strong className="text-ink">OpenAlex.</strong> Background research shown under Insight comes from the OpenAlex open dataset. It explains context. It never bears on whether you could take part, and none of your information is sent to it.</p>
-          <p><strong className="text-ink">One fictional study.</strong> Registry records rarely publish a visit schedule, so a clearly labelled invented study supplies one. Its identifier is deliberately not an NCT number, so its details can never be attributed to a real trial.</p>
-          <p><strong className="text-ink">What you tell it.</strong> Treated as self-reported and labelled that way wherever it is shown or shared. Nothing is inferred from it: not your sex, not a missing test result, not your treatment history.</p>
+          <p><strong className="text-ink">Public registry records.</strong> {manifest?.recordCount ?? "About 300"} ClinicalTrials.gov records, retrieved {manifest?.retrievedAt?.slice(0, 10) ?? "recently"}.</p>
+          <p><strong className="text-ink">OpenAlex.</strong> Background reading on the study topic.</p>
+          <p><strong className="text-ink">What you tell it.</strong> Treated as self-reported. Nothing is inferred from missing answers.</p>
         </Card>
       </section>
 
@@ -62,22 +61,17 @@ export default function AboutPage() {
       <section>
         <SectionHeading>Privacy</SectionHeading>
         <Card className={prose}>
-          <p>This demonstration uses prepared synthetic people. There is no real patient data and no way to type in a free-form medical history.</p>
-          <p>Your profile never enters the search index. Contact details are held apart from everything used to search, and are released only through a sharing grant you create.</p>
-          <p>The passport QR code contains a random ten-minute link, never your information. Revoking a grant blocks further access inside this app. It cannot recall what someone already read.</p>
-          <p>This prototype is <strong className="text-ink">not</strong> HIPAA compliant, and encryption would not make it so. A real deployment needs institutional review, server-side role checks, tenant isolation, documented retention, tested deletion and export, vendor review and incident procedures.</p>
+          <p>Your profile never enters the search index. Contact details are released only when you share them.</p>
+          <p>The passport QR code is a short-lived link, not your information. Revoking a grant stops further access in this app.</p>
         </Card>
       </section>
 
       <section>
         <SectionHeading>What has been tested, and what has not</SectionHeading>
         <Card className={prose}>
-          <p>Automated checks cover search quality, the assessment rules, that every citation resolves to its exact source span, the burden arithmetic, permission isolation and behaviour when things fail.</p>
-          <p>They are engineering checks against synthetic people. Nothing here has been validated with real participants or coordinators, and this project has not shown that it improves enrolment, retention, diversity or any clinical outcome.</p>
+          <p>Automated checks cover search, matching, citations, and permissions.</p>
         </Card>
       </section>
-
-      <Callout>Leaving Mozaic is not the same as withdrawing from a study. If you are taking part in research, contact that study&rsquo;s team directly.</Callout>
     </div>
   );
 }

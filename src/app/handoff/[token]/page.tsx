@@ -1,7 +1,5 @@
 import type { ReactNode } from "react";
-import {
-  CaretRight, ChatCircle, FileText, Heart, LockKey, MapPin, Phone, ShieldCheck, User,
-} from "@phosphor-icons/react/dist/ssr";
+import { CaretRight } from "@phosphor-icons/react/dist/ssr";
 import { Avatar, Callout, Card, DataRow } from "@/components/ui";
 import { requestNow } from "@/lib/clock";
 import { getGrantByToken, getParticipant, getPersonalNote, listQuestions } from "@/lib/repo";
@@ -48,11 +46,11 @@ export default async function HandoffPage({ params }: { params: Promise<{ token:
   const questions = allowed.has("questions")
     ? listQuestions({ participantId: participant.id }).filter((q) => !isAnswered(q)) : [];
 
-  const sections: { id: string; icon: ReactNode; title: string; sub: string; body: ReactNode }[] = [];
+  const sections: { id: string; title: string; sub: string; body: ReactNode }[] = [];
 
   if (allowed.has("age")) {
     sections.push({
-      id: "personal", icon: <User size={22} />, title: "Personal Information", sub: "Age, location, basic details",
+      id: "personal", title: "Personal Information", sub: "Age, location, basic details",
       body: (
         <dl>
           <DataRow label="Age" value={participant.ageYears ?? "Not recorded"} muted={participant.ageYears == null} />
@@ -64,7 +62,7 @@ export default async function HandoffPage({ params }: { params: Promise<{ token:
   }
   if (allowed.has("condition") || allowed.has("facts")) {
     sections.push({
-      id: "medical", icon: <FileText size={22} />, title: "Medical History", sub: "Relevant conditions and treatments",
+      id: "medical", title: "Medical History", sub: "Relevant conditions and treatments",
       body: (
         <dl>
           {allowed.has("condition") ? <DataRow label="Condition" value={participant.condition ?? "Not recorded"} /> : null}
@@ -81,7 +79,7 @@ export default async function HandoffPage({ params }: { params: Promise<{ token:
   }
   if (allowed.has("practical")) {
     sections.push({
-      id: "preferences", icon: <Heart size={22} />, title: "Preferences", sub: "Travel, scheduling, support",
+      id: "preferences", title: "Preferences", sub: "Travel, scheduling, support",
       body: (
         <dl>
           <DataRow label="Travel each way" value={participant.oneWayTravelMinutes != null ? `About ${participant.oneWayTravelMinutes} min` : "Not recorded"} muted={participant.oneWayTravelMinutes == null} />
@@ -94,7 +92,7 @@ export default async function HandoffPage({ params }: { params: Promise<{ token:
   }
   if (allowed.has("questions")) {
     sections.push({
-      id: "questions", icon: <ChatCircle size={22} />, title: "Saved Questions", sub: `${questions.length} waiting to be asked`,
+      id: "questions", title: "Saved Questions", sub: `${questions.length} waiting to be asked`,
       body: questions.length ? (
         <ol className="space-y-1.5 py-2">
           {questions.map((question, index) => (
@@ -106,7 +104,7 @@ export default async function HandoffPage({ params }: { params: Promise<{ token:
   }
   if (allowed.has("contact")) {
     sections.push({
-      id: "contact", icon: <Phone size={22} />, title: "Contact Details", sub: "Email and phone",
+      id: "contact", title: "Contact Details", sub: "Email and phone",
       body: (
         <dl>
           <DataRow label="Email" value={participant.contact.email ?? "Not recorded"} />
@@ -120,13 +118,9 @@ export default async function HandoffPage({ params }: { params: Promise<{ token:
     <div className="space-y-4">
       <header>
         <h1 className="text-[1.45rem] font-bold tracking-[-0.02em] text-ink">Shared Patient Profile</h1>
-        <p className="mt-1.5 inline-flex items-center gap-1.5 rounded-full bg-iris-soft px-3 py-1 text-[12px] font-bold text-iris-deep">
-          <ShieldCheck size={15} weight="fill" /> Patient-authorized view
-          {minutesLeft != null ? `, expires in ${minutesLeft} min` : ""}
-        </p>
-        <p className="mt-2 text-[12.5px] leading-relaxed text-ink-soft">
-          This information has been shared by {name} for research purposes only. This view is read-only.
-        </p>
+        {minutesLeft != null ? (
+          <p className="mt-1.5 text-[12px] font-bold text-iris-deep">Expires in {minutesLeft} min</p>
+        ) : null}
       </header>
 
       <Card className="p-4">
@@ -137,7 +131,7 @@ export default async function HandoffPage({ params }: { params: Promise<{ token:
           {allowed.has("age") ? (
             <>
               <p className="text-[13px] text-ink-soft">{[participant.ageYears != null ? `Age ${participant.ageYears}` : null, sex].filter(Boolean).join(", ")}</p>
-              <p className="flex items-center gap-1 text-[13px] text-ink-soft"><MapPin size={14} className="text-iris" />{[participant.state, "USA"].filter(Boolean).join(", ")}</p>
+              <p className="text-[13px] text-ink-soft">{[participant.state, "USA"].filter(Boolean).join(", ")}</p>
             </>
           ) : <p className="text-[13px] italic text-ink-faint">Personal details not shared</p>}
         </div>
@@ -149,7 +143,6 @@ export default async function HandoffPage({ params }: { params: Promise<{ token:
         {sections.map((section) => (
           <Card key={section.id}><details className="group">
             <summary className="press flex min-h-16 cursor-pointer list-none items-center gap-3.5 px-4 py-3">
-              <span className="grid size-10 shrink-0 place-items-center rounded-[12px] bg-lavender text-iris">{section.icon}</span>
               <span className="min-w-0 flex-1">
                 <span className="block text-[14px] font-bold text-ink">{section.title}</span>
                 <span className="block text-[12.5px] text-ink-soft">{section.sub}</span>
@@ -162,15 +155,8 @@ export default async function HandoffPage({ params }: { params: Promise<{ token:
       </div>
 
       {!allowed.has("contact") ? (
-        <Callout tone="blocked" title="Contact details were not shared.">
-          The participant has chosen not to share their contact information.
-        </Callout>
+        <Callout title="Contact details were not shared." />
       ) : null}
-
-      <Callout icon={<LockKey size={20} weight="fill" />} title="Limited, patient-authorized information">
-        Only the sections {name.split(" ")[0]} chose to share are visible. Everything here is
-        self-reported and not medically verified. It is not a screening decision.
-      </Callout>
     </div>
   );
 }

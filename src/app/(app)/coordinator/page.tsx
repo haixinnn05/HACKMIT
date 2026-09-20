@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { CaretRight, ShieldCheck, Tray } from "@phosphor-icons/react/dist/ssr";
-import { Avatar, Callout, Card, Empty, Pill, ScreenHeader, Tabs } from "@/components/ui";
+import { CaretRight } from "@phosphor-icons/react/dist/ssr";
+import { Avatar, Card, Empty, Pill, ScreenHeader, Tabs } from "@/components/ui";
 import { getParticipant, getTrial, listInquiriesForCoordinator, listQuestions } from "@/lib/repo";
 import { isAnswered } from "@/lib/questions";
 
@@ -24,12 +24,7 @@ export default async function CoordinatorInbox({ searchParams }: { searchParams:
 
   return (
     <div className="space-y-4">
-      <ScreenHeader back="/inbox" title="Research Team Inbox" sub="Organize patient inquiries and support your study team." />
-
-      <Callout tone="caution" title="Simulated staff account">
-        R. Alvarez, Research Coordinator, Harborview Cancer Center. No real site, staff member or
-        participant is involved, and nothing here leaves this app.
-      </Callout>
+      <ScreenHeader back="/inbox" title="Research Team Inbox" />
 
       <Tabs
         current={tab}
@@ -41,8 +36,8 @@ export default async function CoordinatorInbox({ searchParams }: { searchParams:
       />
 
       {shown.length === 0 ? (
-        <Empty title="Nothing waiting" icon={<Tray size={22} />}>
-          When someone shares an inquiry, it appears here with their evidence and what is missing.
+        <Empty title="Nothing waiting">
+          When someone shares an inquiry, it appears here.
         </Empty>
       ) : (
         <ul className="space-y-2.5">
@@ -63,8 +58,7 @@ export default async function CoordinatorInbox({ searchParams }: { searchParams:
                     </span>
                     <span className="block truncate text-[12px] text-ink-soft">{getTrial(inquiry.trialId)?.briefTitle ?? inquiry.trialId}</span>
                     <span className="mt-1 flex flex-wrap items-center gap-1.5">
-                      <Pill tone="iris" icon={<ShieldCheck size={12} weight="fill" />}>Patient-authorized</Pill>
-                      {open ? <Pill tone="peach">{open} open {open === 1 ? "question" : "questions"}</Pill> : <Pill tone="mint">Replied</Pill>}
+                      {open ? <Pill>{open} open</Pill> : <Pill tone="mint">Replied</Pill>}
                     </span>
                   </span>
                   <CaretRight size={16} weight="bold" className="shrink-0 text-iris" />

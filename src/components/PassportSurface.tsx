@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, LockKey, QrCode, ShareNetwork, X } from "@phosphor-icons/react";
+import { Check, QrCode, ShareNetwork, X } from "@phosphor-icons/react";
 import { MozaicMark } from "./Brand";
 
 /**
@@ -36,7 +36,6 @@ interface Code { dataUrl: string; url: string; expiresAt: string }
 
 export function PassportSurface({ summary }: { summary: PassportSummary }) {
   const router = useRouter();
-  const recorded = summary.facts.filter((fact) => fact.value);
 
   const [choosing, setChoosing] = useState(false);
   const [selected, setSelected] = useState<string[]>(["age", "condition", "facts"]);
@@ -101,7 +100,7 @@ export function PassportSurface({ summary }: { summary: PassportSummary }) {
   const rows = [
     { id: "age", label: "Personal information", sub: [summary.ageLabel, summary.sexLabel, summary.locationLabel].filter(Boolean).join(", ") || "Not recorded" },
     { id: "condition", label: "Condition", sub: summary.conditionLabel ?? "Not recorded" },
-    { id: "facts", label: "Clinical facts", sub: `${factKeys.length} of ${summary.facts.length} selected, ${summary.facts.length - recorded.length} marked unknown` },
+    { id: "facts", label: "Clinical facts", sub: `${factKeys.length} selected` },
     { id: "practical", label: "Travel preferences", sub: summary.practicalLabel ?? "Not recorded" },
     { id: "questions", label: "Saved questions", sub: summary.openQuestionCount ? `${summary.openQuestionCount} open` : "None saved" },
     { id: "contact", label: "Contact details", sub: selected.includes("contact") ? "Will be shared" : "Not shared" },
@@ -178,17 +177,6 @@ export function PassportSurface({ summary }: { summary: PassportSummary }) {
         <ShareNetwork size={18} weight="bold" /> {code ? "Create a new code" : "Share QR Code"}
       </button>
 
-      <div className="mt-3 flex items-start gap-3 rounded-[16px] bg-lavender px-3.5 py-3">
-        <LockKey size={20} weight="fill" className="mt-0.5 shrink-0 text-iris" />
-        <div>
-          <p className="text-[13px] font-bold text-ink">Securely share</p>
-          <p className="text-[12px] leading-relaxed text-ink-soft">
-            The code holds no health details, just a ten-minute link. You choose what it opens.
-          </p>
-        </div>
-      </div>
-
-
       {choosing ? (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-ink/40">
           <div
@@ -198,7 +186,6 @@ export function PassportSurface({ summary }: { summary: PassportSummary }) {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <h2 id="share-title" className="text-[17px] font-bold text-ink">Choose what to share</h2>
-                <p className="text-[12.5px] leading-relaxed text-ink-soft">Only what you tick is visible when the code is scanned.</p>
               </div>
               <button type="button" onClick={closeSheet} className="-mr-1.5 grid size-11 shrink-0 place-items-center rounded-full text-ink-soft hover:bg-sunken">
                 <X size={18} weight="bold" /><span className="sr-only">Close</span>
@@ -238,9 +225,6 @@ export function PassportSurface({ summary }: { summary: PassportSummary }) {
               })}
             </ul>
 
-            <p className="mt-3 text-[12px] leading-relaxed text-ink-faint">
-              Facts you marked as unknown are shown as unknown. They are never filled in or guessed.
-            </p>
             {state === "error" ? (
               <p className="mt-2 text-[13px] font-semibold text-blush">The code could not be created, and nothing was shared. Please try again.</p>
             ) : null}

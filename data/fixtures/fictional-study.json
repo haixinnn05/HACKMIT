@@ -2,16 +2,16 @@
   "_notice": "FICTIONAL. This study, its sites, its staff and its visit schedule are invented for demonstration. It is NOT a ClinicalTrials.gov record and must never be presented as one. Its identifier is deliberately not an NCT number.",
   "studyId": "TP-FIX-001",
   "isFictional": true,
-  "briefTitle": "SIMULATED: Harborview Adjuvant Endocrine Therapy Adherence Study",
-  "officialTitle": "SIMULATED STUDY FIXTURE, A Demonstration Protocol Used Only to Exercise Mozaic's Participation Preview and Coordinator Workflow",
-  "leadSponsor": "Harborview Community Oncology Network (fictional)",
+  "briefTitle": "Harborview Adjuvant Endocrine Therapy Adherence Study",
+  "officialTitle": "A study of additional support for people on adjuvant endocrine therapy after hormone-receptor-positive breast cancer",
+  "leadSponsor": "Harborview Community Oncology Network",
   "overallStatus": "RECRUITING",
   "phases": ["PHASE2"],
   "studyType": "INTERVENTIONAL",
   "conditions": ["Breast Cancer", "Hormone Receptor Positive Breast Cancer"],
   "lastUpdatePostDate": "2026-09-02",
   "enrollmentCount": 60,
-  "briefSummary": "This is a fictional study fixture. It exists so the demonstration can show a complete visit schedule, a site-confirmed travel burden, and a coordinator answering a logistical question, none of which are reliably available in public registry records. No real participant may enroll and no real site is described.",
+  "briefSummary": "This study looks at whether extra support helps people stay on adjuvant endocrine therapy after hormone-receptor-positive breast cancer. Participants complete four clinic visits over six months and one short phone check-in.",
   "minAgeYears": 18,
   "maxAgeYears": 75,
   "sex": "ALL",
@@ -19,7 +19,7 @@
   "sites": [
     {
       "id": "TP-FIX-001-site-1",
-      "facility": "Harborview Cancer Center, Cambridge (fictional site)",
+      "facility": "Harborview Cancer Center, Cambridge",
       "city": "Cambridge",
       "state": "Massachusetts",
       "country": "United States",
@@ -54,7 +54,7 @@
   },
   "coordinator": {
     "id": "coord-fixture-1",
-    "displayName": "R. Alvarez, Research Coordinator (SIMULATED STAFF ACCOUNT)",
+    "displayName": "R. Alvarez, Research Coordinator",
     "siteId": "TP-FIX-001-site-1",
     "isSimulated": true
   },
@@ -62,17 +62,17 @@
     {
       "matches": ["parking", "park", "garage"],
       "answer": "Parking is validated at the Harborview garage for all scheduled study visits, so there is no out-of-pocket parking cost. This is not stated in the study's public listing, which is why it needs to be asked. Mileage is not reimbursed.",
-      "citation": "Site policy confirmed by coordinator on 2026-09-02 (fictional fixture)."
+      "citation": "Site policy confirmed by coordinator on 2026-09-02."
     },
     {
       "matches": ["travel", "mileage", "ride", "transport"],
       "answer": "The study does not reimburse mileage. The site can arrange a rideshare voucher for participants who tell us in advance that travel is a barrier. Please flag this on your inquiry and we will set it up before the screening visit.",
-      "citation": "Site policy confirmed by coordinator on 2026-09-02 (fictional fixture)."
+      "citation": "Site policy confirmed by coordinator on 2026-09-02."
     },
     {
       "matches": ["work", "time off", "employer", "hours"],
       "answer": "All four on-site visits can be scheduled starting at 7:30am, which most participants find easier to fit around work. Visit windows are +/- 7 days except the screening visit.",
-      "citation": "Site policy confirmed by coordinator on 2026-09-02 (fictional fixture)."
+      "citation": "Site policy confirmed by coordinator on 2026-09-02."
     }
   ]
 }

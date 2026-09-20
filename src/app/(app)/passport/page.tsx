@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { GearSix } from "@phosphor-icons/react/dist/ssr";
 import { PassportSurface, type PassportSummary } from "@/components/PassportSurface";
-import { Callout, Card, Pill, ScreenHeader, SectionHeading } from "@/components/ui";
+import { Card, Pill, ScreenHeader, SectionHeading } from "@/components/ui";
 import { listGrants, listMilestones, listQuestions } from "@/lib/repo";
 import { getActiveParticipant } from "@/lib/session";
 import { revokeGrantAction } from "@/app/actions";
@@ -43,7 +43,7 @@ export default async function PassportPage() {
   return (
     <div className="space-y-5">
       <ScreenHeader
-        art title="My Trial Passport" sub="Your information. Your control."
+        art title="My Trial Passport"
         action={
           <Link href="/profile" className="-mr-2 grid size-11 place-items-center rounded-full text-ink hover:bg-ink/5">
             <GearSix size={22} /><span className="sr-only">Profile and settings</span>
@@ -54,11 +54,10 @@ export default async function PassportPage() {
       <PassportSurface summary={summary} />
 
       <section aria-labelledby="access-heading" id="access" className="scroll-mt-6">
-        <SectionHeading id="access-heading" hint="Every disclosure you have made, and what it covered.">Who can see what</SectionHeading>
+        <SectionHeading id="access-heading">Who can see what</SectionHeading>
         {grants.length === 0 ? (
           <Card className="px-4 py-5 text-center">
             <p className="text-[14px] font-bold text-ink">You have not shared anything</p>
-            <p className="text-[12.5px] text-ink-soft">Nothing has left your passport.</p>
           </Card>
         ) : (
           <ul className="space-y-2.5">
@@ -94,20 +93,12 @@ export default async function PassportPage() {
             })}
           </ul>
         )}
-        <div className="mt-3">
-          <Callout tone="caution">
-            Revoking stops further access through this app. It cannot recall information someone
-            has already read or copied, and it does not change a study&rsquo;s official research records.
-          </Callout>
-        </div>
       </section>
 
       <section aria-labelledby="stamps-heading">
-        <SectionHeading id="stamps-heading" hint="Private to you. No points, no streaks, and nothing here rewards joining or staying in a study.">
-          Stamps
-        </SectionHeading>
+        <SectionHeading id="stamps-heading">Stamps</SectionHeading>
         {milestones.length === 0 ? (
-          <p className="text-[12.5px] text-ink-soft">Stamps mark things you did, such as reading a study overview or preparing questions.</p>
+          <p className="text-[12.5px] text-ink-soft">None yet.</p>
         ) : (
           <div className="flex flex-wrap gap-2">
             {milestones.map((milestone, index) => (
@@ -119,8 +110,6 @@ export default async function PassportPage() {
           </div>
         )}
       </section>
-
-      <p className="text-center text-[12px] text-ink-faint">Real people. More possibilities.</p>
     </div>
   );
 }

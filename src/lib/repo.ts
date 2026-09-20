@@ -364,6 +364,16 @@ export function listInquiriesForParticipant(participantId: string): Inquiry[] {
     .all(participantId) as any[]).map(rowToInquiry);
 }
 
+/** Most recent inquiry this person already sent about a given study. */
+export function getInquiryForTrial(participantId: string, trialId: string): Inquiry | null {
+  const row = getDb()
+    .prepare(`SELECT * FROM inquiries WHERE participant_id = ? AND trial_id = ?
+              ORDER BY CASE WHEN state = 'closed' THEN 1 ELSE 0 END, updated_at DESC
+              LIMIT 1`)
+    .get(participantId, trialId);
+  return row ? rowToInquiry(row) : null;
+}
+
 /** The coordinator inbox. Only inquiries backed by an active grant are visible;
  *  a revoked grant removes the item rather than merely hiding a field. */
 export function listInquiriesForCoordinator(): Inquiry[] {

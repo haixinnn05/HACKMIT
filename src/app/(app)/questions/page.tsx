@@ -1,4 +1,4 @@
-import { CaretRight, Plus, Question as QuestionIcon } from "@phosphor-icons/react/dist/ssr";
+import { CaretRight, Plus } from "@phosphor-icons/react/dist/ssr";
 import { Card, Empty, Pill, ScreenHeader, Tabs } from "@/components/ui";
 import { getTrial, listQuestions, listSavedTrialIds } from "@/lib/repo";
 import { getActiveParticipant } from "@/lib/session";
@@ -45,7 +45,6 @@ export default async function QuestionsPage({
       <ScreenHeader
         back={params.trial ? `/trial/${params.trial}?tab=expect` : "/profile"}
         title="Saved Questions"
-        sub="Keep track of your questions for the study team. No question is too small."
         action={
           <a href={`/questions?add=1${scope}`} className="press inline-flex min-h-11 items-center gap-1 rounded-full px-3 text-[14px] font-bold text-iris hover:bg-iris-soft">
             <Plus size={16} weight="bold" /> Add
@@ -90,11 +89,7 @@ export default async function QuestionsPage({
       />
 
       {shown.length === 0 ? (
-        <Empty title={tab === "answered" ? "No answers yet" : "No questions here"} icon={<QuestionIcon size={22} />}>
-          {tab === "answered"
-            ? "When a study team replies, their answer appears here with who wrote it."
-            : "As you read a study, save anything it leaves unanswered. Your questions go with your inquiry."}
-        </Empty>
+        <Empty title={tab === "answered" ? "No answers yet" : "No questions here"} />
       ) : (
         <ul className="space-y-2.5">
           {shown.map((question) => {

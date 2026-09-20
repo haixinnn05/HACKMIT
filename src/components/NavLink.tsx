@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { ChatCircle, ClipboardText, House, QrCode, User } from "@phosphor-icons/react";
 
 const ITEMS = [
-  { href: "/", label: "Home", Icon: House, match: ["/", "/timeline"] },
+  { href: "/", label: "Home", Icon: House, match: ["/"] },
   { href: "/explore", label: "Trials", Icon: ClipboardText, match: ["/explore", "/trial"] },
   { href: "/passport", label: "Passport", Icon: QrCode, match: ["/passport"], centre: true },
   { href: "/inbox", label: "Inbox", Icon: ChatCircle, match: ["/inbox", "/inquiry", "/coordinator"] },
@@ -25,6 +25,7 @@ export function BottomNav() {
   return (
     <nav
       aria-label="Main"
+      suppressHydrationWarning
       className="no-print fixed bottom-0 left-1/2 z-30 w-full max-w-[430px] -translate-x-1/2 border-t border-rule bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur"
     >
       <div className="flex items-end justify-around px-2 pb-1.5 pt-1">
@@ -32,7 +33,13 @@ export function BottomNav() {
           const active = isActive(match);
           if (centre) {
             return (
-              <Link key={href} href={href} aria-current={active ? "page" : undefined} className="press -mt-6 flex flex-col items-center">
+              <Link
+                key={href}
+                href={href}
+                aria-current={active ? "page" : undefined}
+                suppressHydrationWarning
+                className="press -mt-6 flex flex-col items-center"
+              >
                 <span className="cta grid size-[58px] place-items-center rounded-full border-4 border-surface text-white">
                   <QrCode size={26} weight="bold" />
                 </span>
@@ -42,7 +49,10 @@ export function BottomNav() {
           }
           return (
             <Link
-              key={href} href={href} aria-current={active ? "page" : undefined}
+              key={href}
+              href={href}
+              aria-current={active ? "page" : undefined}
+              suppressHydrationWarning
               className={`press flex min-h-12 min-w-14 flex-col items-center justify-center gap-0.5 rounded-[12px] px-1 text-[10.5px] font-semibold ${
                 active ? "text-iris" : "text-ink-faint hover:text-ink"
               }`}

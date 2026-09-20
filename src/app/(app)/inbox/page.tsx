@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CaretRight, ChatCircle, UsersThree } from "@phosphor-icons/react/dist/ssr";
+import { CaretRight } from "@phosphor-icons/react/dist/ssr";
 import { Card, Empty, Pill, ScreenHeader, Tabs } from "@/components/ui";
 import { getGrant, getTrial, isInquiryUnread, listInquiriesForParticipant, listQuestions } from "@/lib/repo";
 import { getActiveParticipant } from "@/lib/session";
@@ -10,11 +10,11 @@ export const dynamic = "force-dynamic";
 
 const STATE: Record<InquiryState, { label: string; tone: "peach" | "mint" | "iris" | "neutral"; preview: string }> = {
   draft: { label: "Draft", tone: "neutral", preview: "Not shared yet." },
-  shared: { label: "Awaiting review", tone: "peach", preview: "Your inquiry is with the team. Nobody has opened it yet, and there is nothing you need to do." },
-  acknowledged: { label: "Opened", tone: "iris", preview: "A coordinator has opened your inquiry. This is not enrolment or a screening decision." },
-  needs_information: { label: "Needs information", tone: "peach", preview: "The team has asked you for something." },
-  answered: { label: "Answered", tone: "mint", preview: "A person on the team reviewed and sent a reply." },
-  closed: { label: "Closed", tone: "neutral", preview: "Nothing further is expected. Everything you saved is still here." },
+  shared: { label: "Awaiting review", tone: "neutral", preview: "With the team." },
+  acknowledged: { label: "Opened", tone: "iris", preview: "A coordinator has opened this." },
+  needs_information: { label: "Needs information", tone: "neutral", preview: "The team asked for something." },
+  answered: { label: "Answered", tone: "mint", preview: "You have a reply." },
+  closed: { label: "Closed", tone: "neutral", preview: "Closed." },
 };
 
 function when(iso: string, now: Date) {
@@ -44,7 +44,7 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
 
   return (
     <div className="space-y-4">
-      <ScreenHeader art title="Inbox" sub="Messages from research teams and trial coordinators." />
+      <ScreenHeader art title="Inbox" />
 
       <Tabs
         current={tab}
@@ -56,9 +56,7 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
       />
 
       {shown.length === 0 ? (
-        <Empty title={tab === "unread" ? "You are all caught up" : tab === "archived" ? "Nothing archived" : "No messages yet"} icon={<ChatCircle size={22} />}>
-          {tab === "all" ? "When you share an inquiry with a study team, the conversation appears here." : null}
-        </Empty>
+        <Empty title={tab === "unread" ? "You are all caught up" : tab === "archived" ? "Nothing archived" : "No messages yet"} />
       ) : (
         <ul>
           {shown.map((inquiry) => {
@@ -97,10 +95,8 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
 
       <Card>
         <Link href="/coordinator" className="press flex items-center gap-3.5 p-4">
-          <span className="grid size-10 shrink-0 place-items-center rounded-[12px] bg-lavender text-iris"><UsersThree size={22} /></span>
           <span className="min-w-0 flex-1">
             <span className="block text-[14px] font-bold text-ink">Research Team view</span>
-            <span className="block text-[12.5px] text-ink-soft">A simulated site account, to see what a coordinator receives.</span>
           </span>
           <CaretRight size={16} weight="bold" className="text-ink-faint" />
         </Link>
