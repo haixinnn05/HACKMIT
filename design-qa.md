@@ -1,4 +1,4 @@
-# Trial Passport design QA
+# Mozaic design QA
 
 ## Evidence
 
@@ -34,7 +34,7 @@ The implementation preserves the source hierarchy across all three screens: an u
 
 ## Comparison history
 
-- Iteration 1 — P1: the researcher view inherited a second handoff header from its route layout, creating duplicate Trial Passport chrome. Fix: removed the redundant route-layout header and wrapper, leaving the page-owned researcher header as the single visual shell.
+- Iteration 1 — P1: the researcher view inherited a second handoff header from its route layout, creating duplicate Mozaic chrome. Fix: removed the redundant route-layout header and wrapper, leaving the page-owned researcher header as the single visual shell.
 - Post-fix evidence: the final collaborative-browser researcher snapshot at 390 x 844 and `.journey/18-scanned-handoff.png` show one brand header, one `Shared passport` heading, and one read-only content column.
 
 ## Interaction and accessibility verification

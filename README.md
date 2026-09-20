@@ -1,12 +1,9 @@
 # Mozaic
 
-A two-sided companion for adults considering a cancer clinical trial, and for the
-research team who meets them in person.
-
-The question it answers is **"could this study fit my medical circumstances and
-my life, and what must I still clarify before deciding?"** Clinical suitability,
-practical feasibility, and personal preference stay separate. They are never
-collapsed into a single score.
+Mozaic is a companion that makes clinical trials more friendly: patients keep a
+passport of their health and logistics, find studies, apply, and follow one
+approved path of visits and to-dos. Researchers scan that passport to open a
+scoped profile, fill in-person visit forms, and check people in.
 
 Mozaic does **not** decide eligibility. Only a study's investigators can do that.
 
@@ -14,14 +11,11 @@ Mozaic does **not** decide eligibility. Only a study's investigators can do that
 
 ## Problem
 
-A trial listing is a legal document, not a decision. People are asked to retype
-the same history for every site, then fill it again on paper at screening, while
-the coordinator still cannot see what the person already chose to share.
-
-Search tools make this worse when they pretend to know more than the record
-does: inventing visit counts, scoring "fit," or treating a missing lab value as
-a no. A QR that encodes a diagnosis is a health disclosure to anyone in the
-waiting room, and it cannot be taken back.
+Finding a clinical trial is only part of the problem. Many people don't trust
+trials, and the process is tedious and a lot of work. Even when a trial looks
+relevant, people still wonder if they'd qualify, how much time and travel it
+would take, and who they can ask. Paperwork is tedious and clinicians end up
+repeating the same clarification work.
 
 ## Purpose
 

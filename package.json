@@ -54,5 +54,5 @@
     "typescript": "^5"
   },
   "license": "MIT",
-  "description": "Understand what taking part in a cancer trial would involve, and prepare a first conversation with a research coordinator."
+  "description": "Mozaic is a companion that makes clinical trials more friendly: patients keep a passport of their health and logistics, find studies, apply, and follow one approved path of visits and to-dos. Researchers scan that passport to open a scoped profile, fill in-person visit forms, and check people in."
 }
