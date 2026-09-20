@@ -28,7 +28,7 @@ export default function ActivityPage() {
 
   return (
     <div className="space-y-4">
-      <ScreenHeader back="/clinic" title="Activity log" sub="Who shared, opened, answered and revoked, in order. Private text is never recorded here." />
+      <ScreenHeader back="/clinic" title="Activity log" />
       {events.length === 0 ? <Empty title="Nothing recorded yet" /> : (
         <Card className="px-4">
           {events.map((event) => (

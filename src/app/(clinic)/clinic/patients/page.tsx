@@ -1,6 +1,6 @@
 import Link from "next/link";
-import { CaretRight, ShieldCheck, UsersThree } from "@phosphor-icons/react/dist/ssr";
-import { Avatar, Callout, Card, Empty, Pill, ScreenHeader } from "@/components/ui";
+import { CaretRight, UsersThree } from "@phosphor-icons/react/dist/ssr";
+import { Avatar, Card, Empty, Pill, ScreenHeader } from "@/components/ui";
 import { isAnswered } from "@/lib/questions";
 import { getParticipant, listEnrollments, listInquiriesForCoordinator, listQuestions } from "@/lib/repo";
 
@@ -20,12 +20,7 @@ export default function PatientsPage() {
 
   return (
     <div className="space-y-4">
-      <ScreenHeader title="Patients" sub="People who have chosen to share information with your site." />
-
-      <Callout icon={<ShieldCheck size={20} weight="fill" />} title="Patient-authorized only">
-        You see a person here only while their sharing is active, and only the fields they chose.
-        There is no patient search, by design.
-      </Callout>
+      <ScreenHeader title="Patients" />
 
       {ids.length === 0 ? (
         <Empty title="Nobody is sharing with your site yet" icon={<UsersThree size={22} />}>

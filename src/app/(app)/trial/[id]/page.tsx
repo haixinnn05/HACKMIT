@@ -159,13 +159,7 @@ export default async function TrialPage({
         <StickyAction>
           <LinkButton href="/" variant="registered" className="w-full">Open your path</LinkButton>
         </StickyAction>
-      ) : cannotApply ? (
-        otherStudy ? (
-          <StickyAction>
-            <LinkButton href="/" variant="registered" className="w-full">Open your path</LinkButton>
-          </StickyAction>
-        ) : null
-      ) : (
+      ) : cannotApply ? null : (
         <StickyAction>
           {inquiry ? (
             <LinkButton href={`/inquiry/${inquiry.id}`} className="w-full">

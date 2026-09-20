@@ -1,5 +1,5 @@
 import { Megaphone } from "@phosphor-icons/react/dist/ssr";
-import { Callout, Card, ScreenHeader } from "@/components/ui";
+import { Card, ScreenHeader } from "@/components/ui";
 import { postStudyAction } from "@/app/actions";
 import { STAFF } from "@/lib/session";
 
@@ -83,7 +83,7 @@ export default async function NewStudyPage({ searchParams }: { searchParams: Pro
         <Card as="section" className="space-y-3.5 p-4">
           <div>
             <h2 className={legend}>Who can take part</h2>
-            <p className={hint}>One requirement per line, in the words of your protocol. Mozaic compares each line with what a person recorded and shows them where it matches, conflicts, or is unknown. It never tells anyone they are eligible.</p>
+            <p className={hint}>One requirement per line, in the words of your protocol.</p>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <label className={label}>
@@ -114,7 +114,7 @@ export default async function NewStudyPage({ searchParams }: { searchParams: Pro
         <Card as="section" className="space-y-3.5 p-4">
           <div>
             <h2 className={legend}>What it asks of people (optional)</h2>
-            <p className={hint}>This becomes their Participation Preview: hours on site plus their own travel. Leave it blank if the schedule is not settled and they will be told it is not known yet.</p>
+            <p className={hint}>Leave blank if the schedule is not settled.</p>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <label className={label}>
@@ -158,10 +158,6 @@ export default async function NewStudyPage({ searchParams }: { searchParams: Pro
             <input name="compensationText" maxLength={160} placeholder="e.g. $40 gift card per completed visit" className={`${input} min-h-12`} />
           </label>
         </Card>
-
-        <Callout>
-          This is a simulated site account. A study posted here exists only in this demo and is never sent to a registry.
-        </Callout>
 
         <button type="submit" className="cta inline-flex min-h-13 w-full items-center justify-center gap-2 rounded-full text-[15px] font-bold text-white">
           <Megaphone size={18} weight="bold" /> Post study

@@ -42,9 +42,6 @@ export default async function ClinicLayout({ children }: { children: React.React
             </button>
           </form>
         </div>
-        <p className="mt-1.5 text-center text-[10.5px] font-semibold leading-snug text-white/70">
-          Simulated staff account. No real site or patient. Nothing leaves this app.
-        </p>
       </header>
       <main id="main" className="px-5 pb-32 pt-5">{children}</main>
       <ClinicNav badge={needsReview} />

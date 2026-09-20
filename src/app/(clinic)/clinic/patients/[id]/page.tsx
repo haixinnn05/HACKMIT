@@ -53,7 +53,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
 
   return (
     <div className="space-y-4">
-      <ScreenHeader back="/clinic/patients" title={name} sub="What this person has chosen to share with your site. Self-reported, not verified." />
+      <ScreenHeader back="/clinic/patients" title={name} />
 
       <div className="flex items-center gap-4">
         <Avatar name={name === "Name not shared" ? "?" : name} size="size-16 text-lg" />
@@ -66,12 +66,11 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       {helpRequests.length ? (
         <Callout tone="caution" icon={<HandHeart size={20} weight="fill" />} title="Asked for help">
           {helpRequests.map((q) => <p key={q.id}>{q.text}</p>)}
-          <p className="mt-1 text-ink-soft">They asked for this themselves. Nothing is inferred from silence or inactivity.</p>
         </Callout>
       ) : null}
 
       <section>
-        <SectionHeading hint="A snapshot from when they shared. It does not update unless they share again.">Shared information</SectionHeading>
+        <SectionHeading>Shared information</SectionHeading>
         <Card className="px-4">
           <dl>
             {Object.entries(FIELD_LABEL).filter(([key]) => shared[key] != null && shared[key] !== "").map(([key, label]) => (
@@ -129,7 +128,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
 
       {visits.length ? (
         <section>
-          <SectionHeading hint="From your site's confirmed schedule.">Upcoming visits</SectionHeading>
+          <SectionHeading>Upcoming visits</SectionHeading>
           <Card className="px-4">
             {visits.map((visit) => (
               <div key={visit.date + visit.name} className="flex items-center justify-between gap-3 border-b border-rule py-3 last:border-0">

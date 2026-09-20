@@ -52,7 +52,7 @@ export default async function StudiesPage({ searchParams }: { searchParams: Prom
 
       {postedStudies.length ? (
         <section aria-labelledby="posted-heading">
-          <SectionHeading id="posted-heading" hint="Visible to participants in Find Clinical Trials. Pausing keeps the page readable but marks it as not recruiting.">
+          <SectionHeading id="posted-heading">
             Posted by your team ({postedStudies.length})
           </SectionHeading>
           <ul className="space-y-2.5">
@@ -110,7 +110,7 @@ export default async function StudiesPage({ searchParams }: { searchParams: Prom
 
       {schedule ? (
         <section>
-          <SectionHeading hint="This is what participants see in their Participation Preview. Keeping it accurate is what makes their estimate honest.">
+          <SectionHeading>
             Visit schedule you confirmed
           </SectionHeading>
           <Card className="px-4">
@@ -130,7 +130,7 @@ export default async function StudiesPage({ searchParams }: { searchParams: Prom
       ) : null}
 
       <section aria-labelledby="replies-heading">
-        <SectionHeading id="replies-heading" hint="Offered as a starting draft when a question contains one of the keywords. Never sent without a person editing and sending it.">
+        <SectionHeading id="replies-heading">
           Saved replies ({replies.length})
         </SectionHeading>
         <ul className="space-y-2.5">

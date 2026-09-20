@@ -1,5 +1,5 @@
 import { Camera, Keyboard, QrCode } from "@phosphor-icons/react/dist/ssr";
-import { Callout, Card, ScreenHeader } from "@/components/ui";
+import { Card, ScreenHeader } from "@/components/ui";
 import { PassScanner } from "@/components/PassScanner";
 import { openPassAction } from "@/app/actions";
 
@@ -26,8 +26,7 @@ export default async function ScanPage({ searchParams }: { searchParams: Promise
           <div>
             <p className="text-[14px] font-bold text-ink">Point your camera at the code</p>
             <p className="text-[12.5px] leading-relaxed text-ink-soft">
-              Scan the QR on their ticket to open their shared profile. The code holds a link and
-              nothing else, and it is read on this phone.
+              Scan the QR on their ticket.
             </p>
           </div>
         </div>
@@ -62,11 +61,6 @@ export default async function ScanPage({ searchParams }: { searchParams: Promise
           </button>
         </form>
       </Card>
-
-      <Callout>
-        You see only what they ticked, for ten minutes, read-only. It is self-reported and is not a
-        screening decision. They can end it sooner from their phone.
-      </Callout>
     </div>
   );
 }

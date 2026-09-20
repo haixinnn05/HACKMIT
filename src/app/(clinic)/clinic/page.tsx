@@ -80,7 +80,7 @@ export default function ClinicToday() {
       </ul>
 
       <section aria-labelledby="queue-heading">
-        <SectionHeading id="queue-heading" hint="Ordered by what was asked and how long it has waited. People are never ranked by a prediction about them.">
+        <SectionHeading id="queue-heading">
           Needs you first
         </SectionHeading>
         {queue.length === 0 ? (
@@ -153,7 +153,7 @@ export default function ClinicToday() {
             {median == null ? "No replies sent yet" : `Median time to first reply: ${median < 60 ? `${Math.max(1, Math.round(median))} min` : `${(median / 60).toFixed(1)} h`}`}
           </p>
           <p className="text-[12px] leading-relaxed text-ink-soft">
-            {median == null ? "Once answers are sent, the measured response time appears here." : `Measured across ${responseMinutes.length} answered ${responseMinutes.length === 1 ? "inquiry" : "inquiries"} in this demo. It is a count, not a target.`}
+            {median == null ? "Once answers are sent, the measured response time appears here." : `Across ${responseMinutes.length} answered ${responseMinutes.length === 1 ? "inquiry" : "inquiries"}.`}
           </p>
           <Link href="/clinic/activity" className="mt-1 inline-flex min-h-11 items-center gap-1 text-[12.5px] font-bold text-iris">Open the activity log <ArrowRight size={13} weight="bold" /></Link>
         </div>
