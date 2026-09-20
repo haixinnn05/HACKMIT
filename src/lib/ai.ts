@@ -1,4 +1,6 @@
+import { createHash } from "node:crypto";
 import Anthropic from "@anthropic-ai/sdk";
+import { getDb } from "./db";
 import type { BurdenPreview } from "./burden";
 import type { ParticipantProfile, Trial, TrialAssessment } from "./types";
 
@@ -27,7 +29,7 @@ import type { ParticipantProfile, Trial, TrialAssessment } from "./types";
 
 const MODEL = process.env.MOZAIC_MODEL ?? "claude-sonnet-5";
 const MAX_OUTPUT_TOKENS = 1400;
-const PROMPT_VERSION = "2026-09-19.1";
+const PROMPT_VERSION = "2026-09-19.2";
 
 export type AnswerMode = "model" | "offline_template";
 
@@ -138,17 +140,23 @@ type Backend =
   | { kind: "gateway"; apiKey: string; baseUrl: string; model: string }
   | { kind: "anthropic"; apiKey: string; model: string };
 
-function backend(): Backend | null {
+function backend(speed: "quality" | "fast" = "quality"): Backend | null {
   const key = process.env.LLM_API_KEY;
   const baseUrl = process.env.LLM_BASE_URL?.replace(/\/+$/, "");
   // A gateway needs a named model too. Without one every call would be refused,
   // so the app stays on its rule-built text instead of making doomed requests.
-  const model = process.env.LLM_MODEL;
+  // A person waiting on an answer gets the faster model, when one is configured.
+  const model = (speed === "fast" && process.env.LLM_MODEL_FAST) || process.env.LLM_MODEL;
   if (key && baseUrl && model && /^https:\/\//.test(baseUrl)) {
     return { kind: "gateway", apiKey: key, baseUrl, model };
   }
   if (process.env.ANTHROPIC_API_KEY) return { kind: "anthropic", apiKey: process.env.ANTHROPIC_API_KEY, model: MODEL };
   return null;
+}
+
+/** House style for model-written prose. Never applied to quoted source spans. */
+export function tidy(text: unknown): string {
+  return String(text ?? "").replace(/\s*[\u2014\u2013]\s*/g, ", ").replace(/\s+/g, " ").trim();
 }
 
 /** Pull the first JSON object out of a reply, tolerating code fences and preamble. */
@@ -159,9 +167,41 @@ function parseJsonObject(text: string): Record<string, unknown> | null {
   try { return JSON.parse(text.slice(start, end + 1)) as Record<string, unknown>; } catch { return null; }
 }
 
-async function callModel(system: string, user: string, schemaHint: string) {
-  const target = backend();
+/**
+ * Generated text is cached in the database. The key covers everything that could
+ * change the answer: the model, the prompt version, and the exact prompt, which
+ * itself contains the source text and the verdicts. A study record that changes
+ * therefore misses the cache without anyone having to invalidate it. Model calls
+ * take seconds and cost money; nothing should be generated twice.
+ */
+function cacheKey(target: Backend, system: string, user: string): string {
+  return createHash("sha256").update([target.kind, target.model, PROMPT_VERSION, system, user].join("\u0000")).digest("hex");
+}
+
+function readCache(key: string): Record<string, unknown> | null {
+  try {
+    const row = getDb().prepare("SELECT value FROM ai_cache WHERE key = ?").get(key) as { value: string } | undefined;
+    return row ? JSON.parse(row.value) as Record<string, unknown> : null;
+  } catch { return null; }
+}
+
+function writeCache(key: string, value: Record<string, unknown>, model: string, ms: number) {
+  try {
+    getDb().prepare("INSERT OR REPLACE INTO ai_cache (key, value, model, latency_ms, created_at) VALUES (?,?,?,?,?)")
+      .run(key, JSON.stringify(value), model, ms, new Date().toISOString());
+  } catch (error) { console.warn("[ai] could not cache:", error); }
+}
+
+async function callModel(system: string, user: string, schemaHint: string, speed: "quality" | "fast" = "quality", cacheOnly = false) {
+  const target = backend(speed);
   if (!target) return null;
+
+  const key = cacheKey(target, system, user);
+  const cached = readCache(key);
+  if (cached) return cached;
+  // Callers that must not spend time or money ask for the cache alone.
+  if (cacheOnly) return null;
+  const started = Date.now();
 
   let text: string | null = null;
   if (target.kind === "anthropic") {
@@ -172,35 +212,45 @@ async function callModel(system: string, user: string, schemaHint: string) {
     const block = response.content.find((part) => part.type === "text");
     text = block && block.type === "text" ? block.text : null;
   } else {
-    // Bounded, so a slow gateway degrades to the rule-built brief rather than hanging the page.
-    const response = await fetch(`${target.baseUrl}/chat/completions`, {
+    // Reasoning models spend tokens thinking before they answer, so the budget is
+    // well above the length of the answer itself. The request is still bounded:
+    // a slow gateway degrades to the rule-built text rather than hanging.
+    const request = (structured: boolean) => fetch(`${target.baseUrl}/chat/completions`, {
       method: "POST",
       headers: { "content-type": "application/json", authorization: `Bearer ${target.apiKey}` },
       body: JSON.stringify({
-        model: target.model, max_tokens: MAX_OUTPUT_TOKENS, temperature: 0.2,
+        model: target.model, max_completion_tokens: 6000,
+        // Ask for valid JSON rather than hoping prose parses.
+        ...(structured ? { response_format: { type: "json_object" } } : {}),
         messages: [{ role: "system", content: system }, { role: "user", content: user }],
       }),
-      signal: AbortSignal.timeout(20_000),
+      signal: AbortSignal.timeout(75_000),
     });
+    let response = await request(true);
+    // Some OpenAI-compatible gateways reject response_format. Try once without it.
+    if (response.status === 400) response = await request(false);
     // The status is logged; the body is not, because error bodies can echo the request.
     if (!response.ok) { console.warn(`[ai] gateway returned ${response.status}`); return null; }
-    const body = await response.json() as { choices?: { message?: { content?: string } }[] };
+    const body = await response.json() as { choices?: { finish_reason?: string; message?: { content?: string } }[] };
     text = body.choices?.[0]?.message?.content ?? null;
+    if (body.choices?.[0]?.finish_reason === "length") console.warn(`[ai] ${schemaHint} ran out of tokens before finishing`);
   }
 
   const parsed = text ? parseJsonObject(text) : null;
-  if (!parsed) console.warn(`[ai] response failed to parse against ${schemaHint}`);
+  // Latency and outcome are logged. The prompt and reply never are: they can hold private text.
+  console.info(`[ai] ${schemaHint} ${target.model} ${Date.now() - started}ms ${parsed ? "ok" : "unparseable"}`);
+  if (parsed) writeCache(key, parsed, target.model, Date.now() - started);
   return parsed;
 }
 
 /** For features outside the trial brief. Returns null when no model is configured or the call fails. */
 export async function askModelForJson(system: string, user: string, label: string) {
-  try { return await callModel(system, user, label); } catch (error) { console.warn(`[ai] ${label} failed:`, error); return null; }
+  try { return await callModel(system, user, label, "fast"); } catch (error) { console.warn(`[ai] ${label} failed:`, error); return null; }
 }
 
 /** Which model produced a piece of text, for labelling it honestly. */
 export function modelLabel(): string | null {
-  const target = backend();
+  const target = backend("fast");
   return target ? (target.kind === "gateway" && /llama/i.test(`${target.baseUrl}${target.model}`) ? `Llama (${target.model})` : target.model) : null;
 }
 
@@ -219,9 +269,19 @@ Reply with a single JSON object and nothing else.`;
 
 /* ------------------------------------------------------------------- briefs */
 
+/**
+ * The model-written brief, only if it has already been generated. Never calls
+ * the model, so it is safe to use on every page view, test and crawler hit.
+ */
+export async function cachedTrialBrief(trial: Trial, assessment: TrialAssessment): Promise<TrialBrief | null> {
+  const brief = await generateTrialBrief(trial, assessment, true);
+  return brief.mode === "model" ? brief : null;
+}
+
 export async function generateTrialBrief(
   trial: Trial,
-  assessment: TrialAssessment
+  assessment: TrialAssessment,
+  cacheOnly = false
 ): Promise<TrialBrief> {
   const started = Date.now();
   const docs = sourcesFor(trial);
@@ -243,7 +303,9 @@ Produce JSON with this shape:
   "suggestedQuestions": ["question a coordinator could answer", "..."]
 }
 Give 3 to 5 claims and 3 to 5 questions. Prefer questions the sources leave unanswered.`,
-    "TrialBrief"
+    "TrialBrief",
+    "quality",
+    cacheOnly
   ).catch((error) => {
     console.warn("[ai] brief generation failed:", error);
     return null;
@@ -259,13 +321,13 @@ Give 3 to 5 claims and 3 to 5 questions. Prefer questions the sources leave unan
     const doc = spanExists(raw.supportingSpan ?? "", docs);
     if (!doc) { dropped += 1; continue; } // unverifiable quote never renders
     claims.push({
-      claim: String(raw.claim ?? "").trim(),
+      claim: tidy(raw.claim),
       sourceId: doc.id,
       sourceLabel: doc.label,
       sourceVersion: doc.version,
       supportingSpan: raw.supportingSpan,
-      interpretation: String(raw.interpretation ?? "").trim(),
-      uncertainty: String(raw.uncertainty ?? "This does not tell you whether you can take part.").trim(),
+      interpretation: tidy(raw.interpretation),
+      uncertainty: tidy(raw.uncertainty ?? "This does not tell you whether you can take part."),
     });
   }
 
@@ -277,11 +339,11 @@ Give 3 to 5 claims and 3 to 5 questions. Prefer questions the sources leave unan
 
   return {
     mode: "model",
-    purpose: String(parsed.purpose ?? "").trim(),
-    whatParticipationInvolves: String(parsed.whatParticipationInvolves ?? "").trim(),
+    purpose: tidy(parsed.purpose),
+    whatParticipationInvolves: tidy(parsed.whatParticipationInvolves),
     claims,
     suggestedQuestions: (Array.isArray(parsed.suggestedQuestions) ? parsed.suggestedQuestions : [])
-      .map(String).slice(0, 5),
+      .map(tidy).slice(0, 5),
     droppedClaims: dropped,
     latencyMs: Date.now() - started,
     notice: `Written from the ${trial.isFictional ? "fictional study fixture" : `registry record for ${trial.id}`}, last updated ${trial.lastUpdatePostDate ?? "unknown"}. This is a summary to help you ask questions. It is not a consent form and does not decide whether you can take part.`,
@@ -391,9 +453,10 @@ ${question.slice(0, 500)}
 
 TASK
 Answer only from the sources. Reply with JSON:
-{ "answered": true|false, "answer": "...", "sourceId": "... or null", "supportingSpan": "verbatim quote or null", "uncertainty": "..." }
+{ "answered": true|false, "answer": "...", "sourceId": "... or null", "supportingSpan": "verbatim quote or null", "uncertainty": "one full sentence saying what this answer does NOT settle or what could differ at a particular site. Not a rating such as low or high." }
 Set answered=false when the sources do not address the question, and make the answer say so plainly and suggest asking the study team.`,
-    "GroundedAnswer"
+    "GroundedAnswer",
+    "fast"
   ).catch(() => null);
 
   if (!parsed) return extractiveAnswer(docs, question, Date.now() - started);
@@ -406,13 +469,14 @@ Set answered=false when the sources do not address the question, and make the an
     mode: "model",
     answered,
     answer: answered
-      ? String(parsed.answer ?? "")
+      ? tidy(parsed.answer)
       : "This is not stated in the material available for this study. Add it to your questions for the study team.",
     sourceLabel: doc?.label ?? null,
     supportingSpan: doc ? span : null,
-    uncertainty: String(
-      parsed.uncertainty ?? "The registry record may be out of date, and site practice can differ."
-    ),
+    // A one-word reply such as "low" is a confidence rating, not a caveat. Replace it.
+    uncertainty: tidy(parsed.uncertainty).split(" ").length >= 5
+      ? tidy(parsed.uncertainty)
+      : "The registry record may be out of date, and what happens at a particular site can differ. The study team can confirm.",
     latencyMs: Date.now() - started,
   };
 }

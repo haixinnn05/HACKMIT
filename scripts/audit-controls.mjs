@@ -15,7 +15,7 @@ const BASE = process.env.BASE_URL ?? "http://localhost:3000";
 const browser = await chromium.launch();
 const context = await browser.newContext({ ...devices["iPhone 14 Pro"] });
 const page = await context.newPage();
-const go = (path) => page.goto(`${BASE}${path}`, { waitUntil: "networkidle" });
+const go = async (path) => { await page.goto(`${BASE}${path}`, { waitUntil: "domcontentloaded" }); await page.waitForLoadState("networkidle", { timeout: 3500 }).catch(() => {}); };
 
 // Populate: saved trial, questions, a shared and answered inquiry, a decision.
 await page.request.post(`${BASE}/api/reset`);

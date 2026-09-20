@@ -251,6 +251,16 @@ CREATE TABLE IF NOT EXISTS peer_messages (
   created_at TEXT NOT NULL
 );
 
+-- Generated text, keyed by a hash of the model, prompt version and full prompt.
+-- Holds no participant identifiers; survives a demo reset on purpose.
+CREATE TABLE IF NOT EXISTS ai_cache (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  model TEXT NOT NULL,
+  latency_ms INTEGER NOT NULL,
+  created_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS audit_events (
   id TEXT PRIMARY KEY,
   actor TEXT NOT NULL,

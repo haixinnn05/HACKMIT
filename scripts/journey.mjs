@@ -30,7 +30,10 @@ const shot = async (name, target = page) => {
   step += 1;
   await target.screenshot({ path: `${SHOTS}/${String(step).padStart(2, "0")}-${name}.png`, fullPage: true });
 };
-const go = (path) => page.goto(`${BASE}${path}`, { waitUntil: "networkidle" });
+// Pages stream their AI sections, which holds the connection open. So wait for
+// the document, then give hydration a moment, without requiring the network to go quiet.
+const settle = async (target) => { await target.waitForLoadState("networkidle", { timeout: 3500 }).catch(() => {}); };
+const go = async (path) => { await page.goto(`${BASE}${path}`, { waitUntil: "domcontentloaded" }); await settle(page); };
 const main = () => page.locator("#main");
 const text = async () => (await main().innerText()).replace(/\s+/g, " ");
 
@@ -41,7 +44,7 @@ await page.request.post(`${BASE}/api/persona`, { data: { id: "p-maria" } });
 /* 0. The front door */
 const fresh = await browser.newContext({ viewport: { width: 430, height: 932 } });
 const door = await fresh.newPage();
-await door.goto(`${BASE}/`, { waitUntil: "networkidle" });
+await door.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
 assert("0 A first-time visitor is asked which side they are on", door.url().endsWith("/welcome") && (await door.locator("#main").innerText()).includes("I'm on a research team"));
 await door.click('button:has-text("I\'m on a research team")');
 await door.waitForURL(/\/clinic$/);
@@ -87,9 +90,12 @@ t = await text();
 await page.fill('input[name="ask"]', "What is the wifi password?");
 await page.click('button:has-text("Ask")');
 await page.waitForURL(/ask=/);
+// The answer streams in, and may come from a model or from keyword search.
+await page.waitForSelector("text=Keep in mind:", { timeout: 90000 });
 t = await text();
-assert("3 Asking something the record does not cover gets an honest no", t.includes("record does not say") && t.includes("Save this question for the study team"));
-assert("3 The answer says how it was found", t.includes("No language model was involved"));
+assert("3 Asking something the record does not cover gets an honest no",
+  /record does not say|not stated in the material/.test(t) && t.includes("Save this question for the study team"));
+assert("3 The answer says how it was found", /No language model was involved|Answered with a language model, and the quote was checked/.test(t));
 await shot("detail-real");
 await go(`${realHref}?tab=expect`);
 assert("3 A real record refuses to estimate a time commitment", (await text()).includes("time commitment is not published"));
@@ -100,9 +106,10 @@ await page.locator('button:has-text("Save Trial")').click();
 await page.waitForSelector('a:has-text("Prepare an inquiry")');
 assert("3 Saving swaps the primary action to preparing an inquiry", true);
 await go("/trial/TP-FIX-001?ask=" + encodeURIComponent("Do I get paid for taking part?"));
-t = await text();
-assert("3 Asking something the record covers quotes it word for word",
-  t.includes("Payment accrues per visit and does not depend on completing the entire study") && t.includes("quoted word for word"));
+await page.waitForSelector("text=Keep in mind:", { timeout: 90000 });
+const quoted = ((await page.locator("#ask blockquote").first().textContent()) ?? "").replace(/\s+/g, " ").trim();
+const fixtureText = "Participants receive $50 per completed on-site visit. Payment accrues per visit and does not depend on completing the entire study.";
+assert("3 Asking something the record covers quotes it word for word", quoted.length > 12 && fixtureText.includes(quoted), quoted);
 await shot("detail-ask");
 await go("/trial/TP-FIX-001?tab=insight");
 await page.waitForSelector("text=OpenAlex,", { timeout: 25000 }).catch(() => {});
@@ -135,7 +142,7 @@ await shot("preview-real");
 /* 5. Saved Questions */
 await go("/trial/TP-FIX-001/preview");
 await page.locator('button:has-text("Is parking covered")').click();
-await page.waitForLoadState("networkidle");
+await settle(page);
 await go("/questions?add=1&trial=TP-FIX-001");
 await page.fill('textarea[name="text"]', "Can my family member come with me to visits?");
 await page.click('button:has-text("Save question")');
@@ -168,7 +175,7 @@ assert("11 Items are marked patient-authorized", t.includes("Patient-authorized"
 await shot("team-inbox");
 await items.first().click();
 await page.waitForURL(/\/clinic\/inbox\/[0-9a-f-]{36}/);
-await page.waitForLoadState("networkidle");
+await settle(page);
 t = await text();
 assert("11 Eligibility considerations are marked not a decision", t.includes("not a decision"));
 assert("11 Considerations group as Supported, Unknown, Needs review", ["Supported", "Unknown", "Needs review"].every((l) => t.includes(l)));
@@ -187,7 +194,7 @@ await parking().locator('button:has-text("Save draft")').click();
 await page.waitForSelector("text=A saved draft");
 assert("11 A draft is saved with its own state", (await parking().innerText()).includes("Draft answer"));
 const peek = await context.newPage();
-await peek.goto(inquiryUrl, { waitUntil: "networkidle" });
+await peek.goto(inquiryUrl, { waitUntil: "domcontentloaded" });
 assert("11 A draft is never visible to the participant", !(await peek.locator("#main").innerText()).includes("validated at the Harborview garage"));
 await peek.close();
 
@@ -202,7 +209,7 @@ assert("9 Inbox shows the reply as unread", t.includes("Unread (1)") && t.includ
 await shot("inbox");
 await go("/");
 assert("1 Home surfaces the reply", (await text()).includes("You have a reply"));
-await page.goto(inquiryUrl, { waitUntil: "networkidle" });
+await page.goto(inquiryUrl, { waitUntil: "domcontentloaded" });
 t = await text();
 assert("9 The thread shows the full answer and its author", t.includes("validated at the Harborview garage") && t.includes("R. Alvarez"));
 assert("9 All four choices are offered, including declining and asking for help",
@@ -214,12 +221,12 @@ assert("9 The participant can reopen an answered question", true);
 await go("/clinic/inbox");
 await page.locator('#main a[href^="/clinic/inbox/"]').first().click();
 await page.waitForURL(/\/clinic\/inbox\/[0-9a-f-]{36}/);
-await page.waitForLoadState("networkidle");
+await settle(page);
 assert("11 The team sees it reopened, with the earlier answer kept as history",
   (await text()).includes("Reopened") && (await text()).includes("Earlier answer"));
 await page.locator("li", { hasText: "Is parking covered" }).locator('button:has-text("Send this answer")').click();
 await page.waitForSelector("text=Sent by R. Alvarez", { timeout: 20000 });
-await page.goto(inquiryUrl, { waitUntil: "networkidle" });
+await page.goto(inquiryUrl, { waitUntil: "domcontentloaded" });
 await page.click('button:has-text("This answers it")');
 await page.waitForSelector("text=You marked this resolved");
 assert("9 The participant can mark an answer resolved", true);
@@ -229,7 +236,7 @@ await go("/questions?tab=answered");
 assert("5 The answered question moves to Answered", (await text()).includes("Answered (1)"));
 
 /* 12. Visits & Timeline */
-await page.goto(inquiryUrl, { waitUntil: "networkidle" });
+await page.goto(inquiryUrl, { waitUntil: "domcontentloaded" });
 await page.click('button:has-text("I have agreed to take part")');
 await page.waitForURL(/\/timeline/, { timeout: 20000 });
 t = await text();
@@ -279,7 +286,7 @@ assert("6 The code is a bare link with no health data in it",
   Boolean(handoffUrl) && /\/handoff\/[0-9a-f-]{36}$/.test(handoffUrl) && handoffUrl.includes(tokenPrefix) && !/breast|cancer|NCT|maria/i.test(handoffUrl), handoffUrl);
 
 const scanner = await context.newPage();
-await scanner.goto(handoffUrl, { waitUntil: "networkidle" });
+await scanner.goto(handoffUrl, { waitUntil: "domcontentloaded" });
 assert("7 Shared profile opens as collapsed sections", (await scanner.locator("details[open]").count()) === 0);
 await scanner.locator("summary", { hasText: "Medical History" }).click();
 let s = (await scanner.locator("body").innerText()).replace(/\s+/g, " ");
@@ -294,7 +301,7 @@ await shot("shared-profile", scanner);
 /* 13. Research team: open the passport by its pass number */
 const staff = await context.newPage();
 const staffText = async () => (await staff.locator("#main").innerText()).replace(/\s+/g, " ");
-await staff.goto(`${BASE}/clinic/scan`, { waitUntil: "networkidle" });
+await staff.goto(`${BASE}/clinic/scan`, { waitUntil: "domcontentloaded" });
 await staff.fill('input[name="pass"]', "00000000");
 await staff.click('button:has-text("Open passport")');
 await staff.waitForURL(/missed=1/);
@@ -307,21 +314,21 @@ await shot("clinic-scan-result", staff);
 
 await page.locator('button:has-text("Revoke")').first().click();
 await page.waitForSelector("text=Revoked");
-await staff.goto(`${BASE}/clinic/scan`, { waitUntil: "networkidle" });
+await staff.goto(`${BASE}/clinic/scan`, { waitUntil: "domcontentloaded" });
 await staff.fill('input[name="pass"]', tokenPrefix);
 await staff.click('button:has-text("Open passport")');
 await staff.waitForURL(/missed=1/);
 assert("13 A revoked pass number fails exactly like a wrong one", (await staffText()).includes("No active passport matches"));
 
 /* 14. Research team: Today, Patients, Studies, Activity */
-await staff.goto(`${BASE}/clinic`, { waitUntil: "networkidle" });
+await staff.goto(`${BASE}/clinic`, { waitUntil: "domcontentloaded" });
 let st = await staffText();
 assert("14 Today counts what is waiting", ["Need review", "Open questions", "Waiting on patient", "Visits this week"].every((l) => st.includes(l)));
 assert("14 Today never ranks people by a prediction", st.includes("never ranked by a prediction"));
 assert("14 Today reports a measured reply time, not a target", /Median time to first reply/.test(st) && st.includes("not a target"));
 await shot("clinic-today", staff);
 
-await staff.goto(`${BASE}/clinic/patients`, { waitUntil: "networkidle" });
+await staff.goto(`${BASE}/clinic/patients`, { waitUntil: "domcontentloaded" });
 st = await staffText();
 assert("14 Patients lists who is sharing, and has no patient search", st.includes("Maria Restrepo") && st.includes("no patient search") && (await staff.locator('#main input[type="search"]').count()) === 0);
 await staff.click('#main a[href^="/clinic/patients/"]');
@@ -333,26 +340,26 @@ assert("14 A patient page withholds unshared contact details", !st.includes("exa
 assert("14 A patient's upcoming visits are visible to the site", st.includes("Upcoming visits") && st.includes("Screening visit"));
 await shot("clinic-patient", staff);
 
-await staff.goto(`${BASE}/clinic/studies`, { waitUntil: "networkidle" });
+await staff.goto(`${BASE}/clinic/studies`, { waitUntil: "domcontentloaded" });
 await staff.fill('input[name="keywords"]', "family, caregiver");
 await staff.fill('textarea[name="answer"]', "A family member is welcome at every visit, and there is a waiting area beside the clinic.");
 await staff.click('button:has-text("Save reply")');
 await staff.waitForSelector("text=A family member is welcome");
 assert("14 A new saved reply joins the library", (await staffText()).includes("Saved replies (4)"));
 await shot("clinic-studies", staff);
-await staff.goto(`${BASE}/clinic/inbox`, { waitUntil: "networkidle" });
+await staff.goto(`${BASE}/clinic/inbox`, { waitUntil: "domcontentloaded" });
 await staff.click('#main a[href^="/clinic/inbox/"]');
 await staff.waitForURL(/\/clinic\/inbox\/[0-9a-f-]{36}/);
-await staff.waitForLoadState("networkidle");
+await settle(staff);
 assert("14 The saved reply is offered as a draft on a matching question",
   (await staff.locator("li", { hasText: "Can my family member" }).locator("textarea").inputValue()).includes("A family member is welcome"));
 
-await staff.goto(`${BASE}/clinic/activity`, { waitUntil: "networkidle" });
+await staff.goto(`${BASE}/clinic/activity`, { waitUntil: "domcontentloaded" });
 st = await staffText();
 assert("14 The activity log records access and replies without private text",
   st.includes("In-person passport opened") && st.includes("Answer sent") && !st.includes("validated at the Harborview garage"));
 
-await scanner.goto(handoffUrl, { waitUntil: "networkidle" });
+await scanner.goto(handoffUrl, { waitUntil: "domcontentloaded" });
 s = await scanner.content();
 assert("7 A revoked code stops resolving and leaks nothing", s.includes("This code is not active") && !s.includes("Maria"));
 await scanner.close();
@@ -360,12 +367,12 @@ await scanner.close();
 /* Revoking the inquiry grant removes it from the team. */
 await go("/passport");
 await page.locator('button:has-text("Revoke")').first().click();
-await page.waitForLoadState("networkidle");
+await settle(page);
 await go("/clinic/inbox");
 assert("11 Revoking access empties the research team inbox", (await page.locator('#main a[href^="/clinic/inbox/"]').count()) === 0);
-await staff.goto(`${BASE}/clinic/patients`, { waitUntil: "networkidle" });
+await staff.goto(`${BASE}/clinic/patients`, { waitUntil: "domcontentloaded" });
 assert("14 After revoking, the person leaves the Patients list", !(await staffText()).includes("Maria Restrepo"));
-await staff.goto(patientUrl, { waitUntil: "networkidle" });
+await staff.goto(patientUrl, { waitUntil: "domcontentloaded" });
 assert("14 A kept link to a revoked patient shows nothing", (await staffText()).includes("not sharing anything with your site") && !(await staffText()).includes("Stage II"));
 await staff.close();
 
@@ -389,10 +396,10 @@ await page.waitForURL(/\/inquiry\/[0-9a-f-]{36}/, { timeout: 20000 });
 await go("/profile/edit");
 assert("15 A new answer is saved back to the passport for next time", (await page.locator('input[name="fact_her2"]').inputValue()) === "negative");
 const desk = await context.newPage();
-await desk.goto(`${BASE}/clinic/inbox`, { waitUntil: "networkidle" });
+await desk.goto(`${BASE}/clinic/inbox`, { waitUntil: "domcontentloaded" });
 await desk.locator('#main a[href^="/clinic/inbox/"]').first().click();
 await desk.waitForURL(/\/clinic\/inbox\/[0-9a-f-]{36}/);
-await desk.waitForLoadState("networkidle");
+await settle(desk);
 const deskText = (await desk.locator("#main").innerText()).replace(/\s+/g, " ");
 assert("15 The coordinator sees the answers with their origin, and no contact details",
   deskText.includes("Application answers") && deskText.includes("Dr. Patel, Lowell General") && deskText.includes("typed on the form") && deskText.includes("from passport") && !deskText.includes("example.com"));
@@ -424,14 +431,15 @@ assert("16 A request waits for the other person to agree", (await text()).includ
 
 const otherId = { Dee: "p-dee", Rosa: "p-eval-06", Sam: "p-eval-07", Ivy: "p-eval-01", Noor: "p-eval-05" }[peerAlias];
 await page.request.post(`${BASE}/api/persona`, { data: { id: otherId } });
-await page.goto(peerUrl, { waitUntil: "networkidle" });
+await page.goto(peerUrl, { waitUntil: "domcontentloaded" });
 t = await text();
 assert("16 The other person sees the request under an alias, with the note", t.includes("would like to talk") && t.includes("compare notes on the travel") && !t.includes("Restrepo"));
 await page.click('button:has-text("Yes, let")');
 await page.waitForSelector("text=A few ground rules");
+await page.waitForSelector("text=Not sure how to start?", { timeout: 90000 });
 t = await text();
 assert("16 Conversation starters are offered and labelled with their source", t.includes("Not sure how to start?") && /No language model was involved|Suggested by/.test(t));
-await page.locator("#main li a").first().click();
+await page.locator('#main a[href*="draft="]').first().click();
 await page.waitForURL(/draft=/);
 assert("16 A starter fills the box but is not sent", (await page.locator('textarea[name="text"]').inputValue()).length > 10 && (await page.locator("ol li").count()) === 0);
 await page.click('button:has-text("Send")');
@@ -446,12 +454,12 @@ await shot("peer-chat");
 const stranger = await browser.newContext();
 const intruder = await stranger.newPage();
 await intruder.request.post(`${BASE}/api/persona`, { data: { id: "p-harold" } });
-const intrusion = await intruder.goto(peerUrl, { waitUntil: "networkidle" });
+const intrusion = await intruder.goto(peerUrl, { waitUntil: "domcontentloaded" });
 assert("16 A third person cannot read the conversation", intrusion.status() === 404);
 await stranger.close();
 
 await page.request.post(`${BASE}/api/persona`, { data: { id: "p-maria" } });
-await page.goto(peerUrl, { waitUntil: "networkidle" });
+await page.goto(peerUrl, { waitUntil: "domcontentloaded" });
 assert("16 The first person sees the reply", (await page.locator("ol li").count()) === 2);
 await page.click('button:has-text("End conversation")');
 await page.waitForURL(/\/peers$/);

@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { Flag, PaperPlaneRight, Sparkle } from "@phosphor-icons/react/dist/ssr";
 import { Avatar, Callout, Card, Pill, ScreenHeader } from "@/components/ui";
@@ -13,6 +14,24 @@ export const dynamic = "force-dynamic";
  * One peer conversation. Both people go by an alias, and see only the overlaps
  * that made the match. Either can end it or report it at any time.
  */
+async function Starters({ reasons, studyTitle, here }: { reasons: string[]; studyTitle: string | null; here: string }) {
+  const agenda = await suggestAgenda({ reasons, studyTitle });
+  return (
+    <Card className="p-4">
+      <p className="flex items-center gap-1.5 text-[13.5px] font-bold text-ink"><Sparkle size={16} weight="fill" className="text-iris" /> Not sure how to start?</p>
+      <p className="mt-0.5 text-[11.5px] text-ink-faint">{agenda.source}</p>
+      <ul className="mt-2.5 space-y-2">
+        {[agenda.opener, ...agenda.topics].map((line) => (
+          <li key={line}>
+            <a href={`${here}?draft=${encodeURIComponent(line)}#compose`} className="block rounded-[14px] border border-rule px-3.5 py-2.5 text-[13px] leading-snug text-ink hover:border-iris">{line}</a>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-2 text-[11.5px] text-ink-faint">Tap one to put it in the box below. Nothing is sent until you send it.</p>
+    </Card>
+  );
+}
+
 export default async function PeerConversationPage({
   params, searchParams,
 }: { params: Promise<{ id: string }>; searchParams: Promise<{ draft?: string }> }) {
@@ -29,7 +48,6 @@ export default async function PeerConversationPage({
   const trial = connection.trialId ? getTrial(connection.trialId) : null;
   const incoming = connection.state === "pending" && connection.toId === participant.id;
   const messages = listPeerMessages(connection.id);
-  const agenda = connection.state === "accepted" ? await suggestAgenda({ reasons: connection.reasons, studyTitle: trial?.briefTitle ?? null }) : null;
   const here = `/peers/${connection.id}`;
 
   return (
@@ -80,21 +98,10 @@ export default async function PeerConversationPage({
             recommend a treatment. Medical questions go to the study team.
           </Callout>
 
-          {messages.length === 0 && agenda ? (
-            <Card className="p-4">
-              <p className="flex items-center gap-1.5 text-[13.5px] font-bold text-ink"><Sparkle size={16} weight="fill" className="text-iris" /> Not sure how to start?</p>
-              <p className="mt-0.5 text-[11.5px] text-ink-faint">{agenda.source}</p>
-              <ul className="mt-2.5 space-y-2">
-                {[agenda.opener, ...agenda.topics].map((line) => (
-                  <li key={line}>
-                    <a href={`${here}?draft=${encodeURIComponent(line)}#compose`} className="block rounded-[14px] border border-rule px-3.5 py-2.5 text-[13px] leading-snug text-ink hover:border-iris">
-                      {line}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-2 text-[11.5px] text-ink-faint">Tap one to put it in the box below. Nothing is sent until you send it.</p>
-            </Card>
+          {messages.length === 0 ? (
+            <Suspense fallback={<Card className="space-y-2 p-4"><div className="h-3.5 w-1/2 animate-pulse rounded-full bg-sunken" /><div className="h-3 w-11/12 animate-pulse rounded-full bg-sunken" /></Card>}>
+              <Starters reasons={connection.reasons} studyTitle={trial?.briefTitle ?? null} here={here} />
+            </Suspense>
           ) : null}
 
           <ol className="space-y-2">

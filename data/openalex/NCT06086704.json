@@ -1,0 +1,44 @@
+{
+  "works": [
+    {
+      "id": "https://openalex.org/W4411611309",
+      "title": "Current Approaches of Nuclear Molecular Imaging in Breast Cancer",
+      "publicationYear": 2025,
+      "publicationDate": "2025-06-23",
+      "citedByCount": 0,
+      "authors": [
+        "Laura Schäfer",
+        "Betül Altunay",
+        "Amelie Heesch"
+      ],
+      "venue": "Cancers",
+      "doiUrl": "https://doi.org/10.3390/cancers17132105",
+      "isOpenAccess": true,
+      "openAccessUrl": "https://www.mdpi.com/2072-6694/17/13/2105/pdf?version=1750828510",
+      "isReview": false,
+      "abstractExcerpt": "In this narrative review, we aim to summarize recent advancements in nuclear molecular imaging techniques and their applications in BCa management. The main focus of this review is on the most relevant clinical investigations from the past 2-3 years that highlight the enhanced diagnostic and therapeutic value of these imaging modalities.",
+      "topicId": "T11395"
+    }
+  ],
+  "topic": {
+    "id": "T11395",
+    "name": "Radiopharmaceutical Chemistry and Applications",
+    "description": "This cluster of papers focuses on the development, synthesis, and application of radiopharmaceuticals for PET and SPECT imaging, targeted therapy, radioimmunotherapy, and alpha particle therapy in cancer treatment. It covers topics such as coordinating radiometals, chelators, dosimetry, and the use of specific radionuclides for therapeutic purposes.",
+    "keywords": [
+      "Radiopharmaceuticals",
+      "PET Imaging",
+      "Targeted Therapy",
+      "Radioimmunotherapy",
+      "Alpha Particle Therapy",
+      "Chelators",
+      "Nuclear Medicine",
+      "Bifunctional Agents"
+    ],
+    "field": "Medicine",
+    "worksCount": 90370
+  },
+  "query": "NCT06086704",
+  "matchKind": "trial_id",
+  "fetchedAt": "2026-09-20T00:29:39.430Z",
+  "fromSnapshot": false
+}

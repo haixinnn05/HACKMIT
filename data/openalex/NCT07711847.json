@@ -1,0 +1,44 @@
+{
+  "works": [
+    {
+      "id": "https://openalex.org/W2729965373",
+      "title": "Solute transport in cartilage: Effects of cyclic deformation and ECM binding",
+      "publicationYear": 2006,
+      "publicationDate": "2006-01-01",
+      "citedByCount": 1,
+      "authors": [
+        "L. Zhang",
+        "Bruce S. Gardiner",
+        "David W. Smith"
+      ],
+      "venue": "QUT ePrints (Queensland University of Technology)",
+      "doiUrl": null,
+      "isOpenAccess": true,
+      "openAccessUrl": "http://www3.ntu.edu.sg/ICMMB15/download/FinalProgramme.pdf",
+      "isReview": false,
+      "abstractExcerpt": "Solute transport through articular cartilage under cyclic loading has recently been modelled mathematically using porous media and transport theories to investigate the role of advection that potentially enhance solute transport through cartilage.",
+      "topicId": "T10105"
+    }
+  ],
+  "topic": {
+    "id": "T10105",
+    "name": "Osteoarthritis Treatment and Mechanisms",
+    "description": "This cluster of papers focuses on the pathophysiology of osteoarthritis, with an emphasis on cartilage degradation, inflammation, joint mechanics, and potential therapeutic approaches such as cartilage regeneration using mesenchymal stem cells. It also covers the role of chondrocytes, matrix metalloproteinases, and synovitis in the development and progression of osteoarthritis.",
+    "keywords": [
+      "Osteoarthritis",
+      "Cartilage",
+      "Chondrocyte",
+      "Inflammation",
+      "Joint",
+      "Regeneration",
+      "Matrix Metalloproteinases",
+      "Synovitis"
+    ],
+    "field": "Medicine",
+    "worksCount": 124957
+  },
+  "query": "Invasive Breast Cancer Early Stages VENUS SHELL™ immobilization device",
+  "matchKind": "topic",
+  "fetchedAt": "2026-09-20T00:29:26.365Z",
+  "fromSnapshot": false
+}

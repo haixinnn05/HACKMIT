@@ -1,0 +1,101 @@
+{
+  "works": [
+    {
+      "id": "https://openalex.org/W2109496096",
+      "title": "Quality of Life, Fertility Concerns, and Behavioral Health Outcomes in Younger Breast Cancer Survivors: A Systematic Review",
+      "publicationYear": 2012,
+      "publicationDate": "2012-01-23",
+      "citedByCount": 830,
+      "authors": [
+        "Jessica Howard‐Anderson",
+        "Patricia A. Ganz",
+        "Julienne E. Bower"
+      ],
+      "venue": "JNCI Journal of the National Cancer Institute",
+      "doiUrl": "https://doi.org/10.1093/jnci/djr541",
+      "isOpenAccess": false,
+      "openAccessUrl": null,
+      "isReview": true,
+      "abstractExcerpt": "Breast cancer is the most common cancer in women younger than age 50 years. Cancer treatments in younger women may cause premature menopause, infertility, and negative psychosocial effects.",
+      "topicId": "T10364"
+    },
+    {
+      "id": "https://openalex.org/W2930513443",
+      "title": "Ulvan: A systematic review of extraction, composition and function",
+      "publicationYear": 2019,
+      "publicationDate": "2019-03-29",
+      "citedByCount": 662,
+      "authors": [
+        "Joel T. Kidgell",
+        "Marie Magnusson",
+        "Rocky de Nys"
+      ],
+      "venue": "Algal Research",
+      "doiUrl": "https://doi.org/10.1016/j.algal.2019.101422",
+      "isOpenAccess": true,
+      "openAccessUrl": "https://www.sciencedirect.com/science/article/pii/S2211926418308373/pdf",
+      "isReview": true,
+      "abstractExcerpt": "Species of green macroalgae (Chlorophyta) of the genus Ulva are edible seaweeds with a range of health promoting bioactive components. Ulva is high in dietary fibre which promotes gastrointestinal health and is linked to a reduction in the incidence of chronic diseases.",
+      "topicId": "T11390"
+    },
+    {
+      "id": "https://openalex.org/W2141937355",
+      "title": "Mammographic Density Phenotypes and Risk of Breast Cancer: A Meta-analysis",
+      "publicationYear": 2014,
+      "publicationDate": "2014-05-01",
+      "citedByCount": 365,
+      "authors": [
+        "Andreas Pettersson",
+        "Rebecca E. Graff",
+        "Giske Ursin"
+      ],
+      "venue": "JNCI Journal of the National Cancer Institute",
+      "doiUrl": "https://doi.org/10.1093/jnci/dju078",
+      "isOpenAccess": true,
+      "openAccessUrl": "https://academic.oup.com/jnci/article-pdf/106/5/dju078/17985690/dju078.pdf",
+      "isReview": true,
+      "abstractExcerpt": "Fibroglandular breast tissue appears dense on mammogram, whereas fat appears nondense. It is unclear whether absolute or percentage dense area more strongly predicts breast cancer risk and whether absolute nondense area is independently associated with risk.",
+      "topicId": "T11361"
+    },
+    {
+      "id": "https://openalex.org/W4297341757",
+      "title": "Mammographic breast density and the risk of breast cancer: A systematic review and meta-analysis",
+      "publicationYear": 2022,
+      "publicationDate": "2022-09-26",
+      "citedByCount": 239,
+      "authors": [
+        "F.T.H. Bodewes",
+        "A.A. van Asselt",
+        "Monique D. Dorrius"
+      ],
+      "venue": "The Breast",
+      "doiUrl": "https://doi.org/10.1016/j.breast.2022.09.007",
+      "isOpenAccess": true,
+      "openAccessUrl": "http://www.thebreastonline.com/article/S0960977622001618/pdf",
+      "isReview": true,
+      "abstractExcerpt": "Mammographic density is a well-defined risk factor for breast cancer and having extremely dense breast tissue is associated with a one-to six-fold increased risk of breast cancer. However, it is questioned whether this increased risk estimate is applicable to current breast density classification methods.",
+      "topicId": "T11361"
+    }
+  ],
+  "topic": {
+    "id": "T11361",
+    "name": "Digital Radiography and Breast Imaging",
+    "description": "This cluster of papers focuses on advancements in breast cancer screening technology, including the use of mammographic density, digital mammography, breast tomosynthesis, and supplemental imaging modalities such as ultrasound and MRI. It also explores the impact of radiation dose, contrast-enhanced mammography, and the influence of hormone replacement therapy on screening accuracy and risk assessment.",
+    "keywords": [
+      "Mammographic Density",
+      "Digital Mammography",
+      "Breast Tomosynthesis",
+      "Breast Cancer Risk",
+      "Screening Ultrasound",
+      "Radiation Dose",
+      "Contrast-enhanced Mammography",
+      "Breast Tissue Composition"
+    ],
+    "field": "Medicine",
+    "worksCount": 82400
+  },
+  "query": "Breast Carcinoma Measurement of Body Composition",
+  "matchKind": "topic",
+  "fetchedAt": "2026-09-20T00:29:30.802Z",
+  "fromSnapshot": false
+}

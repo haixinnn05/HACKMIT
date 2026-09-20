@@ -127,6 +127,43 @@ Where the mockups and the design document disagreed, the document won:
   fictional study has a schedule, and timeline entries show no invented clock times.
 - Personas are synthetic, so avatars are monograms rather than photographs.
 
+### The language model
+
+Optional, and off unless configured. Set these in `.env.local` (gitignored):
+
+```
+LLM_API_KEY="..."
+LLM_BASE_URL=https://api.meta.ai/v1      # Meta Model API; any OpenAI-compatible endpoint works
+LLM_MODEL=muse-spark-1.3                 # used for study summaries
+LLM_MODEL_FAST=muse-spark-1.2            # used where someone is waiting on an answer
+```
+
+`npm run ai:check` reports exactly what is and is not working, without printing the
+key. `npm run ai:warm` pre-generates the summaries the demo visits.
+
+The model does three things: rewrites a study summary in plain language, answers a
+question from a study's own text, and suggests openers for two peers who have
+connected. It decides nothing. Eligibility, peer matching and the burden arithmetic
+are rules, because they have to be explainable and reproducible.
+
+How it is kept honest and affordable:
+
+- **Every quote is verified.** A model-written claim must carry a verbatim span from
+  the source. Spans that cannot be found are dropped before rendering, and the screen
+  says how many. In testing this catches a paraphrased "quote" every few summaries.
+- **It can say no.** Asked something the record does not cover, the correct answer is
+  that it is not stated, plus an offer to save the question for the study team.
+- **Nothing is generated unless someone asks.** A summary appears by itself only when
+  it is already cached. Otherwise the rule-built summary is shown with a button. A
+  summary takes 30 to 60 seconds, so page views, tests and crawlers never trigger one.
+- **Generated once.** Results are cached by model, prompt version and the full prompt,
+  which contains the source text, so a changed record regenerates by itself.
+- **Bounded and degradable.** Calls time out, and any failure falls back to the
+  rule-built text. The page never waits on the model: AI sections stream in.
+- **No secrets in the repo.** A pre-commit check reads the real values from
+  `.env.local` and blocks any commit containing them. Prompts and replies are never
+  logged, only the model, the latency and whether the reply parsed.
+
 ### Application autofill
 
 `/apply/[trialId]` fills a study's application form from the passport, so nobody
