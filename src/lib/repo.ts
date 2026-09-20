@@ -704,3 +704,57 @@ export function findHandoffTokenByPassNumber(passNumber: string): string | null 
   // An ambiguous prefix resolves to nothing rather than to a guess.
   return live.length === 1 ? live[0].handoffToken ?? null : null;
 }
+
+export interface VisitFormRecord {
+  id: string;
+  participantId: string;
+  grantId: string | null;
+  pack: string;
+  visitName: string | null;
+  answers: Record<string, string>;
+  createdAt: string;
+}
+
+export function saveVisitForm(entry: Omit<VisitFormRecord, "id" | "createdAt">): VisitFormRecord {
+  const db = getDb();
+  const existing = (entry.pack === "onstudy"
+    ? db.prepare("SELECT * FROM visit_forms WHERE participant_id = ? AND pack = ? AND IFNULL(visit_name,'') = ? ORDER BY created_at DESC LIMIT 1")
+      .get(entry.participantId, entry.pack, entry.visitName ?? "")
+    : db.prepare("SELECT * FROM visit_forms WHERE participant_id = ? AND pack = ? ORDER BY created_at DESC LIMIT 1")
+      .get(entry.participantId, entry.pack)) as {
+        id: string; participant_id: string; grant_id: string | null; pack: string; visit_name: string | null; answers: string; created_at: string;
+      } | undefined;
+
+  if (existing) {
+    db.prepare("UPDATE visit_forms SET grant_id = ?, visit_name = ?, answers = ? WHERE id = ?")
+      .run(entry.grantId, entry.visitName, JSON.stringify(entry.answers), existing.id);
+    return {
+      id: existing.id,
+      participantId: entry.participantId,
+      grantId: entry.grantId,
+      pack: entry.pack,
+      visitName: entry.visitName,
+      answers: entry.answers,
+      createdAt: existing.created_at,
+    };
+  }
+
+  const row: VisitFormRecord = { ...entry, id: randomUUID(), createdAt: new Date().toISOString() };
+  db.prepare("INSERT INTO visit_forms (id, participant_id, grant_id, pack, visit_name, answers, created_at) VALUES (?,?,?,?,?,?,?)")
+    .run(row.id, row.participantId, row.grantId, row.pack, row.visitName, JSON.stringify(row.answers), row.createdAt);
+  return row;
+}
+
+export function listVisitForms(participantId: string): VisitFormRecord[] {
+  return (getDb()
+    .prepare("SELECT * FROM visit_forms WHERE participant_id = ? ORDER BY created_at DESC")
+    .all(participantId) as any[]).map((row) => ({
+    id: row.id,
+    participantId: row.participant_id,
+    grantId: row.grant_id,
+    pack: row.pack,
+    visitName: row.visit_name,
+    answers: json(row.answers, {} as Record<string, string>),
+    createdAt: row.created_at,
+  }));
+}

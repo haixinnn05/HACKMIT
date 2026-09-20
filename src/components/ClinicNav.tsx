@@ -25,7 +25,9 @@ export function ClinicNav({ badge }: { badge: number }) {
     >
       <div className="flex items-end justify-around px-2 pb-1.5 pt-1">
         {ITEMS.map(({ href, label, Icon, exact, centre }) => {
-          const active = exact ? pathname === href : pathname.startsWith(href);
+          const active = centre
+            ? pathname.startsWith("/clinic/scan") || pathname.startsWith("/clinic/visit")
+            : exact ? pathname === href : pathname.startsWith(href);
           if (centre) {
             return (
               <Link key={href} href={href} aria-current={active ? "page" : undefined} className="-mt-6 flex flex-col items-center">

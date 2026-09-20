@@ -6,12 +6,14 @@ import {
   addSavedReply, audit, checkInByToken, clearEnrollment, clearTodos, createGrant, deleteSavedReply, findHandoffTokenByPassNumber, deleteQuestionDraft, getQuestion, saveQuestionDraft, createInquiry, createQuestion, ensureTodo, getInquiry, getOpenInquiryForTrial, getParticipant, getParticipatingEnrollment, getTrial,
   listConfirmedCriterionIds, listEnrollments, listQuestions, recordMilestone, setCriterionCheck, setPersonalNote, revokeGrant, saveTrial, setInquiryState, toggleTodo,
   unsaveTrial, updateParticipant, updateQuestion, upsertEnrollment,
+  getGrantByToken, listVisitForms, saveVisitForm,
 } from "@/lib/repo";
 import { assessTrial } from "@/lib/assess";
 import { computeBurden } from "@/lib/burden";
 import { draftInquiry } from "@/lib/ai";
 import { getActiveParticipant, setRole, clearRole, STAFF } from "@/lib/session";
 import { autofill, formFor } from "@/lib/application";
+import { currentStudyVisit, missingRequiredPacks, visitPack } from "@/lib/visit-forms";
 import { syncStudy } from "@/lib/elastic";
 import { randomBytes } from "node:crypto";
 import { deleteSiteStudy, getDb, getFictionalFixture, saveSiteStudy } from "@/lib/db";
@@ -469,8 +471,22 @@ export async function openScannedPassAction(token: string) {
  */
 export async function checkInAction(formData: FormData) {
   const token = String(formData.get("token") ?? "");
+  const from = String(formData.get("from") ?? "");
   const safe = /^[A-Za-z0-9_-]{8,128}$/.test(token) ? token : null;
   if (!safe) redirect("/clinic/scan?missed=1");
+  const clinic = from === "clinic";
+  const grant = getGrantByToken(safe);
+  if (grant) {
+    const enrollment = getParticipatingEnrollment(grant.participantId);
+    const today = new Date().toISOString().slice(0, 10);
+    const visit = currentStudyVisit(enrollment?.visits, today);
+    if (visit) {
+      const missing = missingRequiredPacks(visit.name, listVisitForms(grant.participantId));
+      if (missing.length) {
+        redirect(`/handoff/${safe}${clinic ? "?from=clinic&need_forms=1" : "?need_forms=1"}`);
+      }
+    }
+  }
   checkInByToken(safe, STAFF.id);
   revalidatePath(`/handoff/${safe}`);
   revalidatePath("/passport");
@@ -805,4 +821,29 @@ export async function removeStudyAction(formData: FormData) {
   audit(STAFF.id, "study.removed", id);
   revalidatePath("/clinic/studies"); revalidatePath("/explore");
   redirect("/clinic/studies");
+}
+
+export async function saveVisitFormAction(formData: FormData) {
+  const token = String(formData.get("token") ?? "");
+  const packId = String(formData.get("pack") ?? "");
+  const pack = visitPack(packId);
+  const grant = getGrantByToken(token);
+  if (!pack || !grant) return;
+  const answers: Record<string, string> = {};
+  for (const field of pack.fields) {
+    const value = String(formData.get(`f_${field.id}`) ?? "").trim();
+    if (value) answers[field.id] = value;
+  }
+  saveVisitForm({
+    participantId: grant.participantId,
+    grantId: grant.id,
+    pack: pack.id,
+    visitName: String(formData.get("visitName") ?? "") || null,
+    answers,
+  });
+  audit(STAFF.id, "visit.form.saved", grant.participantId, pack.id);
+  revalidatePath(`/clinic/visit/${token}`);
+  revalidatePath(`/clinic/visit/${token}/${pack.id}`);
+  revalidatePath(`/handoff/${token}`);
+  redirect(`/clinic/visit/${token}?saved=${pack.id}`);
 }

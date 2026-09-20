@@ -127,12 +127,22 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
         <section>
           <SectionHeading>Upcoming visits</SectionHeading>
           <Card className="px-4">
-            {visits.map((visit) => (
-              <div key={visit.date + visit.name} className="flex items-center justify-between gap-3 border-b border-rule py-3 last:border-0">
-                <span className="text-[13.5px] font-bold text-ink">{visit.name}</span>
-                <span className="text-[12.5px] text-ink-soft">{new Date(`${visit.date}T09:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
-              </div>
-            ))}
+            {visits.map((visit) => {
+              const current = visit.date === today;
+              return (
+                <div key={visit.date + visit.name} className="border-b border-rule py-3 last:border-0">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-[13.5px] font-bold text-ink">{visit.name}</span>
+                    <span className="text-[12.5px] text-ink-soft">{new Date(`${visit.date}T09:00:00`).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}</span>
+                  </div>
+                  {current ? (
+                    <Link href="/clinic/scan" className="mt-1.5 flex min-h-9 items-center text-[13px] font-bold text-iris">
+                      Scan to fill visit forms
+                    </Link>
+                  ) : null}
+                </div>
+              );
+            })}
           </Card>
         </section>
       ) : null}

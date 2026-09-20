@@ -56,7 +56,7 @@ export default async function ProfilePage() {
       )}
 
       <Card className="overflow-hidden [&>a]:border-b [&>a]:border-rule [&>a:last-child]:border-0">
-        <MenuRow href="/passport" title="My Trial Passport" />
+        <MenuRow href="/passport" title="Mozaic Passport" />
         <MenuRow href="/profile/edit" title="Personal Information" />
         <MenuRow href="/questions" title="Saved Questions" sub={open ? `${open} waiting` : undefined} />
         <MenuRow href="/peers" title="Talk with someone like you" sub={peerOn ? "Matching is on" : undefined} />

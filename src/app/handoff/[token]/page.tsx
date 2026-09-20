@@ -1,10 +1,12 @@
 import type { ReactNode } from "react";
-import { CaretRight, CheckCircle } from "@phosphor-icons/react/dist/ssr";
+import Link from "next/link";
+import { CaretRight, CheckCircle, ClipboardText } from "@phosphor-icons/react/dist/ssr";
 import { Avatar, Callout, Card, DataRow } from "@/components/ui";
 import { requestNow } from "@/lib/clock";
-import { getCheckIn, getGrantByToken, getParticipant, getPersonalNote, listQuestions } from "@/lib/repo";
+import { getCheckIn, getGrantByToken, getParticipant, getParticipatingEnrollment, getPersonalNote, listQuestions, listVisitForms } from "@/lib/repo";
 import { checkInAction } from "@/app/actions";
 import { isAnswered } from "@/lib/questions";
+import { currentStudyVisit, missingRequiredPacks } from "@/lib/visit-forms";
 
 export const dynamic = "force-dynamic";
 
@@ -18,8 +20,10 @@ export const dynamic = "force-dynamic";
  * Unknown, expired and revoked tokens all render identically. Telling them
  * apart would let someone probe which codes had once been valid.
  */
-export default async function HandoffPage({ params }: { params: Promise<{ token: string }> }) {
+export default async function HandoffPage({ params, searchParams }: { params: Promise<{ token: string }>; searchParams: Promise<{ from?: string; need_forms?: string }> }) {
   const { token } = await params;
+  const { from } = await searchParams;
+  const fromClinic = from === "clinic";
   const grant = getGrantByToken(token);
   const now = requestNow();
 
@@ -45,6 +49,10 @@ export default async function HandoffPage({ params }: { params: Promise<{ token:
   const facts = participant.clinicalFacts.filter((fact) => allowed.has(`fact:${fact.key}`));
   const note = allowed.has("age") ? getPersonalNote(participant.id) : null;
   const checkedInAt = getCheckIn(grant.id);
+  const enrollment = getParticipatingEnrollment(participant.id);
+  const today = new Date(now).toISOString().slice(0, 10);
+  const visit = currentStudyVisit(enrollment?.visits, today);
+  const missingForms = visit ? missingRequiredPacks(visit.name, listVisitForms(participant.id)) : [];
   const questions = allowed.has("questions")
     ? listQuestions({ participantId: participant.id }).filter((q) => !isAnswered(q)) : [];
 
@@ -165,14 +173,39 @@ export default async function HandoffPage({ params }: { params: Promise<{ token:
         <p role="status" className="flex min-h-13 items-center justify-center gap-2 rounded-full bg-mint-soft px-4 text-[14.5px] font-bold text-ink">
           <CheckCircle size={20} weight="fill" /> Checked in at {new Date(checkedInAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
         </p>
+      ) : missingForms.length ? (
+        <div className="space-y-2">
+          <p className="text-center text-[13px] leading-relaxed text-ink-soft">
+            Finish {missingForms.map((pack) => pack.title.toLowerCase()).join(" and ")} before check-in.
+          </p>
+          <Link href={`/clinic/visit/${token}`} className="press flex min-h-13 items-center justify-center gap-2 rounded-full border border-rule-strong bg-surface text-[14.5px] font-bold text-ink">
+            <ClipboardText size={18} weight="bold" /> Visit forms
+          </Link>
+          <button type="button" disabled className="inline-flex min-h-13 w-full items-center justify-center gap-2 rounded-full bg-rule text-[15px] font-bold text-ink-faint">
+            <CheckCircle size={20} weight="bold" /> Check in {name.split(" ")[0]}
+          </button>
+        </div>
       ) : (
         <form action={checkInAction}>
           <input type="hidden" name="token" value={token} />
+          {fromClinic ? <input type="hidden" name="from" value="clinic" /> : null}
           <button type="submit" className="cta inline-flex min-h-13 w-full items-center justify-center gap-2 rounded-full text-[15px] font-bold text-white">
             <CheckCircle size={20} weight="bold" /> Check in {name.split(" ")[0]}
           </button>
         </form>
       )}
+
+      {fromClinic && (checkedInAt || !missingForms.length) ? (
+        <Link href={`/clinic/visit/${token}`} className="press flex min-h-13 items-center justify-center gap-2 rounded-full border border-rule-strong bg-surface text-[14.5px] font-bold text-ink">
+          <ClipboardText size={18} weight="bold" /> Visit forms
+        </Link>
+      ) : null}
+
+      {fromClinic ? (
+        <Link href="/clinic/scan" className="inline-flex min-h-11 w-full items-center justify-center text-[13px] font-bold text-iris">
+          Back to your workspace
+        </Link>
+      ) : null}
     </div>
   );
 }

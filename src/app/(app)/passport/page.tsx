@@ -11,7 +11,7 @@ import { isAnswered } from "@/lib/questions";
 export const dynamic = "force-dynamic";
 
 /**
- * My Trial Passport: what you would hand over, and who already has access.
+ * Mozaic Passport: what you would hand over, and who already has access.
  * Editing lives in Profile. This screen is only about disclosure, so nobody
  * changes a fact while meaning to change who can see it.
  */
@@ -59,7 +59,7 @@ export default async function PassportPage() {
   return (
     <div className="space-y-5">
       <ScreenHeader
-        art title="My Trial Passport"
+        art title="Mozaic Passport"
         action={
           <Link href="/profile" className="-mr-2 grid size-11 place-items-center rounded-full text-ink hover:bg-ink/5">
             <GearSix size={22} /><span className="sr-only">Profile and settings</span>

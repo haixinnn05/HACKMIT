@@ -292,7 +292,7 @@ await shot("home-complete");
 await go("/profile");
 t = await text();
 assert("10 Profile shows the person's own words with an Edit control", t.includes("what I'd be signing up for") && t.includes("Edit"));
-assert("10 Profile lists its sections", ["My Trial Passport", "Personal Information", "Medical History", "Preferences", "Privacy & Security", "Past / Saved Trials"].every((l) => t.includes(l)));
+assert("10 Profile lists its sections", ["Mozaic Passport", "Personal Information", "Medical History", "Preferences", "Privacy & Security", "Past / Saved Trials"].every((l) => t.includes(l)));
 await shot("profile");
 await go("/profile/saved");
 assert("10 Saved trials and decisions are listed", (await text()).includes("Taking part"));

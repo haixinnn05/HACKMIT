@@ -110,7 +110,7 @@ Rules the research-team side is built around:
 | 3 | Trial Detail | `/trial/[id]` | Overview, Eligibility, What to Expect and Insight tabs, save, ask the record |
 | 4 | Participation Preview | `/trial/[id]/preview` | Six sourced rows, total hours with arithmetic, what-if, suggested questions |
 | 5 | Saved Questions | `/questions` | All / Need to ask / Answered, add, remove, answers with their author |
-| 6 | My Trial Passport | `/passport` | Passport card, scoped ten-minute QR, who can see what, revoke, stamps |
+| 6 | Mozaic Passport | `/passport` | Passport card, scoped ten-minute QR, who can see what, revoke, stamps |
 | 7 | Shared Patient Profile | `/handoff/[token]` | Read-only researcher view of only the chosen sections |
 | 8 | Inquiry Preview | `/inquiry/new/[trialId]` | Tick what to share, personal note, editable and printable packet |
 | 9 | Inbox | `/inbox`, `/inquiry/[id]` | All / Unread / Archived, thread, four choices including declining |

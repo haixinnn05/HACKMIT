@@ -310,6 +310,16 @@ export function getDb(): Database.Database {
       PRIMARY KEY (participant_id, trial_id, criterion_id)
     );
     CREATE INDEX IF NOT EXISTS idx_criterion_checks_participant ON criterion_checks(participant_id);
+    CREATE TABLE IF NOT EXISTS visit_forms (
+      id TEXT PRIMARY KEY,
+      participant_id TEXT NOT NULL REFERENCES participants(id) ON DELETE CASCADE,
+      grant_id TEXT,
+      pack TEXT NOT NULL,
+      visit_name TEXT,
+      answers TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_visit_forms_participant ON visit_forms(participant_id);
   `);
   return instance;
 }
@@ -622,7 +632,7 @@ export function resetDemoData() {
   const db = getDb();
   db.transaction(() => {
     db.exec(`
-      DELETE FROM inquiries; DELETE FROM questions; DELETE FROM grants;
+      DELETE FROM inquiries; DELETE FROM questions; DELETE FROM grants; DELETE FROM visit_forms;
       DELETE FROM milestones; DELETE FROM enrollments; DELETE FROM saved_trials;
       DELETE FROM todos; DELETE FROM inquiry_reads; DELETE FROM question_drafts; DELETE FROM saved_replies;
       DELETE FROM peer_messages; DELETE FROM peer_connections; DELETE FROM peer_optins;
