@@ -278,6 +278,8 @@ CREATE TABLE IF NOT EXISTS meta (
 
 function openDatabase(): Database.Database {
   if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
+  // A host may put the database on its own disk (MOZAIC_DB), away from the seed data.
+  if (!existsSync(path.dirname(DB_PATH))) mkdirSync(path.dirname(DB_PATH), { recursive: true });
   const db = new Database(DB_PATH);
   db.exec(SCHEMA);
   return db;

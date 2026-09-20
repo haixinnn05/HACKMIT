@@ -1,0 +1,17 @@
+# Secrets never enter an image. Keys are given to the host as environment variables.
+.env*
+!.env.example
+
+# Local state and build output
+.git
+.next
+node_modules
+data/mozaic.db*
+certificates
+*.log
+.DS_Store
+
+# Not needed to run the web app
+ios
+native-shell
+design-qa.md
