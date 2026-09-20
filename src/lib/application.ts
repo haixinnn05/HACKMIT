@@ -4,9 +4,9 @@ import type { ParticipantProfile, Trial } from "./types";
  * Application forms, and how the passport fills them in.
  *
  * Every research site asks roughly the same opening questions, and people retype
- * the same answers for each one. The passport already holds most of them, so a
- * form is filled from it, and the person confirms every field before anything is
- * sent.
+ * the same answers for each one. The passport already holds most of them, so it
+ * sits on the form like a card: tap it to fill what it knows, then confirm
+ * every field before anything is sent.
  *
  * Three rules keep autofill honest:
  *  1. A field is filled only from something the person entered themselves.

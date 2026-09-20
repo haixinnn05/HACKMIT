@@ -16,11 +16,12 @@ export const dynamic = "force-dynamic";
  * times are not shown for the same reason: the fixture confirms visit length,
  * not appointment slots.
  */
-export default async function TimelinePage({ searchParams }: { searchParams: Promise<{ view?: string; from?: string }> }) {
+export default async function TimelinePage({ searchParams }: { searchParams: Promise<{ view?: string | string[]; from?: string }> }) {
   const { view: rawView, from } = await searchParams;
-  const view = rawView === "calendar" ? "calendar" : "timeline";
+  const requested = Array.isArray(rawView) ? rawView[0] : rawView;
+  const view = requested === "calendar" ? "calendar" : "timeline";
   const fromMap = openedFromMap(from);
-  const timelineHref = fromMap ? "/timeline?from=map" : "/timeline";
+  const timelineHref = fromMap ? "/timeline?view=timeline&from=map" : "/timeline?view=timeline";
   const calendarHref = fromMap ? "/timeline?view=calendar&from=map" : "/timeline?view=calendar";
   const participant = await getActiveParticipant();
   const now = requestNow();

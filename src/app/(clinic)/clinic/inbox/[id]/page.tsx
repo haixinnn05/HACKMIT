@@ -30,9 +30,7 @@ export default async function CoordinatorInquiryPage({ params }: { params: Promi
       <div className="space-y-4">
         <ScreenHeader back="/clinic/inbox" title="No longer available" />
         <Card className="p-5 text-[13.5px] leading-relaxed text-ink-soft">
-          The participant revoked access, or the sharing grant expired. Nothing further can be read
-          here. If you already recorded details elsewhere, your institution&rsquo;s retention rules apply
-          to that copy. Revoking access in this app cannot recall it.
+          Access was revoked or expired.
         </Card>
       </div>
     );
@@ -78,7 +76,7 @@ export default async function CoordinatorInquiryPage({ params }: { params: Promi
 
       <section aria-labelledby="considerations-heading">
         <SectionHeading id="considerations-heading">
-          Eligibility Considerations
+          Eligibility
         </SectionHeading>
         <Card className="overflow-hidden">
           {considerations.map((group) => (
@@ -97,9 +95,6 @@ export default async function CoordinatorInquiryPage({ params }: { params: Promi
                   <li key={item.criterionId} className="rounded-[14px] border border-rule p-3">
                     <p className="text-[12.5px] leading-relaxed text-ink-soft">{item.rationale}</p>
                     <blockquote className="source-quote mt-2">{item.evidenceSpan}</blockquote>
-                    <p className="mt-1 text-[11px] text-ink-faint">
-                      {trial.id} eligibility criteria{item.sourceStart >= 0 ? `, characters ${item.sourceStart} to ${item.sourceEnd}` : ""}, record version {trial.lastUpdatePostDate ?? "unknown"}
-                    </p>
                   </li>
                 ))}
               </ul>
@@ -137,7 +132,7 @@ export default async function CoordinatorInquiryPage({ params }: { params: Promi
               <div key={answer.id} className="border-b border-rule py-2.5 last:border-0">
                 <p className="text-[12px] text-ink-soft">{answer.label}</p>
                 <p className="text-[13.5px] font-semibold text-ink">{answer.value}</p>
-                <p className="text-[11px] text-ink-faint">{answer.origin}, self-reported</p>
+                <p className="text-[11px] text-ink-faint">{answer.origin}</p>
               </div>
             ))}
           </Card>
@@ -197,9 +192,7 @@ export default async function CoordinatorInquiryPage({ params }: { params: Promi
                       <input type="hidden" name="questionId" value={question.id} />
                       <input type="hidden" name="inquiryId" value={inquiry.id} />
                       {draft ? (
-                        <p className="rounded-[12px] bg-sunken px-3 py-2 text-[11.5px] text-ink-soft">A saved draft</p>
-                      ) : suggestion ? (
-                        <p className="rounded-[12px] bg-sunken px-3 py-2 text-[11.5px] text-ink-soft">You are the author.</p>
+                        <p className="rounded-[12px] bg-sunken px-3 py-2 text-[11.5px] text-ink-soft">Saved draft</p>
                       ) : null}
                       <label className="block text-[12px] font-semibold text-ink-soft">
                         Your answer
@@ -207,7 +200,7 @@ export default async function CoordinatorInquiryPage({ params }: { params: Promi
                           className="mt-1 w-full rounded-[14px] border border-rule bg-surface p-3 text-[13.5px] text-ink" />
                       </label>
                       <label className="block text-[12px] font-semibold text-ink-soft">
-                        Where this comes from (shown to the participant)
+                        Source
                         <input name="citation" defaultValue={draft?.citation ?? suggestion?.citation ?? ""}
                           className="mt-1 min-h-12 w-full rounded-[14px] border border-rule bg-surface px-3 text-[13.5px] text-ink" />
                       </label>

@@ -33,12 +33,12 @@ function steps(state: Inquiry["state"], replied: boolean): { label: string; done
 
 const SUMMARY: Record<Inquiry["state"], { title: string; body: string; tone: string; icon: React.ReactNode }> = {
   draft: { title: "Draft", body: "Not shared yet.", tone: "bg-sunken text-ink", icon: <Question size={20} weight="fill" /> },
-  shared: { title: "New. Not acknowledged yet", body: "The participant sees this as waiting. Acknowledge it so they know it reached a person.", tone: "bg-peach-soft text-peach", icon: <HandWaving size={20} weight="fill" /> },
-  acknowledged: { title: "Received", body: "The participant can see that a coordinator has their inquiry. Choose a next step when you are ready.", tone: "bg-iris-soft text-iris-deep", icon: <CheckCircle size={20} weight="fill" /> },
-  needs_information: { title: "Waiting on the participant", body: "You asked them for something. They see your note in their inbox.", tone: "bg-peach-soft text-peach", icon: <Question size={20} weight="fill" /> },
-  answered: { title: "In conversation", body: "You have sent at least one answer. Choose a next step, or keep answering.", tone: "bg-iris-soft text-iris-deep", icon: <CheckCircle size={20} weight="fill" /> },
-  approved: { title: "Approved for this study", body: "This person can see their study path.", tone: "bg-mint-soft text-mint", icon: <CheckCircle size={20} weight="fill" /> },
-  closed: { title: "Closed", body: "This inquiry is not moving forward. The participant can read the reason below.", tone: "bg-sunken text-ink-soft", icon: <XCircle size={20} weight="fill" /> },
+  shared: { title: "New", body: "Waiting to be opened.", tone: "bg-peach-soft text-peach", icon: <HandWaving size={20} weight="fill" /> },
+  acknowledged: { title: "Received", body: "They know you have it.", tone: "bg-iris-soft text-iris-deep", icon: <CheckCircle size={20} weight="fill" /> },
+  needs_information: { title: "Waiting on them", body: "You asked for something.", tone: "bg-peach-soft text-peach", icon: <Question size={20} weight="fill" /> },
+  answered: { title: "In conversation", body: "Keep answering, or choose a next step.", tone: "bg-iris-soft text-iris-deep", icon: <CheckCircle size={20} weight="fill" /> },
+  approved: { title: "Approved for this study", body: "They can see their study path.", tone: "bg-mint-soft text-mint", icon: <CheckCircle size={20} weight="fill" /> },
+  closed: { title: "Closed", body: "This inquiry is not moving forward.", tone: "bg-sunken text-ink-soft", icon: <XCircle size={20} weight="fill" /> },
 };
 
 export function InquiryStatusPanel({
@@ -88,7 +88,6 @@ export function InquiryStatusPanel({
           <button type="submit" className="min-h-12 w-full rounded-full border border-rule-strong bg-surface text-[14px] font-bold text-ink hover:bg-sunken">
             Reopen this inquiry
           </button>
-          <p className="mt-2 text-center text-[11.5px] text-ink-faint">{firstName} is told when a conversation is reopened.</p>
         </form>
       ) : null}
 
@@ -136,9 +135,6 @@ export function InquiryStatusPanel({
             </summary>
             <form action={coordinatorNotProceedingAction} className="space-y-2.5 p-3.5">
               {hidden}
-              <p className="text-[12px] leading-relaxed text-ink-soft">
-                {firstName} will be able to read the reason. Nobody should be left wondering why a conversation stopped.
-              </p>
               <label className="block text-[12px] font-semibold text-ink-soft">
                 Reason
                 <select name="reason" defaultValue="not_enrolling" className={`${input} min-h-12`}>

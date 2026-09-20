@@ -14,8 +14,8 @@ export const dynamic = "force-dynamic";
 /**
  * Home is a journey map. Before a study is applied to it is two stops — profile,
  * then find a trial. After applying, the path starts at 0, waiting for the
- * research team to approve, then get-ready and visits. Only one study can be
- * underway at a time.
+ * research team to approve, then get-ready and visits. Tapping a stop opens a
+ * card; Full timeline opens the visit list. Only one study can be underway.
  */
 export default async function HomePage() {
   const participant = await getActiveParticipant();
@@ -93,6 +93,8 @@ function studyJourney(opts: {
   const openTodos = todos.filter((todo) => !todo.done);
   const approvalHref = inquiry ? `/inquiry/${inquiry.id}` : `/trial/${trial.id}`;
 
+  const plannedByName = new Map((trial.visitSchedule?.visits ?? []).map((visit) => [visit.name, visit]));
+
   const stops: JourneyStop[] = [
     {
       id: "approval",
@@ -100,6 +102,11 @@ function studyJourney(opts: {
       sub: approved ? undefined : "The study team reviews this first",
       href: approvalHref,
       done: approved,
+      detail: {
+        note: approved ? "The study team approved this." : "The study team reviews this first.",
+        moreHref: approvalHref,
+        moreLabel: "Open application",
+      },
     },
     {
       id: "prep",
@@ -107,20 +114,36 @@ function studyJourney(opts: {
       sub: approved && openTodos.length ? `${openTodos.length} to do` : undefined,
       href: "/timeline",
       done: approved && openTodos.length === 0,
+      detail: {
+        note: approved
+          ? (openTodos.length ? undefined : "You're all set for now.")
+          : "These come after the study team approves.",
+        items: todos.map((todo) => ({ id: todo.id, label: todo.label, done: todo.done })),
+      },
     },
   ];
 
   const dated = enrollment?.visits ?? [];
   if (dated.length) {
     for (const [index, visit] of dated.entries()) {
+      const planned = plannedByName.get(visit.name);
+      const when = new Date(`${visit.date}T09:00:00`).toLocaleDateString("en-US", {
+        weekday: "short", month: "short", day: "numeric",
+      });
       stops.push({
         id: `visit-${trial.id}-${index}`,
         title: visit.name,
-        sub: new Date(`${visit.date}T09:00:00`).toLocaleDateString("en-US", {
-          weekday: "short", month: "short", day: "numeric",
-        }),
+        sub: when,
         href: `/timeline#visit-${trial.id}-${index}`,
         done: approved && visit.date < today,
+        detail: {
+          facts: [
+            { label: "When", value: new Date(`${visit.date}T09:00:00`).toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" }) },
+            ...(visit.location ? [{ label: "Where", value: visit.location.split(",")[0] }] : []),
+            { label: "Length", value: `About ${visit.onSiteHours} hours. Time to be confirmed.` },
+          ],
+          items: (planned?.procedures ?? []).map((step) => ({ label: step })),
+        },
       });
     }
     return stops;
@@ -133,6 +156,11 @@ function studyJourney(opts: {
       sub: approved ? "Date not confirmed" : undefined,
       href: `/trial/${trial.id}?tab=expect`,
       done: false,
+      detail: {
+        note: approved ? "Date not confirmed yet." : "Dates are set once the study team approves.",
+        facts: [{ label: "Length", value: `About ${visit.onSiteHours} hours` }],
+        items: visit.procedures.map((step) => ({ label: step })),
+      },
     });
   }
   return stops;

@@ -30,19 +30,19 @@ export default async function StudiesPage({ searchParams }: { searchParams: Prom
 
   return (
     <div className="space-y-4">
-      <ScreenHeader title="Studies" sub="The studies your site runs, and the replies you reuse." />
+      <ScreenHeader title="Studies" />
 
       {justPosted ? (
         <p role="status" className="flex items-start gap-2.5 rounded-[16px] bg-mint-soft px-4 py-3 text-[13px] leading-relaxed text-ink">
           <CheckCircle size={20} weight="fill" className="mt-0.5 shrink-0 text-mint" />
-          <span><span className="font-bold">Posted.</span> Participants can now find &ldquo;{justPosted.briefTitle}&rdquo; and send you an inquiry.{" "}
+          <span><span className="font-bold">Posted.</span> &ldquo;{justPosted.briefTitle}&rdquo; is live.{" "}
             <Link href={`/trial/${justPosted.id}`} className="font-bold text-iris-deep underline">See it as they do</Link>
           </span>
         </p>
       ) : null}
       {kept ? (
         <p role="alert" className="rounded-[16px] bg-peach-soft px-4 py-3 text-[13px] leading-relaxed text-ink">
-          <span className="font-bold">Not removed.</span> Someone has an inquiry on that study. Pause recruiting instead, so their conversation stays intact.
+          <span className="font-bold">Not removed.</span> Someone has an inquiry on that study. Pause recruiting instead.
         </p>
       ) : null}
 
@@ -110,9 +110,7 @@ export default async function StudiesPage({ searchParams }: { searchParams: Prom
 
       {schedule ? (
         <section>
-          <SectionHeading>
-            Visit schedule you confirmed
-          </SectionHeading>
+          <SectionHeading>Visit schedule</SectionHeading>
           <Card className="px-4">
             {schedule.visits.map((visit) => (
               <div key={visit.name} className="flex items-start gap-3 border-b border-rule py-3 last:border-0">
@@ -164,8 +162,8 @@ export default async function StudiesPage({ searchParams }: { searchParams: Prom
               <textarea name="answer" required rows={3} placeholder="What you would tell the next person who asks." className={`${input} py-2.5`} />
             </label>
             <label className="block text-[12px] font-semibold text-ink-soft">
-              Where it comes from
-              <input name="citation" placeholder="e.g. Site policy, confirmed today" className={`${input} min-h-12`} />
+              Source
+              <input name="citation" placeholder="e.g. Site policy" className={`${input} min-h-12`} />
             </label>
             <button type="submit" className="min-h-12 w-full rounded-full border border-iris bg-iris-soft text-[14px] font-bold text-iris-deep hover:bg-iris hover:text-white">Save reply</button>
           </form>

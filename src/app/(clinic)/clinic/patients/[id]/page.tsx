@@ -30,9 +30,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       <div className="space-y-4">
         <ScreenHeader back="/clinic/patients" title="Not available" />
         <Card className="p-5 text-[13.5px] leading-relaxed text-ink-soft">
-          This person is not sharing anything with your site. They may have revoked access, or the
-          sharing may have expired. Anything you already recorded elsewhere is covered by your
-          institution&rsquo;s own retention rules.
+          They are not sharing with your site.
         </Card>
       </div>
     );
@@ -58,8 +56,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
       <div className="flex items-center gap-4">
         <Avatar name={name === "Name not shared" ? "?" : name} size="size-16 text-lg" />
         <div className="flex flex-wrap gap-1.5">
-          <Pill tone="iris">Patient-authorized</Pill>
-          {visits.length ? <Pill tone="mint">Taking part</Pill> : <Pill>Exploring</Pill>}
+          {visits.length ? <Pill tone="mint">Taking part</Pill> : <Pill tone="iris">Exploring</Pill>}
         </div>
       </div>
 
@@ -84,7 +81,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
         </Card>
         {!contact ? (
           <p className="mt-2 flex items-start gap-1.5 text-[12px] leading-relaxed text-ink-faint">
-            <LockKey size={14} className="mt-0.5 shrink-0" /> Contact details were not shared. Reply through their inquiry and they will see it in their inbox.
+            <LockKey size={14} className="mt-0.5 shrink-0" /> Contact details were not shared.
           </p>
         ) : null}
       </section>

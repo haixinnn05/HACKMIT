@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CaretRight, ShieldCheck, Tray } from "@phosphor-icons/react/dist/ssr";
+import { CaretRight, Tray } from "@phosphor-icons/react/dist/ssr";
 import type { InquiryState } from "@/lib/types";
 import { Avatar, Card, Empty, Pill, ScreenHeader, Tabs } from "@/components/ui";
 import { getParticipant, getTrial, listInquiriesForCoordinator, listQuestions } from "@/lib/repo";
@@ -35,7 +35,7 @@ export default async function CoordinatorInbox({ searchParams }: { searchParams:
 
   return (
     <div className="space-y-4">
-      <ScreenHeader title="Research Team Inbox" sub="Organize patient inquiries and support your study team." />
+      <ScreenHeader title="Inbox" />
 
       <Tabs
         current={tab}
@@ -47,9 +47,7 @@ export default async function CoordinatorInbox({ searchParams }: { searchParams:
       />
 
       {shown.length === 0 ? (
-        <Empty title="Nothing waiting" icon={<Tray size={22} />}>
-          When someone shares an inquiry, it appears here with their evidence and what is missing.
-        </Empty>
+        <Empty title="Nothing waiting" icon={<Tray size={22} />} />
       ) : (
         <ul className="space-y-2.5">
           {shown.map((inquiry) => {
@@ -70,8 +68,7 @@ export default async function CoordinatorInbox({ searchParams }: { searchParams:
                     <span className="block truncate text-[12px] text-ink-soft">{getTrial(inquiry.trialId)?.briefTitle ?? inquiry.trialId}</span>
                     <span className="mt-1 flex flex-wrap items-center gap-1.5">
                       <Pill tone={STATUS[inquiry.state].tone}>{STATUS[inquiry.state].label}</Pill>
-                      <Pill tone="iris" icon={<ShieldCheck size={12} weight="fill" />}>Patient-authorized</Pill>
-                      {open ? <Pill tone="peach">{open} open {open === 1 ? "question" : "questions"}</Pill> : <Pill tone="mint">Replied</Pill>}
+                      {open ? <Pill tone="peach">{open} open</Pill> : null}
                     </span>
                   </span>
                   <CaretRight size={16} weight="bold" className="shrink-0 text-iris" />

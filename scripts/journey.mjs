@@ -157,6 +157,10 @@ await shot("questions");
 /* 8. Application form */
 await go("/apply/TP-FIX-001");
 t = await text();
+assert("8 The passport sits on the form, unfilled until tapped", t.includes("Use this passport") && (await page.locator('input[name="f_name"]').inputValue()) === "");
+await page.click('button:has-text("Use this passport")');
+await page.waitForSelector("text=From your passport");
+t = await text();
 assert("8 The application form is filled from the passport", /\d+ of \d+ answers filled from your passport/.test(t));
 assert("8 Each answer shows where it came from", t.includes("From your passport") && t.includes("You marked this unknown") && t.includes("Only you can answer"));
 assert("8 A fact marked unknown is left blank, not guessed", (await page.locator('input[name="f_her2"]').inputValue()) === "");
@@ -178,28 +182,26 @@ await go("/clinic/inbox");
 t = await text();
 const items = page.locator('#main a[href^="/clinic/inbox/"]');
 assert("11 The inquiry reaches the research team", (await items.count()) === 1 && t.includes("Maria Restrepo"));
-assert("11 The staff account is named on every staff screen", (await page.locator("header").first().innerText()).includes("R. Alvarez"));
-assert("11 Items are marked patient-authorized", t.includes("Patient-authorized"));
 await shot("team-inbox");
 await items.first().click();
 await page.waitForURL(/\/clinic\/inbox\/[0-9a-f-]{36}/);
 await settle(page);
 t = await text();
 assert("11 Considerations group as Supported, Unknown, Needs review", ["Supported", "Unknown", "Needs review"].every((l) => t.includes(l)));
-assert("11 Unshared contact details are absent and explained", !t.includes("maria.demo@example.com") && t.includes("did not share contact details"));
+assert("11 Unshared contact details are absent and explained", !t.includes("maria.demo@example.com") && t.includes("Contact details not shared"));
 assert("11 The coordinator sees the application answers with their origin", t.includes("Application answers") && t.includes("Dr. Patel, Lowell General") && t.includes("typed on the form") && t.includes("from passport"));
 assert("11 Missing information is listed to request", t.includes("Missing information to request"));
-assert("11 A saved site answer is pre-filled and flagged for review", t.includes("You are the author"));
 assert("11 A Reply action stays in reach", (await page.locator('a:has-text("Reply to Maria")').count()) === 1);
 await shot("team-review");
 const parking = () => page.locator("li", { hasText: "Is parking covered" });
+assert("11 A saved site answer is pre-filled", (await parking().locator('textarea[name="answer"]').inputValue()).includes("Harborview"));
 await parking().locator('select[name="assignee"]').selectOption("finance");
 await parking().locator('button:has-text("Assign")').click();
 await page.waitForSelector("text=Owner: Site finance office");
 assert("11 A question can be assigned an owner", (await parking().innerText()).includes("Assigned"));
 
 await parking().locator('button:has-text("Save draft")').click();
-await page.waitForSelector("text=A saved draft");
+await page.waitForSelector("text=Saved draft");
 assert("11 A draft is saved with its own state", (await parking().innerText()).includes("Draft answer"));
 const peek = await context.newPage();
 await asRole("participant");
@@ -273,6 +275,17 @@ await go("/");
 assert("1 Home reminds of the next visit", (await text()).includes("Screening visit"));
 assert("1 Home keeps a path for the study being taken", (await text()).includes("Harborview"));
 assert("1 Home marks waiting for approval as done after clinic approval", (await text()).includes("Waiting for approval") && (await text()).includes(", done"));
+await page.click('button:has-text("Get ready")');
+await page.waitForSelector('[role="dialog"]');
+assert("1 A journey stop opens its own card", (await text()).includes("Confirm parking details") && (await text()).includes("Full timeline"));
+const openTodo = page.locator('[role="dialog"] button[role="checkbox"][aria-checked="false"]').first();
+const openLabel = (await openTodo.innerText()).trim();
+await openTodo.click();
+await page.waitForSelector(`[role="dialog"] button[role="checkbox"][aria-checked="true"]:has-text("${openLabel}")`);
+await page.click('button:has-text("Full timeline")');
+await page.waitForURL(/\/timeline\?view=timeline/, { timeout: 10000 });
+assert("1 Full timeline opens the visit list", (await text()).includes("Screening visit") && (await page.locator(`button[role="checkbox"][aria-checked="true"]:has-text("${openLabel}")`).count()) >= 1 && !(await page.url()).includes("view=calendar"));
+await go("/");
 await shot("home-complete");
 
 /* 10. Profile */
@@ -339,13 +352,13 @@ await staff.goto(`${BASE}/clinic/scan`, { waitUntil: "domcontentloaded" });
 await staff.fill('input[name="pass"]', tokenPrefix);
 await staff.click('button:has-text("Open passport")');
 await staff.waitForURL(/missed=1/);
-assert("13 A revoked pass number fails exactly like a wrong one", (await staffText()).includes("No active passport matches"));
+assert("13 A revoked pass number fails exactly like a wrong one", (await staffText()).includes("No matching passport"));
 
 /* 14. Research team: Today, Patients, Studies, Activity */
 await staff.goto(`${BASE}/clinic`, { waitUntil: "domcontentloaded" });
 let st = await staffText();
 assert("14 Today counts what is waiting", ["Need review", "Open questions", "Waiting on patient", "Visits this week"].every((l) => st.includes(l)));
-assert("14 Today reports a measured reply time", /Median time to first reply/.test(st));
+assert("14 Today links to the activity log", st.includes("Activity log"));
 await shot("clinic-today", staff);
 
 await staff.goto(`${BASE}/clinic/patients`, { waitUntil: "domcontentloaded" });

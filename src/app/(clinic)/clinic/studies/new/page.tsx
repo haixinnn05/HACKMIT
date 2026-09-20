@@ -1,7 +1,6 @@
 import { Megaphone } from "@phosphor-icons/react/dist/ssr";
 import { Card, ScreenHeader } from "@/components/ui";
 import { postStudyAction } from "@/app/actions";
-import { STAFF } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +21,7 @@ export default async function NewStudyPage({ searchParams }: { searchParams: Pro
 
   return (
     <div className="space-y-4">
-      <ScreenHeader back="/clinic/studies" title="Post a study" sub={`Participants will see it as posted by ${STAFF.site}.`} />
+      <ScreenHeader back="/clinic/studies" title="Post a study" />
 
       {error ? (
         <p role="alert" className="rounded-[14px] bg-blush-soft px-4 py-3 text-[13px] font-semibold text-blush">

@@ -29,7 +29,7 @@ export function ClinicNav({ badge }: { badge: number }) {
           if (centre) {
             return (
               <Link key={href} href={href} aria-current={active ? "page" : undefined} className="-mt-6 flex flex-col items-center">
-                <span className="grid size-[58px] place-items-center rounded-full border-4 border-surface bg-ink text-white shadow-[0_8px_20px_rgba(14,13,99,0.3)]">
+                <span className="grid size-[58px] place-items-center rounded-full border-4 border-surface bg-iris text-white shadow-[0_8px_20px_rgba(94,68,251,0.35)]">
                   <Icon size={26} weight="bold" />
                 </span>
                 <span className="sr-only">{label} a passport</span>
@@ -40,7 +40,7 @@ export function ClinicNav({ badge }: { badge: number }) {
             <Link
               key={href} href={href} aria-current={active ? "page" : undefined}
               className={`relative flex min-h-12 min-w-14 flex-col items-center justify-center gap-0.5 rounded-[12px] px-1 text-[10.5px] font-semibold ${
-                active ? "text-ink" : "text-ink-faint hover:text-ink"
+                active ? "text-iris" : "text-ink-faint hover:text-ink"
               }`}
             >
               <Icon size={22} weight={active ? "fill" : "regular"} />

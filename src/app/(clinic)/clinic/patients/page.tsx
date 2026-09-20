@@ -23,9 +23,7 @@ export default function PatientsPage() {
       <ScreenHeader title="Patients" />
 
       {ids.length === 0 ? (
-        <Empty title="Nobody is sharing with your site yet" icon={<UsersThree size={22} />}>
-          People appear here when they share an inquiry, and leave when they revoke it.
-        </Empty>
+        <Empty title="Nobody here yet" icon={<UsersThree size={22} />} />
       ) : (
         <ul className="space-y-2.5">
           {ids.map((id) => {
