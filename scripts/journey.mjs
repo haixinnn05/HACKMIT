@@ -373,8 +373,92 @@ await go("/access-gaps");
 assert("Gaps are reported with denominators and not as discrimination", /\d+ \/ \d+/.test(await text()) && (await text()).includes("not evidence that a site turns anyone away"));
 await shot("access-gaps");
 
+/* 15. Application form, filled from the passport */
+await go(`/apply/TP-FIX-001`);
+t = await text();
+assert("15 The application is filled in from the passport, and says how much", /We filled in \d+ of \d+ answers for you/.test(t));
+assert("15 Each answer shows where it came from", t.includes("From your passport") && t.includes("You marked this unknown") && t.includes("Only you can answer"));
+assert("15 A fact marked unknown is left blank, not guessed", (await page.locator('input[name="f_her2"]').inputValue()) === "");
+assert("15 Known facts are prefilled", (await page.locator('input[name="f_stage"]').inputValue()) === "Stage II" && (await page.locator('input[name="f_name"]').inputValue()) === "Maria Restrepo");
+assert("15 Contact details wait for an explicit tick", !(await page.locator('input[name="includeContact"]').isChecked()));
+await page.fill('input[name="f_oncologist"]', "Dr. Patel, Lowell General");
+await page.fill('input[name="f_her2"]', "negative");
+await shot("application");
+await page.click('button:has-text("Send application")');
+await page.waitForURL(/\/inquiry\/[0-9a-f-]{36}/, { timeout: 20000 });
+await go("/profile/edit");
+assert("15 A new answer is saved back to the passport for next time", (await page.locator('input[name="fact_her2"]').inputValue()) === "negative");
+const desk = await context.newPage();
+await desk.goto(`${BASE}/clinic/inbox`, { waitUntil: "networkidle" });
+await desk.locator('#main a[href^="/clinic/inbox/"]').first().click();
+await desk.waitForURL(/\/clinic\/inbox\/[0-9a-f-]{36}/);
+await desk.waitForLoadState("networkidle");
+const deskText = (await desk.locator("#main").innerText()).replace(/\s+/g, " ");
+assert("15 The coordinator sees the answers with their origin, and no contact details",
+  deskText.includes("Application answers") && deskText.includes("Dr. Patel, Lowell General") && deskText.includes("typed on the form") && deskText.includes("from passport") && !deskText.includes("example.com"));
+await desk.close();
+
+/* 16. Talking with a peer */
+await go("/peers");
+assert("16 Peer matching is off until the person turns it on", (await text()).includes("This is off until you turn it on"));
+await go("/peers?trial=TP-FIX-001");
+await go("/peers/settings");
+for (const id of ["stage", "biomarkers", "treatment", "age", "practical"]) await page.check(`input[value="${id}"]`);
+await page.click('button:has-text("Turn on matching")');
+await page.waitForURL(/\/peers$/);
+t = await text();
+assert("16 Suggestions use an alias and explain what is in common", t.includes("Suggested for you") && /You both have breast cancer/.test(t));
+assert("16 Suggestions never expose real names or contact details", !t.includes("Okafor") && !t.includes("example.com"));
+assert("16 A different diagnosis is not suggested", !t.includes("lung"));
+await shot("peers");
+await go("/peers?trial=TP-FIX-001");
+assert("16 Nobody is paired about a study they have joined", (await text()).includes("Not while you're taking part in this study"));
+
+await go("/peers");
+const peerAlias = (await page.locator("#main li p.font-bold").first().innerText()).trim();
+await page.locator('input[name="note"]').first().fill("Hi, I would love to compare notes on the travel.");
+await page.locator('button:has-text("Ask")').first().click();
+await page.waitForURL(/\/peers\/[0-9a-f-]{36}/);
+const peerUrl = page.url();
+assert("16 A request waits for the other person to agree", (await text()).includes(`Waiting for ${peerAlias}`));
+
+const otherId = { Dee: "p-dee", Rosa: "p-eval-06", Sam: "p-eval-07", Ivy: "p-eval-01", Noor: "p-eval-05" }[peerAlias];
+await page.request.post(`${BASE}/api/persona`, { data: { id: otherId } });
+await page.goto(peerUrl, { waitUntil: "networkidle" });
+t = await text();
+assert("16 The other person sees the request under an alias, with the note", t.includes("would like to talk") && t.includes("compare notes on the travel") && !t.includes("Restrepo"));
+await page.click('button:has-text("Yes, let")');
+await page.waitForSelector("text=A few ground rules");
+t = await text();
+assert("16 Conversation starters are offered and labelled with their source", t.includes("Not sure how to start?") && /No language model was involved|Suggested by/.test(t));
+await page.locator("#main li a").first().click();
+await page.waitForURL(/draft=/);
+assert("16 A starter fills the box but is not sent", (await page.locator('textarea[name="text"]').inputValue()).length > 10 && (await page.locator("ol li").count()) === 0);
+await page.click('button:has-text("Send")');
+await page.waitForSelector("ol li");
+assert("16 The box is empty again after sending, so a starter cannot be sent twice", (await page.locator('textarea[name="text"]').inputValue()) === "");
+await page.fill('textarea[name="text"]', "Do you know which arm you were randomized to?");
+await page.click('button:has-text("Send")');
+await page.waitForSelector("text=best taken to the study team");
+assert("16 A message about treatment groups gets a gentle reminder", true);
+await shot("peer-chat");
+
+const stranger = await browser.newContext();
+const intruder = await stranger.newPage();
+await intruder.request.post(`${BASE}/api/persona`, { data: { id: "p-harold" } });
+const intrusion = await intruder.goto(peerUrl, { waitUntil: "networkidle" });
+assert("16 A third person cannot read the conversation", intrusion.status() === 404);
+await stranger.close();
+
+await page.request.post(`${BASE}/api/persona`, { data: { id: "p-maria" } });
+await page.goto(peerUrl, { waitUntil: "networkidle" });
+assert("16 The first person sees the reply", (await page.locator("ol li").count()) === 2);
+await page.click('button:has-text("End conversation")');
+await page.waitForURL(/\/peers$/);
+assert("16 Either person can end it", (await text()).includes("Ended"));
+
 /* Accessibility across screens */
-for (const path of ["/", "/explore", "/trial/TP-FIX-001", "/trial/TP-FIX-001/preview", "/questions", "/passport", "/inbox", "/profile", "/profile/edit", "/timeline", "/inquiry/new/TP-FIX-001"]) {
+for (const path of ["/apply/TP-FIX-001", "/peers", "/peers/settings", "/", "/explore", "/trial/TP-FIX-001", "/trial/TP-FIX-001/preview", "/questions", "/passport", "/inbox", "/profile", "/profile/edit", "/timeline", "/inquiry/new/TP-FIX-001"]) {
   await go(path);
   const a11y = await page.evaluate(() => {
     const controls = [...document.querySelectorAll("button, a, input, select, textarea")];

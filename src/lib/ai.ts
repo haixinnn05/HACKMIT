@@ -141,8 +141,11 @@ type Backend =
 function backend(): Backend | null {
   const key = process.env.LLM_API_KEY;
   const baseUrl = process.env.LLM_BASE_URL?.replace(/\/+$/, "");
-  if (key && baseUrl && /^https:\/\//.test(baseUrl)) {
-    return { kind: "gateway", apiKey: key, baseUrl, model: process.env.LLM_MODEL || MODEL };
+  // A gateway needs a named model too. Without one every call would be refused,
+  // so the app stays on its rule-built text instead of making doomed requests.
+  const model = process.env.LLM_MODEL;
+  if (key && baseUrl && model && /^https:\/\//.test(baseUrl)) {
+    return { kind: "gateway", apiKey: key, baseUrl, model };
   }
   if (process.env.ANTHROPIC_API_KEY) return { kind: "anthropic", apiKey: process.env.ANTHROPIC_API_KEY, model: MODEL };
   return null;
@@ -188,6 +191,17 @@ async function callModel(system: string, user: string, schemaHint: string) {
   const parsed = text ? parseJsonObject(text) : null;
   if (!parsed) console.warn(`[ai] response failed to parse against ${schemaHint}`);
   return parsed;
+}
+
+/** For features outside the trial brief. Returns null when no model is configured or the call fails. */
+export async function askModelForJson(system: string, user: string, label: string) {
+  try { return await callModel(system, user, label); } catch (error) { console.warn(`[ai] ${label} failed:`, error); return null; }
+}
+
+/** Which model produced a piece of text, for labelling it honestly. */
+export function modelLabel(): string | null {
+  const target = backend();
+  return target ? (target.kind === "gateway" && /llama/i.test(`${target.baseUrl}${target.model}`) ? `Llama (${target.model})` : target.model) : null;
 }
 
 const SYSTEM = `You are a careful explainer inside Mozaic, a tool that helps a person prepare for a conversation with a clinical research coordinator.

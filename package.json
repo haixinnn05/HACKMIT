@@ -18,7 +18,8 @@
     "ios:open": "cap open ios",
     "ios:device": "node scripts/ios-device.mjs",
     "openalex:snapshot": "tsx scripts/openalex-snapshot.mts",
-    "check:secrets": "node scripts/check-secrets.mjs --all"
+    "check:secrets": "node scripts/check-secrets.mjs --all",
+    "test:peers": "tsx scripts/peers-test.mts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.127.0",

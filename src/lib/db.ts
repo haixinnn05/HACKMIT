@@ -222,6 +222,35 @@ CREATE TABLE IF NOT EXISTS saved_replies (
   created_at TEXT NOT NULL
 );
 
+-- Peer connections. Opting in is explicit, lists exactly which kinds of
+-- information may be compared, and can be withdrawn.
+CREATE TABLE IF NOT EXISTS peer_optins (
+  participant_id TEXT PRIMARY KEY REFERENCES participants(id) ON DELETE CASCADE,
+  alias TEXT NOT NULL,
+  offers TEXT NOT NULL,
+  about TEXT,
+  created_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS peer_connections (
+  id TEXT PRIMARY KEY,
+  trial_id TEXT,
+  from_id TEXT NOT NULL,
+  to_id TEXT NOT NULL,
+  state TEXT NOT NULL,
+  reasons TEXT NOT NULL DEFAULT '[]',
+  note TEXT,
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+CREATE TABLE IF NOT EXISTS peer_messages (
+  id TEXT PRIMARY KEY,
+  connection_id TEXT NOT NULL REFERENCES peer_connections(id) ON DELETE CASCADE,
+  sender_id TEXT NOT NULL,
+  text TEXT NOT NULL,
+  reminder INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS audit_events (
   id TEXT PRIMARY KEY,
   actor TEXT NOT NULL,
@@ -269,6 +298,7 @@ export function getFictionalFixture(): FictionalFixture | null {
 export interface FictionalFixture {
   studyId: string;
   cannedAnswers: { matches: string[]; answer: string; citation: string }[];
+  applicationForm?: { title: string; notice?: string; siteFields?: { id: string; label: string; kind: "text" | "number" | "choice" | "longtext"; help?: string; options?: string[] }[] };
 }
 
 function readJson<T>(relativePath: string): T | null {
@@ -451,6 +481,10 @@ export function seedIfEmpty(db: Database.Database, force = false) {
         clinical_facts: JSON.stringify(persona.clinicalFacts ?? []),
         contact: JSON.stringify(persona.contact ?? {}),
       });
+      if (persona.peer) {
+        db.prepare("INSERT OR REPLACE INTO peer_optins (participant_id, alias, offers, about, created_at) VALUES (?,?,?,?,?)")
+          .run(persona.id, persona.peer.alias, JSON.stringify(persona.peer.offers), persona.peer.about ?? null, new Date().toISOString());
+      }
       if (persona.personalNote) {
         db.prepare("INSERT OR REPLACE INTO participant_notes (participant_id, note) VALUES (?, ?)")
           .run(persona.id, persona.personalNote);
@@ -506,6 +540,7 @@ export function resetDemoData() {
       DELETE FROM inquiries; DELETE FROM questions; DELETE FROM grants;
       DELETE FROM milestones; DELETE FROM enrollments; DELETE FROM saved_trials;
       DELETE FROM todos; DELETE FROM inquiry_reads; DELETE FROM question_drafts; DELETE FROM saved_replies;
+      DELETE FROM peer_messages; DELETE FROM peer_connections; DELETE FROM peer_optins;
       DELETE FROM audit_events; DELETE FROM participants;
     `);
     db.prepare("DELETE FROM meta WHERE key = 'seeded_at'").run();

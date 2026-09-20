@@ -1,11 +1,12 @@
 import {
-  CalendarCheck, ChartBar, ChatCircle, ClockCounterClockwise, FileText, GearSix, Heart, Info,
+  CalendarCheck, ChartBar, HandHeart, ChatCircle, ClockCounterClockwise, FileText, GearSix, Heart, Info,
   LockKey, MapPin, PencilSimple, QrCode, User,
 } from "@phosphor-icons/react/dist/ssr";
 import Link from "next/link";
 import { PersonaSwitcher } from "@/components/PersonaSwitcher";
 import { Avatar, Card, MenuRow, ScreenHeader, SectionHeading } from "@/components/ui";
 import { getPersonalNote, listParticipants, listQuestions, listSavedTrialIds } from "@/lib/repo";
+import { getPeerOptIn } from "@/lib/peer-repo";
 import { getActiveParticipant } from "@/lib/session";
 import { chooseRoleAction, resetDemoAction } from "@/app/actions";
 import { isAnswered } from "@/lib/questions";
@@ -21,6 +22,7 @@ export default async function ProfilePage() {
   const open = listQuestions({ participantId: participant.id }).filter((q) => !isAnswered(q)).length;
   const saved = listSavedTrialIds(participant.id).length;
   const note = getPersonalNote(participant.id);
+  const peerOn = Boolean(getPeerOptIn(participant.id));
 
   return (
     <div className="space-y-5">
@@ -59,6 +61,7 @@ export default async function ProfilePage() {
         <MenuRow href="/profile/edit#medical" icon={<FileText size={22} />} title="Medical History" sub={unknown ? `Conditions and treatments, ${unknown} marked unknown` : "Conditions, treatments"} />
         <MenuRow href="/profile/edit#preferences" icon={<Heart size={22} />} title="Preferences" sub="Travel, scheduling, support" />
         <MenuRow href="/questions" icon={<ChatCircle size={22} />} title="Saved Questions" sub={open ? `${open} waiting for an answer` : "Questions for study teams"} />
+        <MenuRow href="/peers" icon={<HandHeart size={22} />} title="Talk with someone like you" sub={peerOn ? "Matching is on" : "Off until you turn it on"} />
         <MenuRow href="/timeline" icon={<CalendarCheck size={22} />} title="Visits & Timeline" sub="Upcoming visits and to-dos" />
         <MenuRow href="/passport#access" icon={<LockKey size={22} />} title="Privacy & Security" sub="Control your data and sharing" />
         <MenuRow href="/profile/saved" icon={<ClockCounterClockwise size={22} />} title="Past / Saved Trials" sub={`${saved} saved`} />

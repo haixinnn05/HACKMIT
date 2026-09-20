@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
-import { LockKey, PaperPlaneTilt } from "@phosphor-icons/react/dist/ssr";
+import Link from "next/link";
+import { CaretRight, LockKey, MagicWand, PaperPlaneTilt } from "@phosphor-icons/react/dist/ssr";
 import { CountedTextarea, PrintButton } from "@/components/CountedTextarea";
 import { Callout, Card, FictionBanner, ScreenHeader, StickyAction } from "@/components/ui";
 import { getTrial, listQuestions } from "@/lib/repo";
@@ -50,6 +51,17 @@ export default async function NewInquiryPage({ params }: { params: Promise<{ tri
       ) : (
         <Callout tone="caution">Prototype: nothing is sent to a real site. The inquiry stays inside this app.</Callout>
       )}
+
+      <Card>
+        <Link href={`/apply/${trial.id}`} className="flex items-center gap-3.5 p-4">
+          <span className="grid size-10 shrink-0 place-items-center rounded-[12px] bg-mint-soft text-mint"><MagicWand size={22} weight="fill" /></span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-[14px] font-bold text-ink">Fill in the application form instead</span>
+            <span className="block text-[12.5px] text-ink-soft">Your passport fills in most of it. You check every answer.</span>
+          </span>
+          <CaretRight size={16} weight="bold" className="text-ink-faint" />
+        </Link>
+      </Card>
 
       <form action={shareInquiryAction} className="space-y-4">
         <input type="hidden" name="trialId" value={trial.id} />

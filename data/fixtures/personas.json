@@ -136,13 +136,31 @@
           "label": "Brain metastases",
           "value": null,
           "provenance": "unknown"
+        },
+        {
+          "key": "prior_therapy",
+          "label": "Prior therapy",
+          "value": "Surgery, chemotherapy, radiation",
+          "provenance": "self_reported"
         }
       ],
       "contact": {
         "email": "dee.demo@example.com",
         "phone": "+1-555-0177"
       },
-      "personalNote": "Advancing research gives me hope, and I'm glad to be part of it."
+      "personalNote": "Advancing research gives me hope, and I'm glad to be part of it.",
+      "peer": {
+        "alias": "Dee",
+        "offers": [
+          "condition",
+          "stage",
+          "biomarkers",
+          "treatment",
+          "age",
+          "practical"
+        ],
+        "about": "Two years in. Happy to talk through how I weighed a study against my week."
+      }
     },
     {
       "id": "p-harold",
@@ -240,6 +258,15 @@
       "contact": {
         "email": "eval01@example.com",
         "phone": "+1-555-0101"
+      },
+      "peer": {
+        "alias": "Ivy",
+        "offers": [
+          "condition",
+          "stage",
+          "age"
+        ],
+        "about": "Newly diagnosed and still learning the vocabulary."
       }
     },
     {
@@ -306,6 +333,18 @@
       "contact": {
         "email": "eval03@example.com",
         "phone": "+1-555-0103"
+      },
+      "peer": {
+        "alias": "Al",
+        "offers": [
+          "condition",
+          "stage",
+          "biomarkers",
+          "treatment",
+          "age",
+          "practical"
+        ],
+        "about": "Lung cancer, stage III."
       }
     },
     {
@@ -396,6 +435,15 @@
       "contact": {
         "email": "eval05@example.com",
         "phone": "+1-555-0105"
+      },
+      "peer": {
+        "alias": "Noor",
+        "offers": [
+          "condition",
+          "stage",
+          "practical"
+        ],
+        "about": null
       }
     },
     {
@@ -436,11 +484,27 @@
           "label": "Performance status (ECOG)",
           "value": "2",
           "provenance": "self_reported"
+        },
+        {
+          "key": "prior_therapy",
+          "label": "Prior therapy",
+          "value": "Surgery, chemotherapy, endocrine therapy",
+          "provenance": "self_reported"
         }
       ],
       "contact": {
         "email": "eval06@example.com",
         "phone": "+1-555-0106"
+      },
+      "peer": {
+        "alias": "Rosa",
+        "offers": [
+          "condition",
+          "stage",
+          "treatment",
+          "practical"
+        ],
+        "about": "I travel a long way for care, so I think a lot about logistics."
       }
     },
     {
@@ -480,6 +544,15 @@
       "contact": {
         "email": "eval07@example.com",
         "phone": "+1-555-0107"
+      },
+      "peer": {
+        "alias": "Sam",
+        "offers": [
+          "condition",
+          "biomarkers",
+          "age"
+        ],
+        "about": "A man with breast cancer. There are not many of us, so I like to compare notes."
       }
     }
   ]

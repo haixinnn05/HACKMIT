@@ -44,7 +44,7 @@ const screens = [
   "/", "/explore", "/trial/TP-FIX-001", "/trial/TP-FIX-001?tab=eligibility", "/trial/TP-FIX-001?tab=expect", "/trial/TP-FIX-001?tab=insight",
   "/trial/TP-FIX-001/preview", "/trial/NCT06185205", "/questions", "/questions?add=1", "/passport",
   "/inquiry/new/TP-FIX-001", "/inbox", inquiryPath, "/profile", "/profile/edit", "/profile/saved",
-  "/clinic", "/clinic/inbox", coordinatorPath, "/clinic/patients", "/clinic/scan", "/clinic/studies", "/clinic/activity", "/welcome", "/timeline", "/timeline?view=calendar", "/about", "/access-gaps",
+  "/clinic", "/clinic/inbox", coordinatorPath, "/clinic/patients", "/clinic/scan", "/clinic/studies", "/clinic/activity", "/welcome", "/apply/TP-FIX-001", "/peers", "/peers/settings", "/timeline", "/timeline?view=calendar", "/about", "/access-gaps",
 ];
 
 const problems = [];

@@ -2,8 +2,8 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import {
-  ArrowSquareOut, Buildings, CaretLeft, CaretRight, ClipboardText, Flask, Heart, MapPin,
-  Heartbeat, Lightbulb, PaperPlaneTilt, ShieldCheck, Timer,
+  ArrowSquareOut, Buildings, HandHeart, CaretLeft, CaretRight, ClipboardText, Flask, Heart, MapPin,
+  Heartbeat, Lightbulb, MagicWand, PaperPlaneTilt, ShieldCheck, Timer,
 } from "@phosphor-icons/react/dist/ssr";
 import { OpenAlexResearch, OpenAlexResearchSkeleton } from "@/components/OpenAlexResearch";
 import { Hills } from "@/components/Brand";
@@ -159,6 +159,28 @@ export default async function TrialPage({
               </p>
             </Card>
           </div>
+
+          <Card>
+            <Link href={`/apply/${trial.id}`} className="flex items-center gap-3 p-4">
+              <span className="grid size-10 shrink-0 place-items-center rounded-[12px] bg-mint-soft text-mint"><MagicWand size={22} weight="fill" /></span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[14px] font-bold text-ink">Application form</span>
+                <span className="block text-[12.5px] text-ink-soft">Filled in from your passport. You confirm every answer.</span>
+              </span>
+              <CaretRight size={16} weight="bold" className="text-ink-faint" />
+            </Link>
+          </Card>
+
+          <Card>
+            <Link href={`/peers?trial=${trial.id}`} className="flex items-center gap-3 p-4">
+              <span className="grid size-10 shrink-0 place-items-center rounded-[12px] bg-lavender text-iris"><HandHeart size={22} /></span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[14px] font-bold text-ink">Talk with someone weighing this too</span>
+                <span className="block text-[12.5px] text-ink-soft">Opt-in, by alias, matched only on what you both offer.</span>
+              </span>
+              <CaretRight size={16} weight="bold" className="text-ink-faint" />
+            </Link>
+          </Card>
 
           <Card>
             <Link href={`/questions?trial=${trial.id}`} className="press flex items-center gap-3 p-4">

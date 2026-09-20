@@ -29,7 +29,7 @@ scholarly works from the CC0 [OpenAlex open dataset](https://registry.opendata.a
 
 ```bash
 npm run evaluate     # 43 checks: invariants, citations, burden, permissions
-npm run journey      # 108 checks: both faces in a real browser
+npm run journey      # 131 checks: both faces in a real browser
 npm run audit        # every button and link on every screen: reachable, uncovered, resolving
 npm run phone        # current address and a scannable code, to open the app on a phone
 npm run capture      # phone-size screenshots of all twelve screens, to .capture/
@@ -126,6 +126,37 @@ Where the mockups and the design document disagreed, the document won:
 - A real registry record shows "Not published" for visits and duration. Only the labelled
   fictional study has a schedule, and timeline entries show no invented clock times.
 - Personas are synthetic, so avatars are monograms rather than photographs.
+
+### Application autofill
+
+`/apply/[trialId]` fills a study's application form from the passport, so nobody
+retypes the same answers for every site. Each field says where its value came from
+(from the passport, marked unknown, or only the person can answer), everything is
+editable, blanks are not sent, and contact details wait for an explicit tick. A
+fact marked unknown is left blank rather than guessed. New answers can be saved
+back to the passport, so the next form starts fuller. The coordinator sees each
+answer with whether it came from the passport or was typed on the form.
+
+### Talking with a peer
+
+`/peers` suggests someone in a similar situation to talk to about a study. This
+goes beyond the original design document, which deferred stranger matching, so it
+is built around that document's own cautions:
+
+- **Opt-in, by alias.** Off until switched on. Nobody can browse people.
+- **Only mutually offered fields are compared.** A kind of information takes part in
+  matching only when both people ticked it, so no reason can reveal something a
+  person kept back. An unknown fact never counts as something in common.
+- **Not while enrolled.** People are not paired about a study either has joined,
+  because comparing experiences inside a trial can reveal treatment groups.
+- **Transparent scoring.** Pairing is done by rule and explained in plain words. A
+  language model (Meta Llama, when enabled) only suggests conversation starters for
+  two people who have already connected, from their shared overlaps and the study's
+  public title. It cannot send anything.
+- **Consent both ways, and a way out.** The other person must accept; either can end
+  or report; a third person gets a 404.
+
+`npm run test:peers` checks these rules directly.
 
 ### Insight, from OpenAlex
 
@@ -263,7 +294,7 @@ Both suites run against the real 300-record snapshot.
 
 ```
 npm run evaluate    43 passed, 0 failed
-npm run journey     108 passed, 0 failed
+npm run journey     131 passed, 0 failed
 ```
 
 Selected results:

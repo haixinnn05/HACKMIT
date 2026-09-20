@@ -138,5 +138,33 @@
       "type": "BEHAVIORAL",
       "name": "Adjuvant endocrine therapy adherence"
     }
-  ]
+  ],
+  "applicationForm": {
+    "title": "Harborview pre-screening form",
+    "notice": "A fictional site form, modelled on what a research site asks before a first call.",
+    "siteFields": [
+      {
+        "id": "oncologist",
+        "label": "Name of your oncologist or treating clinic",
+        "kind": "text",
+        "help": "So the team knows who to request records from, with your permission."
+      },
+      {
+        "id": "visit_days",
+        "label": "Days you could usually attend",
+        "kind": "choice",
+        "options": [
+          "Weekday mornings",
+          "Weekday afternoons",
+          "Either",
+          "It varies"
+        ]
+      },
+      {
+        "id": "how_heard",
+        "label": "How did you hear about this study?",
+        "kind": "text"
+      }
+    ]
+  }
 }
