@@ -4,31 +4,29 @@ import { getOpenAlexResearch, OPENALEX_DATASET_URL, type OpenAlexWork } from "@/
 import type { Trial } from "@/lib/types";
 
 /**
- * Insight: scholarly background from the OpenAlex open dataset.
- *
- * Kept visibly apart from the study's own requirements. A paper can explain the
- * medical context; it cannot establish anyone's eligibility or a site's local
- * procedure. The query is built from public trial fields only, so no passport
- * data ever reaches OpenAlex.
+ * Insight: the medical background behind a study, from the OpenAlex open index
+ * of scholarly work. Quoted as published. Public trial fields only, so no
+ * passport data reaches OpenAlex.
  */
 
-function authorLine(work: OpenAlexWork): string {
-  if (work.authors.length === 0) return "Authors not listed";
-  return `${work.authors.join(", ")}${work.authors.length === 3 ? ", et al." : ""}`;
+function byline(work: OpenAlexWork): string {
+  const authors = work.authors.length ? `${work.authors.join(", ")}${work.authors.length === 3 ? ", et al." : ""}` : "Authors not listed";
+  return [authors.replace(/\.$/, ""), work.venue, work.publicationYear].filter(Boolean).join(". ");
 }
 
 export function OpenAlexResearchSkeleton() {
   return (
-    <section aria-label="Background research loading">
-      <SectionHeading>Insight</SectionHeading>
-      <Card className="space-y-3 p-4">
-        {[0, 1, 2].map((row) => (
-          <div key={row} className="space-y-1.5">
-            <div className="h-3.5 w-11/12 animate-pulse rounded-full bg-sunken" />
-            <div className="h-3 w-2/3 animate-pulse rounded-full bg-sunken" />
-          </div>
-        ))}
+    <section aria-label="Background research loading" className="space-y-3">
+      <Card className="space-y-2.5 p-4">
+        <div className="h-3.5 w-1/2 animate-pulse rounded-full bg-sunken" />
+        {[0, 1, 2].map((row) => <div key={row} className="h-3 animate-pulse rounded-full bg-sunken" style={{ width: `${96 - row * 14}%` }} />)}
       </Card>
+      {[0, 1].map((row) => (
+        <Card key={row} className="space-y-2 p-4">
+          <div className="h-3.5 w-11/12 animate-pulse rounded-full bg-sunken" />
+          <div className="h-3 w-2/3 animate-pulse rounded-full bg-sunken" />
+        </Card>
+      ))}
     </section>
   );
 }
@@ -40,52 +38,59 @@ export async function OpenAlexResearch({ trial }: { trial: Trial }) {
   } catch (error) {
     console.warn("[openalex] background research unavailable:", error);
     return (
-      <section aria-labelledby="openalex-heading">
-        <SectionHeading id="openalex-heading">Insight</SectionHeading>
-        <Card className="p-4 text-[13px]">
-          <a href={OPENALEX_DATASET_URL} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-bold text-iris hover:underline">
-            OpenAlex open dataset <ArrowSquareOut size={14} />
-          </a>
-        </Card>
-      </section>
+      <Card className="p-4 text-[13px]">
+        <a href={OPENALEX_DATASET_URL} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 font-bold text-iris hover:underline">
+          OpenAlex <ArrowSquareOut size={14} />
+        </a>
+      </Card>
     );
   }
 
+  const { topic, works } = result;
+
   return (
-    <section aria-labelledby="openalex-heading">
-      <SectionHeading id="openalex-heading">Insight</SectionHeading>
-
-      <Card className="overflow-hidden">
-        <div className="flex items-center justify-between gap-2 px-4 py-2.5">
-          <span className="text-[12px] font-bold text-ink-soft">OpenAlex</span>
-          <span className="text-[11px] text-ink-faint">{result.fetchedAt.slice(0, 10)}</span>
+    <section className="space-y-4">
+      {topic ? (
+        <div>
+          <SectionHeading>{topic.name}</SectionHeading>
+          <Card className="p-4">
+            <blockquote className="text-[13.5px] leading-relaxed text-ink">{topic.description}</blockquote>
+            {topic.keywords.length ? (
+              <ul className="mt-3 flex flex-wrap gap-1.5">
+                {topic.keywords.map((keyword) => <li key={keyword}><Pill tone="iris">{keyword}</Pill></li>)}
+              </ul>
+            ) : null}
+          </Card>
         </div>
+      ) : null}
 
-        {result.works.length > 0 ? (
-          <ul>
-            {result.works.map((work) => (
-              <li key={work.id} className="border-b border-rule last:border-0">
-                <a href={work.id} target="_blank" rel="noreferrer" className="press block px-4 py-3.5 hover:bg-sunken">
-                  <span className="flex items-start justify-between gap-3">
-                    <span className="text-[13.5px] font-bold leading-snug text-ink">{work.title}</span>
-                    <ArrowSquareOut size={15} className="mt-0.5 shrink-0 text-iris" />
-                  </span>
-                  <span className="mt-1 block text-[12px] text-ink-soft">{authorLine(work)}</span>
-                  <span className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px] text-ink-faint">
-                    {[work.venue, work.publicationYear, `${work.citedByCount.toLocaleString()} citations`]
-                      .filter(Boolean).join(", ")}
-                    {work.isOpenAccess ? <Pill tone="mint">Open access</Pill> : null}
-                  </span>
+      <div>
+        <SectionHeading>{result.matchKind === "trial_id" ? "About this study" : "Papers"}</SectionHeading>
+        {works.length === 0 ? (
+          <Card className="p-4 text-[13px] leading-relaxed text-ink-soft">No close match.</Card>
+        ) : (
+          <ul className="space-y-2.5">
+            {works.map((work) => (
+              <Card as="li" key={work.id} className="p-4">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {work.isReview ? <Pill tone="iris">Review</Pill> : null}
+                  {work.isOpenAccess ? <Pill tone="mint">Free to read</Pill> : null}
+                  <span className="text-[11px] text-ink-faint">{work.citedByCount.toLocaleString()} citations</span>
+                </div>
+                <h3 className="mt-1.5 text-[13.5px] font-bold leading-snug text-ink">{work.title}</h3>
+                <p className="mt-0.5 text-[11.5px] leading-snug text-ink-soft">{byline(work)}</p>
+                {work.abstractExcerpt ? (
+                  <blockquote className="mt-2.5 border-l-[3px] border-rule-strong pl-3 text-[12.5px] leading-relaxed text-ink-soft">{work.abstractExcerpt}</blockquote>
+                ) : null}
+                <a href={work.openAccessUrl ?? work.doiUrl ?? work.id} target="_blank" rel="noreferrer"
+                  className="mt-2 inline-flex min-h-11 items-center gap-1 text-[12.5px] font-bold text-iris hover:underline">
+                  {work.openAccessUrl ? "Read the paper" : "View the record"} <ArrowSquareOut size={14} />
                 </a>
-              </li>
+              </Card>
             ))}
           </ul>
-        ) : (
-          <p className="p-4 text-[13px] leading-relaxed text-ink-soft">
-            OpenAlex does not currently index a close match for this study topic.
-          </p>
         )}
-      </Card>
+      </div>
     </section>
   );
 }

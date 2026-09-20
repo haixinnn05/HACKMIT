@@ -1,0 +1,101 @@
+{
+  "works": [
+    {
+      "id": "https://openalex.org/W2012078072",
+      "title": "Accelerated Partial Breast Irradiation for Breast Cancer: A Meta-Analysis",
+      "publicationYear": 2013,
+      "publicationDate": "2013-12-01",
+      "citedByCount": 19,
+      "authors": [
+        "Xiupeng Ye",
+        "Shen Bao",
+        "Liyun Guo"
+      ],
+      "venue": "Translational Oncology",
+      "doiUrl": "https://doi.org/10.1593/tlo.13580",
+      "isOpenAccess": true,
+      "openAccessUrl": "https://www.sciencedirect.com/science/article/pii/S1936523313800010/pdf",
+      "isReview": true,
+      "abstractExcerpt": "To evaluate the long-term effect of breast conservation with accelerated partial breast irradiation (APBI) for early-stage breast cancer, PubMed, EMBASE, Cochrane Library, Web of Science, Chinese Biomedical Literature Database, Chinese Scientific Journals Full-text Database, and China Journal Full-text Database were searched to identify relevant original ...",
+      "topicId": "T10183"
+    },
+    {
+      "id": "https://openalex.org/W3127793480",
+      "title": "A meta-analysis of the efficacy and safety of accelerated partial breast irradiation versus whole-breast irradiation for early-stage breast cancer",
+      "publicationYear": 2021,
+      "publicationDate": "2021-02-02",
+      "citedByCount": 16,
+      "authors": [
+        "Xiaoyong Xiang",
+        "Zhen Ding",
+        "Lingling Feng"
+      ],
+      "venue": "Radiation Oncology",
+      "doiUrl": "https://doi.org/10.1186/s13014-021-01752-2",
+      "isOpenAccess": true,
+      "openAccessUrl": "https://ro-journal.biomedcentral.com/track/pdf/10.1186/s13014-021-01752-2",
+      "isReview": true,
+      "abstractExcerpt": "This meta-analysis evaluated the efficacy and safety of accelerated partial breast irradiation versus whole-breast irradiation for early-stage breast cancer after breast-conserving surgery.",
+      "topicId": "T10183"
+    },
+    {
+      "id": "https://openalex.org/W2390212520",
+      "title": "Reduced Mortality With Partial-Breast Irradiation for Early Breast Cancer: A Meta-Analysis of Randomized Trials",
+      "publicationYear": 2016,
+      "publicationDate": "2016-05-13",
+      "citedByCount": 88,
+      "authors": [
+        "Jayant S. Vaidya",
+        "Max Bulsara",
+        "Frederik Wenz"
+      ],
+      "venue": "International Journal of Radiation Oncology*Biology*Physics",
+      "doiUrl": "https://doi.org/10.1016/j.ijrobp.2016.05.008",
+      "isOpenAccess": true,
+      "openAccessUrl": "http://www.redjournal.org/article/S0360301616302000/pdf",
+      "isReview": true,
+      "abstractExcerpt": "With earlier detection and more effective treatment, mortality from breast cancer continues to fall and it has become increasingly important to reduce the toxicity of treatments. Partial-breast radiation therapy, which focuses radiation to the tumor bed, may achieve this aim.",
+      "topicId": "T10183"
+    },
+    {
+      "id": "https://openalex.org/W2912938136",
+      "title": "Effectiveness of different accelerated partial breast irradiation techniques for the treatment of breast cancer patients: Systematic review using indirect comparisons of randomized clinical trials",
+      "publicationYear": 2019,
+      "publicationDate": "2019-02-15",
+      "citedByCount": 15,
+      "authors": [
+        "Gustavo Nader Marta",
+        "Jessica Barrett",
+        "Gustavo José Martiniano Porfírio"
+      ],
+      "venue": "Reports of Practical Oncology & Radiotherapy",
+      "doiUrl": "https://doi.org/10.1016/j.rpor.2019.01.009",
+      "isOpenAccess": true,
+      "openAccessUrl": "https://doi.org/10.1016/j.rpor.2019.01.009",
+      "isReview": true,
+      "abstractExcerpt": "AIM: This systematic review was conducted to compare the effectiveness of different accelerated partial breast irradiation (APBI) techniques for the treatment of breast cancer patients. BACKGROUND: Numerous (APBI) techniques are available for clinical practice.",
+      "topicId": "T10183"
+    }
+  ],
+  "topic": {
+    "id": "T10183",
+    "name": "Breast Cancer Treatment Studies",
+    "description": "This cluster of papers focuses on molecular research, treatment response, and prognostic markers in breast cancer. It covers topics such as gene expression patterns, molecular subtypes, neoadjuvant therapy, radiotherapy, and the impact of hormone receptors on survival. The papers also discuss the development of clinical practice guidelines for breast cancer management.",
+    "keywords": [
+      "Gene Expression",
+      "Breast Tumours",
+      "Treatment Response",
+      "Molecular Subtypes",
+      "Prognostic Markers",
+      "Neoadjuvant Therapy",
+      "Radiotherapy",
+      "Hormone Receptors"
+    ],
+    "field": "Biochemistry, Genetics and Molecular Biology",
+    "worksCount": 119994
+  },
+  "query": "Breast Cancer Accelerated partial breast irradiation",
+  "matchKind": "topic",
+  "fetchedAt": "2026-09-19T23:54:52.749Z",
+  "fromSnapshot": false
+}

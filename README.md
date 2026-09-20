@@ -29,7 +29,7 @@ scholarly works from the CC0 [OpenAlex open dataset](https://registry.opendata.a
 
 ```bash
 npm run evaluate     # 43 checks: invariants, citations, burden, permissions
-npm run journey      # 88 checks: all twelve screens in a real browser
+npm run journey      # 108 checks: both faces in a real browser
 npm run audit        # every button and link on every screen: reachable, uncovered, resolving
 npm run phone        # current address and a scannable code, to open the app on a phone
 npm run capture      # phone-size screenshots of all twelve screens, to .capture/
@@ -47,13 +47,67 @@ produced the text.
 
 ---
 
+## iPhone app
+
+Mozaic is a web app, and that is what judges open. For a demo there is also a
+native iOS shell built with Capacitor. It loads the running server by URL, so
+every screen, test and line of logic is shared with the web version.
+
+```bash
+npm run dev            # the server the app loads from
+npm run ios:device     # build, sign and install on a plugged-in, unlocked iPhone
+```
+
+`ios:device` finds the phone, points the app at this computer's current Wi-Fi
+address, signs with the team Xcode is signed in to, and installs. Other commands:
+`npm run ios:sync -- https://your-deployment` to target a deployed server, and
+`npm run ios:open` to open the project in Xcode.
+
+The shell cannot work without a reachable server, because the database, search
+and eligibility rules all run there. If the server is unreachable the app shows a
+plain explanation and a retry button. iOS is granted local-network loading only,
+not a blanket exception for insecure traffic. A free Apple ID signs apps for seven
+days, so re-run `ios:device` to renew.
+
+## Two faces
+
+Mozaic is one app with two sides, chosen at `/welcome` and switchable from inside
+either one. They are separate route groups with separate navigation, and the
+research-team header is dark where the participant app is lavender, so the two
+cannot be confused on a shared demo phone.
+
+**Participant** (`/`): the twelve screens below.
+
+**Research team** (`/clinic`), a simulated staff account labelled as such on every screen:
+
+| Screen | Route | What it does |
+|---|---|---|
+| Today | `/clinic` | What is waiting, ordered by what was asked and how long it has waited; open questions by owner; visits this week; measured time to first reply |
+| Inbox | `/clinic/inbox` | Inquiries people shared: considerations (not a decision), missing information, assign, draft, send |
+| Scan | `/clinic/scan` | Open a participant's ticket by camera or by its eight-character pass number |
+| Patients | `/clinic/patients` | People currently sharing with the site, and exactly what each shared |
+| Studies | `/clinic/studies` | The site's study, its confirmed visit schedule, and the saved-reply library |
+| Activity | `/clinic/activity` | Who shared, opened, answered and revoked, without any private text |
+
+Rules the research-team side is built around:
+
+- **Not a directory.** Patients lists people who started the relationship by sharing.
+  There is no patient search, and revoking access removes the person at once. A kept
+  link to a revoked patient shows nothing.
+- **Snapshots, not live profiles.** A patient page shows what was shared with each
+  inquiry. A fact added later and not shared is not visible.
+- **No predictions about people.** The queue is ordered by what was asked and how long
+  it has waited. There is no dropout-risk or likelihood-to-enrol score.
+- **Pass numbers leak nothing.** A wrong, expired and revoked number all fail the same way.
+- **A person sends every answer.** Saved replies are offered as drafts only.
+
 ## The twelve screens
 
 | # | Screen | Route | What it does |
 |---|---|---|---|
 | 1 | Home / Journey | `/` | Greeting, five-step progress derived from real activity, one next step, replies and the next visit |
 | 2 | Find Clinical Trials | `/explore` | Search, location and phase filters, sort, provisional status on every card |
-| 3 | Trial Detail | `/trial/[id]` | Overview, Eligibility and What to Expect tabs, save, OpenAlex Insight |
+| 3 | Trial Detail | `/trial/[id]` | Overview, Eligibility, What to Expect and Insight tabs, save, ask the record |
 | 4 | Participation Preview | `/trial/[id]/preview` | Six sourced rows, total hours with arithmetic, what-if, suggested questions |
 | 5 | Saved Questions | `/questions` | All / Need to ask / Answered, add, remove, answers with their author |
 | 6 | My Trial Passport | `/passport` | Passport card, scoped ten-minute QR, who can see what, revoke, stamps |
@@ -72,6 +126,21 @@ Where the mockups and the design document disagreed, the document won:
 - A real registry record shows "Not published" for visits and duration. Only the labelled
   fictional study has a schedule, and timeline entries show no invented clock times.
 - Personas are synthetic, so avatars are monograms rather than photographs.
+
+### Insight, from OpenAlex
+
+Every study, including the demonstration one, has an Insight tab for someone who
+does not yet understand what the trial is for. It shows OpenAlex's own description
+of the research area, the terms a patient is likely to hear, and review articles
+with the opening of each abstract. Reviews are preferred because they are the
+papers written to explain a field.
+
+All of it is quoted from OpenAlex and labelled as background. Nothing is reworded
+or generated, and it is kept apart from the study's requirements, because a paper
+cannot establish anyone's eligibility. The search uses public trial fields only,
+so no passport data reaches OpenAlex. Each lookup is saved to `data/openalex/`;
+if OpenAlex is unreachable the saved copy is shown with its date.
+`npm run openalex:snapshot` saves the studies the demo visits.
 
 ## The three design commitments
 
@@ -194,7 +263,7 @@ Both suites run against the real 300-record snapshot.
 
 ```
 npm run evaluate    43 passed, 0 failed
-npm run journey     88 passed, 0 failed
+npm run journey     108 passed, 0 failed
 ```
 
 Selected results:

@@ -1,0 +1,99 @@
+{
+  "works": [
+    {
+      "id": "https://openalex.org/W1857442781",
+      "title": "Does Locoregional Radiation Therapy Improve Survival in Breast Cancer? A Meta-Analysis",
+      "publicationYear": 2000,
+      "publicationDate": "2000-03-13",
+      "citedByCount": 512,
+      "authors": [
+        "Timothy J. Whelan",
+        "Jim A. Julian",
+        "Jim Wright"
+      ],
+      "venue": "Journal of Clinical Oncology",
+      "doiUrl": "https://doi.org/10.1200/jco.2000.18.6.1220",
+      "isOpenAccess": false,
+      "openAccessUrl": null,
+      "isReview": true,
+      "abstractExcerpt": "Recent randomized trials in women with node-positive breast cancer who received systemic treatment report that locoregional radiation therapy improves survival. Previous trials failed to detect a difference in survival that results from its use.",
+      "topicId": "T10183"
+    },
+    {
+      "id": "https://openalex.org/W2171958606",
+      "title": "Neoadjuvant Versus Adjuvant Systemic Treatment in Breast Cancer: A Meta-Analysis",
+      "publicationYear": 2005,
+      "publicationDate": "2005-02-01",
+      "citedByCount": 1218,
+      "authors": [
+        "Davide Mauri",
+        "N. Pavlidis",
+        "John P. A. Ioannidis"
+      ],
+      "venue": "JNCI Journal of the National Cancer Institute",
+      "doiUrl": "https://doi.org/10.1093/jnci/dji021",
+      "isOpenAccess": false,
+      "openAccessUrl": null,
+      "isReview": true,
+      "abstractExcerpt": "Interest in the use of preoperative systemic treatment in the management of breast cancer has increased because such neoadjuvant therapy appears to reduce the extent of local surgery required.",
+      "topicId": "T10183"
+    },
+    {
+      "id": "https://openalex.org/W2205503125",
+      "title": "Adjuvant radiation therapy of regional lymph nodes in breast cancer - a meta-analysis of randomized trials- an update",
+      "publicationYear": 2015,
+      "publicationDate": "2015-12-01",
+      "citedByCount": 114,
+      "authors": [
+        "Wilfried Budach",
+        "Edwin Bölke",
+        "Kai Kammers"
+      ],
+      "venue": "Radiation Oncology",
+      "doiUrl": "https://doi.org/10.1186/s13014-015-0568-4",
+      "isOpenAccess": true,
+      "openAccessUrl": "https://doi.org/10.1186/s13014-015-0568-4",
+      "isReview": true,
+      "abstractExcerpt": "Adjuvant radiotherapy (RT) of regional lymph nodes (LN) in early breast cancer is still a matter of debate. RT increases the Overall survival (OS) rate of breast cancer patients after breast conserving surgery and after mastectomy in patients with involved LN. The contribution of RT to regional LN to this improvement was poorly identified.",
+      "topicId": "T10183"
+    },
+    {
+      "id": "https://openalex.org/W2116690431",
+      "title": "Effects of exercise on breast cancer patients and survivors: a systematic review and meta-analysis",
+      "publicationYear": 2006,
+      "publicationDate": "2006-07-04",
+      "citedByCount": 1093,
+      "authors": [
+        "Margaret L. McNeely"
+      ],
+      "venue": "Canadian Medical Association Journal",
+      "doiUrl": "https://doi.org/10.1503/cmaj.051073",
+      "isOpenAccess": true,
+      "openAccessUrl": "https://www.cmaj.ca/content/cmaj/175/1/34.full.pdf",
+      "isReview": true,
+      "abstractExcerpt": "Physical exercise has been identified as a potential intervention to improve quality of life in women with breast cancer. We sought to summarize the available evidence concerning the effects of exercise on breast cancer patients and survivors.",
+      "topicId": "T10178"
+    }
+  ],
+  "topic": {
+    "id": "T10183",
+    "name": "Breast Cancer Treatment Studies",
+    "description": "This cluster of papers focuses on molecular research, treatment response, and prognostic markers in breast cancer. It covers topics such as gene expression patterns, molecular subtypes, neoadjuvant therapy, radiotherapy, and the impact of hormone receptors on survival. The papers also discuss the development of clinical practice guidelines for breast cancer management.",
+    "keywords": [
+      "Gene Expression",
+      "Breast Tumours",
+      "Treatment Response",
+      "Molecular Subtypes",
+      "Prognostic Markers",
+      "Neoadjuvant Therapy",
+      "Radiotherapy",
+      "Hormone Receptors"
+    ],
+    "field": "Biochemistry, Genetics and Molecular Biology",
+    "worksCount": 119994
+  },
+  "query": "Breast Cancer Radiation Therapy",
+  "matchKind": "topic",
+  "fetchedAt": "2026-09-19T23:37:08.117Z",
+  "fromSnapshot": false
+}

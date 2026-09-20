@@ -4,7 +4,7 @@ import { PersonaSwitcher } from "@/components/PersonaSwitcher";
 import { Avatar, Card, MenuRow, ScreenHeader } from "@/components/ui";
 import { getPersonalNote, listParticipants, listQuestions, listSavedTrialIds } from "@/lib/repo";
 import { getActiveParticipant } from "@/lib/session";
-import { resetDemoAction } from "@/app/actions";
+import { chooseRoleAction, resetDemoAction } from "@/app/actions";
 import { isAnswered } from "@/lib/questions";
 
 export const dynamic = "force-dynamic";
@@ -70,6 +70,12 @@ export default async function ProfilePage() {
       <section>
         <Card className="space-y-3 p-4">
           <PersonaSwitcher currentId={participant.id} personas={personas.map((p) => ({ id: p.id, displayName: p.displayName }))} />
+          <form action={chooseRoleAction}>
+            <input type="hidden" name="role" value="clinic" />
+            <button type="submit" className="min-h-11 w-full rounded-full bg-ink px-4 text-[13px] font-bold text-white">
+              Switch to the research team side
+            </button>
+          </form>
           <form action={resetDemoAction}>
             <button type="submit" className="press min-h-11 w-full rounded-full border border-rule-strong bg-surface px-4 text-[13px] font-bold text-ink hover:bg-sunken">
               Reset all demo data

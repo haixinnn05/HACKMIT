@@ -45,9 +45,9 @@ const inquiryUrl = page.url();
 await ask("Can my family member come with me to visits?");
 await ask("What happens after the study ends?");
 
-await go("/coordinator");
-await page.locator('#main a[href^="/coordinator/"]').first().click();
-await page.waitForURL(/\/coordinator\/[0-9a-f-]{36}/);
+await go("/clinic/inbox");
+await page.locator('#main a[href^="/clinic/inbox/"]').first().click();
+await page.waitForURL(/\/clinic\/inbox\/[0-9a-f-]{36}/);
 await page.waitForLoadState("networkidle");
 await snap(11);
 for (const key of ["parking", "travel assistance"]) {

@@ -1,0 +1,101 @@
+{
+  "works": [
+    {
+      "id": "https://openalex.org/W4206953994",
+      "title": "Factors influencing five-year adherence to adjuvant endocrine therapy in breast cancer patients: A systematic review",
+      "publicationYear": 2022,
+      "publicationDate": "2022-01-24",
+      "citedByCount": 179,
+      "authors": [
+        "Izzati Yussof",
+        "Nor Asyikin Mohd Tahir",
+        "Ernieda Hatah"
+      ],
+      "venue": "The Breast",
+      "doiUrl": "https://doi.org/10.1016/j.breast.2022.01.012",
+      "isOpenAccess": true,
+      "openAccessUrl": "https://doi.org/10.1016/j.breast.2022.01.012",
+      "isReview": true,
+      "abstractExcerpt": "This systematic review aimed to determine the rate and identify correlates of adherence and persistence over five years of treatment with adjuvant endocrine therapy in female breast cancer patients. METHODS: Relevant articles were identified from Medline, Embase, AMED, PsycINFO, International Pharmaceutical Abstracts, and APA PsycArticles.",
+      "topicId": "T11620"
+    },
+    {
+      "id": "https://openalex.org/W3115995788",
+      "title": "Potentially Modifiable Factors Associated with Adherence to Adjuvant Endocrine Therapy among Breast Cancer Survivors: A Systematic Review",
+      "publicationYear": 2020,
+      "publicationDate": "2020-12-31",
+      "citedByCount": 83,
+      "authors": [
+        "Kirsti Toivonen",
+        "Tamara M. Williamson",
+        "Linda E. Carlson"
+      ],
+      "venue": "Cancers",
+      "doiUrl": "https://doi.org/10.3390/cancers13010107",
+      "isOpenAccess": true,
+      "openAccessUrl": "https://www.mdpi.com/2072-6694/13/1/107/pdf?version=1609726961",
+      "isReview": true,
+      "abstractExcerpt": "Adjuvant endocrine therapy (AET) reduces risk of breast cancer recurrence. However, suboptimal adherence and persistence to AET remain important clinical issues. Understanding factors associated with adherence may help inform efforts to improve use of AET as prescribed.",
+      "topicId": "T11620"
+    },
+    {
+      "id": "https://openalex.org/W4385488031",
+      "title": "A Systematic Review and Meta-Analysis of Interventions to Promote Adjuvant Endocrine Therapy Adherence Among Breast Cancer Survivors",
+      "publicationYear": 2023,
+      "publicationDate": "2023-08-02",
+      "citedByCount": 70,
+      "authors": [
+        "Emma E. Bright",
+        "Lauren B. Finkelstein",
+        "Madeline Nealis"
+      ],
+      "venue": "Journal of Clinical Oncology",
+      "doiUrl": "https://doi.org/10.1200/jco.23.00697",
+      "isOpenAccess": true,
+      "openAccessUrl": "https://pmc.ncbi.nlm.nih.gov/articles/PMC10553065/pdf/jco-41-4548.pdf",
+      "isReview": true,
+      "abstractExcerpt": "Adjuvant endocrine therapy (AET) adherence among breast cancer survivors is often suboptimal, leading to higher cancer recurrence and mortality. Intervention studies to promote AET adherence have burgeoned, more than doubling in number since this literature was last reviewed.",
+      "topicId": "T11620"
+    },
+    {
+      "id": "https://openalex.org/W3037162430",
+      "title": "Adherence to adjuvant endocrine therapy among breast cancer survivors: a systematic review and meta-synthesis of the qualitative literature using grounded theory",
+      "publicationYear": 2020,
+      "publicationDate": "2020-06-29",
+      "citedByCount": 46,
+      "authors": [
+        "Othman AlOmeir",
+        "Nilesh Patel",
+        "Parastou Donyai"
+      ],
+      "venue": "Supportive Care in Cancer",
+      "doiUrl": "https://doi.org/10.1007/s00520-020-05585-9",
+      "isOpenAccess": true,
+      "openAccessUrl": "https://link.springer.com/content/pdf/10.1007/s00520-020-05585-9.pdf",
+      "isReview": true,
+      "abstractExcerpt": "Numerous studies have examined non-adherence to adjuvant endocrine therapy in women recovering from breast cancer, but none provides a comprehensive theory to explain the challenges of long-term medication taking and resilience needed to continue.",
+      "topicId": "T11620"
+    }
+  ],
+  "topic": {
+    "id": "T11620",
+    "name": "Medication Adherence and Compliance",
+    "description": "This cluster of papers focuses on the challenges and strategies related to improving patient adherence to medication regimens, particularly in the context of chronic diseases. It covers topics such as medication adherence, treatment adherence, patient compliance, interventions to improve adherence, barriers to adherence, and the impact of adherence on healthcare costs and health outcomes.",
+    "keywords": [
+      "Medication Adherence",
+      "Treatment Adherence",
+      "Patient Compliance",
+      "Medication Persistence",
+      "Chronic Disease Management",
+      "Healthcare Costs",
+      "Interventions",
+      "Barriers to Adherence"
+    ],
+    "field": "Medicine",
+    "worksCount": 42637
+  },
+  "query": "Breast Cancer Adjuvant endocrine therapy adherence",
+  "matchKind": "topic",
+  "fetchedAt": "2026-09-19T23:56:01.390Z",
+  "fromSnapshot": false
+}

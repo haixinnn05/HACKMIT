@@ -13,10 +13,17 @@
     "reset": "rm -f data/mozaic.db*",
     "capture": "node scripts/capture.mjs",
     "phone": "node scripts/phone.mjs",
-    "audit": "node scripts/audit-controls.mjs"
+    "audit": "node scripts/audit-controls.mjs",
+    "ios:sync": "node scripts/ios-sync.mjs",
+    "ios:open": "cap open ios",
+    "ios:device": "node scripts/ios-device.mjs",
+    "openalex:snapshot": "tsx scripts/openalex-snapshot.mts",
+    "check:secrets": "node scripts/check-secrets.mjs --all"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.127.0",
+    "@capacitor/core": "^8.5.2",
+    "@capacitor/ios": "^8.5.2",
     "@phosphor-icons/react": "^2.1.10",
     "better-sqlite3": "^13.0.3",
     "next": "16.3.5",
@@ -26,6 +33,7 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.2",
     "@tailwindcss/postcss": "^4",
     "@types/better-sqlite3": "^9.6.0",
     "@types/node": "^20",

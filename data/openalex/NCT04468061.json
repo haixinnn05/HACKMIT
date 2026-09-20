@@ -1,0 +1,101 @@
+{
+  "works": [
+    {
+      "id": "https://openalex.org/W3166995079",
+      "title": "Saci-IO TNBC: Randomized phase II trial of sacituzumab govitecan (SG) +/- pembrolizumab in PD-L1– metastatic triple-negative breast cancer (mTNBC).",
+      "publicationYear": 2021,
+      "publicationDate": "2021-05-20",
+      "citedByCount": 26,
+      "authors": [
+        "Ana C. Garrido-Castro",
+        "Tanya E. Keenan",
+        "Tianyu Li"
+      ],
+      "venue": "Journal of Clinical Oncology",
+      "doiUrl": "https://doi.org/10.1200/jco.2021.39.15_suppl.tps1106",
+      "isOpenAccess": false,
+      "openAccessUrl": null,
+      "isReview": false,
+      "abstractExcerpt": "TPS1106 Background: Immune checkpoint inhibitors (ICIs) have not yet benefited most patients with breast cancer. In mTNBC, ICIs combined with chemotherapy have improved survival only in PD-L1+ mTNBC. The optimal ICI combination agent to overcome primary resistance in PD-L1– mTNBC is unknown.",
+      "topicId": "T10158"
+    },
+    {
+      "id": "https://openalex.org/W3169973594",
+      "title": "Biomarker analyses in the phase III ASCENT study of sacituzumab govitecan versus chemotherapy in patients with metastatic triple-negative breast cancer",
+      "publicationYear": 2021,
+      "publicationDate": "2021-06-08",
+      "citedByCount": 319,
+      "authors": [
+        "Aditya Bardia",
+        "Sara M. Tolaney",
+        "Kevin Punie"
+      ],
+      "venue": "Annals of Oncology",
+      "doiUrl": "https://doi.org/10.1016/j.annonc.2021.06.002",
+      "isOpenAccess": true,
+      "openAccessUrl": "http://www.annalsofoncology.org/article/S0923753421020470/pdf",
+      "isReview": false,
+      "abstractExcerpt": "The pivotal phase III ASCENT trial demonstrated improved survival outcomes associated with sacituzumab govitecan (SG), an anti-trophoblast cell-surface antigen 2 (anti-Trop-2) antibody-drug conjugate linked with the topoisomerase-inhibitor SN-38, over single-agent chemotherapy treatment of physician's choice (TPC) in previously treated metastatic ...",
+      "topicId": "T10755"
+    },
+    {
+      "id": "https://openalex.org/W4306739715",
+      "title": "Antibody-drug conjugates targeting TROP-2: Clinical development in metastatic breast cancer",
+      "publicationYear": 2022,
+      "publicationDate": "2022-10-18",
+      "citedByCount": 143,
+      "authors": [
+        "Mythili Shastry",
+        "Saya Jacob",
+        "Hope S. Rugo"
+      ],
+      "venue": "The Breast",
+      "doiUrl": "https://doi.org/10.1016/j.breast.2022.10.007",
+      "isOpenAccess": true,
+      "openAccessUrl": "http://www.thebreastonline.com/article/S0960977622001722/pdf",
+      "isReview": false,
+      "abstractExcerpt": "Antibody drug conjugates (ADCs) combine the potent cytotoxicity of chemotherapy with the antigen -specific targeted approach of antibodies into one single molecule. Trophoblast cell surface antigen 2 (TROP-2) is a transmembrane glycoprotein involved in calcium signal transduction and is expressed in multiple tumor types.",
+      "topicId": "T10755"
+    },
+    {
+      "id": "https://openalex.org/W3093149563",
+      "title": "Antibody–Drug Conjugates for Cancer Therapy",
+      "publicationYear": 2020,
+      "publicationDate": "2020-10-16",
+      "citedByCount": 396,
+      "authors": [
+        "Umbreen Hafeez",
+        "Sagun Parakh",
+        "Hui Gan"
+      ],
+      "venue": "Molecules",
+      "doiUrl": "https://doi.org/10.3390/molecules25204764",
+      "isOpenAccess": true,
+      "openAccessUrl": "https://www.mdpi.com/1420-3049/25/20/4764/pdf?version=1603272781",
+      "isReview": false,
+      "abstractExcerpt": "Antibody-drug conjugates (ADCs) are novel drugs that exploit the specificity of a monoclonal antibody (mAb) to reach target antigens expressed on cancer cells for the delivery of a potent cytotoxic payload.",
+      "topicId": "T10755"
+    }
+  ],
+  "topic": {
+    "id": "T10755",
+    "name": "HER2/EGFR in Cancer Research",
+    "description": "This cluster of papers focuses on the use of HER2-targeted therapies, such as trastuzumab and pertuzumab, in the treatment of HER2-positive breast cancer. It explores the mechanisms of action, resistance, and combination therapies involving chemotherapy and monoclonal antibodies. The cluster also delves into the role of EGFR, neuregulin 1, and ADAM metalloproteinases in HER2 signaling and breast cancer progression.",
+    "keywords": [
+      "HER2",
+      "breast cancer",
+      "trastuzumab",
+      "EGFR",
+      "monoclonal antibody",
+      "chemotherapy",
+      "metastatic",
+      "receptor tyrosine kinases"
+    ],
+    "field": "Medicine",
+    "worksCount": 67014
+  },
+  "query": "NCT04468061",
+  "matchKind": "trial_id",
+  "fetchedAt": "2026-09-19T23:37:07.562Z",
+  "fromSnapshot": false
+}

@@ -574,3 +574,48 @@ export function getQuestionDraft(questionId: string): { draft: string; citation:
 export function deleteQuestionDraft(questionId: string) {
   getDb().prepare("DELETE FROM question_drafts WHERE question_id = ?").run(questionId);
 }
+
+/* ------------------------------------------------------------ saved replies */
+
+export interface SavedReply { id: string; trialId: string; keywords: string[]; answer: string; citation: string | null; createdAt: string }
+
+export function listSavedReplies(trialId?: string): SavedReply[] {
+  const rows = (trialId
+    ? getDb().prepare("SELECT * FROM saved_replies WHERE trial_id = ? ORDER BY created_at").all(trialId)
+    : getDb().prepare("SELECT * FROM saved_replies ORDER BY created_at").all()) as any[];
+  return rows.map((row) => ({
+    id: row.id, trialId: row.trial_id, keywords: json(row.keywords, [] as string[]),
+    answer: row.answer, citation: row.citation, createdAt: row.created_at,
+  }));
+}
+
+export function addSavedReply(input: { trialId: string; keywords: string[]; answer: string; citation: string | null }) {
+  getDb().prepare("INSERT INTO saved_replies (id, trial_id, keywords, answer, citation, created_at) VALUES (?,?,?,?,?,?)")
+    .run(randomUUID(), input.trialId, JSON.stringify(input.keywords), input.answer, input.citation, new Date().toISOString());
+}
+
+export function deleteSavedReply(id: string) {
+  getDb().prepare("DELETE FROM saved_replies WHERE id = ?").run(id);
+}
+
+/* ------------------------------------------------------- the site's patients */
+
+/**
+ * People the site may currently see: those with at least one active sharing
+ * grant attached to an inquiry. This is a list of relationships the participant
+ * started, not a directory. There is no way to browse or search people who have
+ * not shared something, and revoking a grant removes the person from it.
+ */
+export function listAuthorizedParticipantIds(): string[] {
+  return [...new Set(listInquiriesForCoordinator().map((inquiry) => inquiry.participantId))];
+}
+
+/** A short-lived in-person code, looked up by the pass number printed on the ticket. */
+export function findHandoffTokenByPassNumber(passNumber: string): string | null {
+  const code = passNumber.trim().toLowerCase().replace(/[^0-9a-f]/g, "");
+  if (code.length !== 8) return null;
+  const rows = getDb().prepare("SELECT * FROM grants WHERE handoff_token LIKE ? AND state = 'active'").all(`${code}%`) as any[];
+  const live = rows.map(rowToGrant).filter(isGrantActive);
+  // An ambiguous prefix resolves to nothing rather than to a guess.
+  return live.length === 1 ? live[0].handoffToken ?? null : null;
+}

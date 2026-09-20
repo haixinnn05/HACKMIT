@@ -1,0 +1,63 @@
+{
+  "works": [
+    {
+      "id": "https://openalex.org/W3028403973",
+      "title": "Exploratory analysis of immune checkpoint receptor expression by circulating T cells and tumor specimens in patients receiving neo-adjuvant chemotherapy for operable breast cancer",
+      "publicationYear": 2020,
+      "publicationDate": "2020-05-19",
+      "citedByCount": 16,
+      "authors": [
+        "Robert Wesolowski",
+        "Andrew Stiff",
+        "Dionisia Quiroga"
+      ],
+      "venue": "BMC Cancer",
+      "doiUrl": "https://doi.org/10.1186/s12885-020-06949-4",
+      "isOpenAccess": true,
+      "openAccessUrl": "https://bmccancer.biomedcentral.com/track/pdf/10.1186/s12885-020-06949-4",
+      "isReview": false,
+      "abstractExcerpt": "While combinations of immune checkpoint (ICP) inhibitors and neo-adjuvant chemotherapy (NAC) have begun testing in patients with breast cancer (BC), the effects of chemotherapy on ICP expression in circulating T cells and within the tumor microenvironment are still unclear.",
+      "topicId": "T10158"
+    },
+    {
+      "id": "https://openalex.org/W3083314940",
+      "title": "Abstract 5514: Analysis of immune checkpoint receptor expression by circulating T cells and tumor specimens in patients pre- and post-neoadjuvant chemotherapy for operable breast cancer",
+      "publicationYear": 2020,
+      "publicationDate": "2020-08-15",
+      "citedByCount": 0,
+      "authors": [
+        "Dionisia Quiroga",
+        "Andrew Stiff",
+        "Christopher McQuinn"
+      ],
+      "venue": "Cancer Research",
+      "doiUrl": "https://doi.org/10.1158/1538-7445.am2020-5514",
+      "isOpenAccess": false,
+      "openAccessUrl": null,
+      "isReview": false,
+      "abstractExcerpt": "While combinations of immune checkpoint (ICP) inhibitors and neo-adjuvant chemotherapy (NAC) have begun to be tested in patients with breast cancer (BC), chemotherapeutic effects on ICP expression in circulating T cells are still unclear.",
+      "topicId": "T10158"
+    }
+  ],
+  "topic": {
+    "id": "T10158",
+    "name": "Cancer Immunotherapy and Biomarkers",
+    "description": "This cluster of papers focuses on the advances in cancer immunotherapy research, particularly in the context of immune checkpoint blockade targeting PD-1 and PD-L1, the impact of tumor microenvironment, biomarkers for immunotherapy response, T-cell exhaustion, neoantigens, tumor mutational burden, immune-related adverse events, and the exploration of combination therapies. The research also delves into the intricate mechanisms of cancer immunoediting.",
+    "keywords": [
+      "Immune Checkpoint Blockade",
+      "PD-1 and PD-L1",
+      "Tumor Microenvironment",
+      "Tumor Mutational Burden",
+      "Immune-related Adverse Events",
+      "T-cell Exhaustion",
+      "Neoantigens",
+      "Biomarkers for Immunotherapy"
+    ],
+    "field": "Medicine",
+    "worksCount": 143448
+  },
+  "query": "NCT04022616",
+  "matchKind": "trial_id",
+  "fetchedAt": "2026-09-19T23:37:11.430Z",
+  "fromSnapshot": false
+}

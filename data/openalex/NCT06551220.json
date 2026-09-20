@@ -1,0 +1,63 @@
+{
+  "works": [
+    {
+      "id": "https://openalex.org/W4410805105",
+      "title": "Impact of HER2-ultralow heterogeneity and optimal threshold on trastuzumab deruxtecan (T-DXd) efficacy in metastatic breast cancer: A national multicenter cohort study (HEROIC).",
+      "publicationYear": 2025,
+      "publicationDate": "2025-05-28",
+      "citedByCount": 1,
+      "authors": [
+        "Yutian Zou",
+        "Xinpei Deng",
+        "Yuan Zeng"
+      ],
+      "venue": "Journal of Clinical Oncology",
+      "doiUrl": "https://doi.org/10.1200/jco.2025.43.16_suppl.1117",
+      "isOpenAccess": false,
+      "openAccessUrl": null,
+      "isReview": false,
+      "abstractExcerpt": "1117 Background: Trastuzumab deruxtecan (T-DXd) has been approved for patients (pts) with HER2-ultralow metastatic breast cancer (MBC). HER2 discordance commonly occurs between primary and metastatic lesions within the same patient; however, its incidence remains unknown in the HER2-ultralow era.",
+      "topicId": "T10755"
+    },
+    {
+      "id": "https://openalex.org/W4409972834",
+      "title": "Navigating antibody‒drug conjugates (ADCs): from metastatic to early breast cancer treatment strategies",
+      "publicationYear": 2025,
+      "publicationDate": "2025-04-30",
+      "citedByCount": 6,
+      "authors": [
+        "Tala Najdi",
+        "Lea Awad",
+        "Antoine Chartouni"
+      ],
+      "venue": "Investigational New Drugs",
+      "doiUrl": "https://doi.org/10.1007/s10637-025-01525-8",
+      "isOpenAccess": true,
+      "openAccessUrl": "https://link.springer.com/content/pdf/10.1007/s10637-025-01525-8.pdf",
+      "isReview": false,
+      "abstractExcerpt": "We are currently living in the era of precision medicine, and antibody‒drug conjugates (ADCs) represent promising advancements in targeted cancer therapy.",
+      "topicId": "T10755"
+    }
+  ],
+  "topic": {
+    "id": "T10755",
+    "name": "HER2/EGFR in Cancer Research",
+    "description": "This cluster of papers focuses on the use of HER2-targeted therapies, such as trastuzumab and pertuzumab, in the treatment of HER2-positive breast cancer. It explores the mechanisms of action, resistance, and combination therapies involving chemotherapy and monoclonal antibodies. The cluster also delves into the role of EGFR, neuregulin 1, and ADAM metalloproteinases in HER2 signaling and breast cancer progression.",
+    "keywords": [
+      "HER2",
+      "breast cancer",
+      "trastuzumab",
+      "EGFR",
+      "monoclonal antibody",
+      "chemotherapy",
+      "metastatic",
+      "receptor tyrosine kinases"
+    ],
+    "field": "Medicine",
+    "worksCount": 67014
+  },
+  "query": "NCT06551220",
+  "matchKind": "trial_id",
+  "fetchedAt": "2026-09-19T23:37:06.449Z",
+  "fromSnapshot": false
+}

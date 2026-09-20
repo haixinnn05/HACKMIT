@@ -1,0 +1,100 @@
+{
+  "works": [
+    {
+      "id": "https://openalex.org/W3116476506",
+      "title": "The incidence of brain metastases among patients with metastatic breast cancer: a systematic review and meta-analysis",
+      "publicationYear": 2020,
+      "publicationDate": "2020-12-21",
+      "citedByCount": 278,
+      "authors": [
+        "Markus Kuksis",
+        "Yizhuo Gao",
+        "William T. Tran"
+      ],
+      "venue": "Neuro-Oncology",
+      "doiUrl": "https://doi.org/10.1093/neuonc/noaa285",
+      "isOpenAccess": true,
+      "openAccessUrl": "https://academic.oup.com/neuro-oncology/article-pdf/23/6/894/38438356/noaa285.pdf",
+      "isReview": true,
+      "abstractExcerpt": "Patients with metastatic breast cancer (MBC) are living longer, but the development of brain metastases often limits their survival. We conducted a systematic review and meta-analysis to determine the incidence of brain metastases in this patient population.",
+      "topicId": "T11600"
+    },
+    {
+      "id": "https://openalex.org/W4292548548",
+      "title": "Systematic Review on the Use of Biosimilars of Trastuzumab in HER2+ Breast Cancer",
+      "publicationYear": 2022,
+      "publicationDate": "2022-08-21",
+      "citedByCount": 41,
+      "authors": [
+        "Eleni Triantafyllidi",
+        "John K. Triantafillidis"
+      ],
+      "venue": "Biomedicines",
+      "doiUrl": "https://doi.org/10.3390/biomedicines10082045",
+      "isOpenAccess": true,
+      "openAccessUrl": "https://www.mdpi.com/2227-9059/10/8/2045/pdf?version=1661081507",
+      "isReview": true,
+      "abstractExcerpt": "Trastuzumab is a monoclonal antibody used in the treatment of breast cancer in cases where the tumor overexpresses the HER2 receptor, a cell membrane receptor activated by the epidermal growth factor.",
+      "topicId": "T10755"
+    },
+    {
+      "id": "https://openalex.org/W4391478259",
+      "title": "HER2-targeted therapies in cancer: a systematic review",
+      "publicationYear": 2024,
+      "publicationDate": "2024-02-02",
+      "citedByCount": 134,
+      "authors": [
+        "Kunrui Zhu",
+        "Xinyi Yang",
+        "Hebei Tai"
+      ],
+      "venue": "Biomarker Research",
+      "doiUrl": "https://doi.org/10.1186/s40364-024-00565-1",
+      "isOpenAccess": true,
+      "openAccessUrl": "https://biomarkerres.biomedcentral.com/counter/pdf/10.1186/s40364-024-00565-1",
+      "isReview": true,
+      "abstractExcerpt": "Abnormal alterations in human epidermal growth factor receptor 2 (HER2, neu, and erbB2) are associated with the development of many tumors. It is currently a crucial treatment for multiple cancers.",
+      "topicId": "T10755"
+    },
+    {
+      "id": "https://openalex.org/W3025134199",
+      "title": "Molecular and cellular mechanisms underlying brain metastasis of breast cancer",
+      "publicationYear": 2020,
+      "publicationDate": "2020-05-12",
+      "citedByCount": 161,
+      "authors": [
+        "Mari Hosonaga",
+        "Hideyuki Saya",
+        "Yoshimi Arima"
+      ],
+      "venue": "Cancer and Metastasis Reviews",
+      "doiUrl": "https://doi.org/10.1007/s10555-020-09881-y",
+      "isOpenAccess": true,
+      "openAccessUrl": "https://link.springer.com/content/pdf/10.1007/s10555-020-09881-y.pdf",
+      "isReview": true,
+      "abstractExcerpt": "Metastasis of cancer cells to the brain occurs frequently in patients with certain subtypes of breast cancer. In particular, patients with HER2-positive or triple-negative breast cancer are at high risk for the development of brain metastases.",
+      "topicId": "T11600"
+    }
+  ],
+  "topic": {
+    "id": "T11600",
+    "name": "Brain Metastases and Treatment",
+    "description": "This cluster of papers focuses on the management of brain metastases in cancer patients, including the use of radiosurgery and whole-brain radiation therapy, the impact on cognitive function, prognostic assessment, blood-brain barrier permeability, and specific considerations for HER2-positive breast cancer. It also explores the role of immunotherapy, the effects on neurocognitive function, and the challenges associated with leptomeningeal metastasis.",
+    "keywords": [
+      "Brain Metastases",
+      "Radiosurgery",
+      "Whole-Brain Radiation Therapy",
+      "Cognitive Function",
+      "Prognostic Assessment",
+      "Blood-Brain Barrier",
+      "HER2-Positive Breast Cancer",
+      "Immunotherapy"
+    ],
+    "field": "Medicine",
+    "worksCount": 42598
+  },
+  "query": "HER2-positive Breast Cancer Tucatinib",
+  "matchKind": "topic",
+  "fetchedAt": "2026-09-19T23:37:05.451Z",
+  "fromSnapshot": false
+}

@@ -38,6 +38,17 @@ console.log("\nMozaic: twelve-screen journey\n");
 await page.request.post(`${BASE}/api/reset`);
 await page.request.post(`${BASE}/api/persona`, { data: { id: "p-maria" } });
 
+/* 0. The front door */
+const fresh = await browser.newContext({ viewport: { width: 430, height: 932 } });
+const door = await fresh.newPage();
+await door.goto(`${BASE}/`, { waitUntil: "networkidle" });
+assert("0 A first-time visitor is asked which side they are on", door.url().endsWith("/welcome") && (await door.locator("#main").innerText()).includes("I'm on a research team"));
+await door.click('button:has-text("I\'m on a research team")');
+await door.waitForURL(/\/clinic$/);
+assert("0 Choosing the research team opens a separate app with its own navigation",
+  (await door.locator('nav[aria-label="Research team"]').count()) === 1 && (await door.locator('nav[aria-label="Main"]').count()) === 0);
+await fresh.close();
+
 /* 1. Home */
 await go("/");
 let t = await text();
@@ -64,8 +75,15 @@ await shot("trials");
 const realHref = await page.locator('a[href^="/trial/NCT"]').first().getAttribute("href");
 await go(realHref);
 t = await text();
-assert("3 Detail has the three tabs", ["Overview", "Eligibility", "What to Expect"].every((label) => t.includes(label)));
-assert("3 Detail shows OpenAlex background research, labelled as not evidence", t.includes("OpenAlex") && t.includes("not evidence"));
+assert("3 Detail has four tabs, Insight among them", ["Overview", "Eligibility", "What to Expect", "Insight"].every((label) => t.includes(label)));
+await go(`${realHref}?tab=insight`);
+await page.waitForSelector("text=From OpenAlex", { timeout: 25000 }).catch(() => {});
+t = await text();
+assert("3 Insight explains the research area in OpenAlex's own words", t.includes("The research area:") && t.includes("Quoted from OpenAlex"));
+assert("3 Insight is labelled as background, not a requirement", t.includes("This is background, not a requirement") && t.includes("says nothing about whether you could take part"));
+assert("3 Insight states that no passport data reaches OpenAlex", t.includes("never sent to OpenAlex"));
+await go(realHref);
+t = await text();
 await page.fill('input[name="ask"]', "What is the wifi password?");
 await page.click('button:has-text("Ask")');
 await page.waitForURL(/ask=/);
@@ -86,6 +104,11 @@ t = await text();
 assert("3 Asking something the record covers quotes it word for word",
   t.includes("Payment accrues per visit and does not depend on completing the entire study") && t.includes("quoted word for word"));
 await shot("detail-ask");
+await go("/trial/TP-FIX-001?tab=insight");
+await page.waitForSelector("text=OpenAlex,", { timeout: 25000 }).catch(() => {});
+t = await text();
+assert("3 Insight is available on the demo study too, with abstracts quoted", t.includes("The research area:") && t.includes("From the abstract"));
+await shot("detail-insight");
 await go("/trial/TP-FIX-001?tab=eligibility");
 t = await text();
 assert("3 Eligibility is marked provisional", t.includes("provisional"));
@@ -136,15 +159,15 @@ const inquiryUrl = page.url();
 assert("8 Sharing is not presented as enrolment", (await text()).includes("Shared, waiting to be picked up"));
 
 /* 11. Research Team Inbox */
-await go("/coordinator");
+await go("/clinic/inbox");
 t = await text();
-const items = page.locator('#main a[href^="/coordinator/"]');
+const items = page.locator('#main a[href^="/clinic/inbox/"]');
 assert("11 The inquiry reaches the research team", (await items.count()) === 1 && t.includes("Maria Restrepo"));
-assert("11 The staff account is labelled simulated", t.includes("Simulated staff account"));
+assert("11 The staff account is labelled simulated on every staff screen", (await page.locator("header").first().innerText()).includes("Simulated staff account"));
 assert("11 Items are marked patient-authorized", t.includes("Patient-authorized"));
 await shot("team-inbox");
 await items.first().click();
-await page.waitForURL(/\/coordinator\/[0-9a-f-]{36}/);
+await page.waitForURL(/\/clinic\/inbox\/[0-9a-f-]{36}/);
 await page.waitForLoadState("networkidle");
 t = await text();
 assert("11 Eligibility considerations are marked not a decision", t.includes("not a decision"));
@@ -188,9 +211,9 @@ await shot("thread");
 await page.click('button:has-text("I still have a question")');
 await page.waitForSelector("text=Reopened");
 assert("9 The participant can reopen an answered question", true);
-await go("/coordinator");
-await page.locator('#main a[href^="/coordinator/"]').first().click();
-await page.waitForURL(/\/coordinator\/[0-9a-f-]{36}/);
+await go("/clinic/inbox");
+await page.locator('#main a[href^="/clinic/inbox/"]').first().click();
+await page.waitForURL(/\/clinic\/inbox\/[0-9a-f-]{36}/);
 await page.waitForLoadState("networkidle");
 assert("11 The team sees it reopened, with the earlier answer kept as history",
   (await text()).includes("Reopened") && (await text()).includes("Earlier answer"));
@@ -268,8 +291,67 @@ assert("7 No participant navigation or other people leak into the scanned view",
   (await scanner.locator("nav").count()) === 0 && !(await scanner.content()).includes("Dee Okafor"));
 await shot("shared-profile", scanner);
 
+/* 13. Research team: open the passport by its pass number */
+const staff = await context.newPage();
+const staffText = async () => (await staff.locator("#main").innerText()).replace(/\s+/g, " ");
+await staff.goto(`${BASE}/clinic/scan`, { waitUntil: "networkidle" });
+await staff.fill('input[name="pass"]', "00000000");
+await staff.click('button:has-text("Open passport")');
+await staff.waitForURL(/missed=1/);
+assert("13 A wrong pass number reveals nothing", (await staffText()).includes("No active passport matches"));
+await staff.fill('input[name="pass"]', tokenPrefix);
+await staff.click('button:has-text("Open passport")');
+await staff.waitForURL(/\/handoff\//);
+assert("13 The right pass number opens the shared profile, with a way back", (await staffText()).includes("Shared Patient Profile") && (await staffText()).includes("Back to your workspace"));
+await shot("clinic-scan-result", staff);
+
 await page.locator('button:has-text("Revoke")').first().click();
 await page.waitForSelector("text=Revoked");
+await staff.goto(`${BASE}/clinic/scan`, { waitUntil: "networkidle" });
+await staff.fill('input[name="pass"]', tokenPrefix);
+await staff.click('button:has-text("Open passport")');
+await staff.waitForURL(/missed=1/);
+assert("13 A revoked pass number fails exactly like a wrong one", (await staffText()).includes("No active passport matches"));
+
+/* 14. Research team: Today, Patients, Studies, Activity */
+await staff.goto(`${BASE}/clinic`, { waitUntil: "networkidle" });
+let st = await staffText();
+assert("14 Today counts what is waiting", ["Need review", "Open questions", "Waiting on patient", "Visits this week"].every((l) => st.includes(l)));
+assert("14 Today never ranks people by a prediction", st.includes("never ranked by a prediction"));
+assert("14 Today reports a measured reply time, not a target", /Median time to first reply/.test(st) && st.includes("not a target"));
+await shot("clinic-today", staff);
+
+await staff.goto(`${BASE}/clinic/patients`, { waitUntil: "networkidle" });
+st = await staffText();
+assert("14 Patients lists who is sharing, and has no patient search", st.includes("Maria Restrepo") && st.includes("no patient search") && (await staff.locator('#main input[type="search"]').count()) === 0);
+await staff.click('#main a[href^="/clinic/patients/"]');
+await staff.waitForURL(/\/clinic\/patients\/p-/);
+const patientUrl = staff.url();
+st = await staffText();
+assert("14 A patient page shows what they shared, unknowns included", st.includes("Shared information") && st.includes("I don't know"));
+assert("14 A patient page withholds unshared contact details", !st.includes("example.com") && st.includes("Contact details were not shared"));
+assert("14 A patient's upcoming visits are visible to the site", st.includes("Upcoming visits") && st.includes("Screening visit"));
+await shot("clinic-patient", staff);
+
+await staff.goto(`${BASE}/clinic/studies`, { waitUntil: "networkidle" });
+await staff.fill('input[name="keywords"]', "family, caregiver");
+await staff.fill('textarea[name="answer"]', "A family member is welcome at every visit, and there is a waiting area beside the clinic.");
+await staff.click('button:has-text("Save reply")');
+await staff.waitForSelector("text=A family member is welcome");
+assert("14 A new saved reply joins the library", (await staffText()).includes("Saved replies (4)"));
+await shot("clinic-studies", staff);
+await staff.goto(`${BASE}/clinic/inbox`, { waitUntil: "networkidle" });
+await staff.click('#main a[href^="/clinic/inbox/"]');
+await staff.waitForURL(/\/clinic\/inbox\/[0-9a-f-]{36}/);
+await staff.waitForLoadState("networkidle");
+assert("14 The saved reply is offered as a draft on a matching question",
+  (await staff.locator("li", { hasText: "Can my family member" }).locator("textarea").inputValue()).includes("A family member is welcome"));
+
+await staff.goto(`${BASE}/clinic/activity`, { waitUntil: "networkidle" });
+st = await staffText();
+assert("14 The activity log records access and replies without private text",
+  st.includes("In-person passport opened") && st.includes("Answer sent") && !st.includes("validated at the Harborview garage"));
+
 await scanner.goto(handoffUrl, { waitUntil: "networkidle" });
 s = await scanner.content();
 assert("7 A revoked code stops resolving and leaks nothing", s.includes("This code is not active") && !s.includes("Maria"));
@@ -279,8 +361,13 @@ await scanner.close();
 await go("/passport");
 await page.locator('button:has-text("Revoke")').first().click();
 await page.waitForLoadState("networkidle");
-await go("/coordinator");
-assert("11 Revoking access empties the research team inbox", (await page.locator('#main a[href^="/coordinator/"]').count()) === 0);
+await go("/clinic/inbox");
+assert("11 Revoking access empties the research team inbox", (await page.locator('#main a[href^="/clinic/inbox/"]').count()) === 0);
+await staff.goto(`${BASE}/clinic/patients`, { waitUntil: "networkidle" });
+assert("14 After revoking, the person leaves the Patients list", !(await staffText()).includes("Maria Restrepo"));
+await staff.goto(patientUrl, { waitUntil: "networkidle" });
+assert("14 A kept link to a revoked patient shows nothing", (await staffText()).includes("not sharing anything with your site") && !(await staffText()).includes("Stage II"));
+await staff.close();
 
 await go("/access-gaps");
 assert("Gaps are reported with denominators and not as discrimination", /\d+ \/ \d+/.test(await text()) && (await text()).includes("not evidence that a site turns anyone away"));

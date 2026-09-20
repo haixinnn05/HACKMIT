@@ -1,0 +1,43 @@
+{
+  "works": [
+    {
+      "id": "https://openalex.org/W4406800589",
+      "title": "Breast MRI to Screen Women With Extremely Dense Breasts",
+      "publicationYear": 2025,
+      "publicationDate": "2025-01-24",
+      "citedByCount": 11,
+      "authors": [
+        "Carla Sitges",
+        "Ritse M. Mann"
+      ],
+      "venue": "Journal of Magnetic Resonance Imaging",
+      "doiUrl": "https://doi.org/10.1002/jmri.29716",
+      "isOpenAccess": true,
+      "openAccessUrl": "https://onlinelibrary.wiley.com/doi/pdfdirect/10.1002/jmri.29716",
+      "isReview": false,
+      "abstractExcerpt": "Women with extremely dense breasts are at a higher risk of breast cancer, and the sensitivity of mammography in this group is reduced due to the masking effect of overlapping tissue. This review examines supplemental screening methods to improve detection in this population, with a focus on MRI.",
+      "topicId": "T11361"
+    }
+  ],
+  "topic": {
+    "id": "T11361",
+    "name": "Digital Radiography and Breast Imaging",
+    "description": "This cluster of papers focuses on advancements in breast cancer screening technology, including the use of mammographic density, digital mammography, breast tomosynthesis, and supplemental imaging modalities such as ultrasound and MRI. It also explores the impact of radiation dose, contrast-enhanced mammography, and the influence of hormone replacement therapy on screening accuracy and risk assessment.",
+    "keywords": [
+      "Mammographic Density",
+      "Digital Mammography",
+      "Breast Tomosynthesis",
+      "Breast Cancer Risk",
+      "Screening Ultrasound",
+      "Radiation Dose",
+      "Contrast-enhanced Mammography",
+      "Breast Tissue Composition"
+    ],
+    "field": "Medicine",
+    "worksCount": 82400
+  },
+  "query": "NCT05667532",
+  "matchKind": "trial_id",
+  "fetchedAt": "2026-09-19T23:37:09.162Z",
+  "fromSnapshot": false
+}

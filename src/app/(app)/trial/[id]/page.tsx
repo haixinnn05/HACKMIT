@@ -29,7 +29,7 @@ export default async function TrialPage({
 }: { params: Promise<{ id: string }>; searchParams: Promise<{ tab?: string; ask?: string; from?: string; visits?: string; travel?: string }> }) {
   const { id } = await params;
   const { tab: rawTab, ask, from, visits, travel } = await searchParams;
-  const tab = rawTab === "eligibility" || rawTab === "expect" ? rawTab : "overview";
+  const tab = rawTab === "eligibility" || rawTab === "expect" || rawTab === "insight" ? rawTab : "overview";
 
   const trial = getTrial(decodeURIComponent(id));
   if (!trial) notFound();
@@ -111,12 +111,18 @@ export default async function TrialPage({
           { id: "overview", label: "Overview", href: tabHref() },
           { id: "eligibility", label: "Eligibility", href: tabHref("eligibility") },
           { id: "expect", label: "What to Expect", href: tabHref("expect") },
+          { id: "insight", label: "Insight", href: tabHref("insight") },
         ]}
       />
 
       {tab === "overview" ? <Overview trial={trial} assessment={assessment} nearestCity={site?.city ?? null} now={now} ask={ask?.slice(0, 200) ?? null} /> : null}
       {tab === "eligibility" ? <Eligibility assessment={assessment} /> : null}
       {tab === "expect" ? <Expect trial={trial} burden={burden} miles={miles} /> : null}
+      {tab === "insight" ? (
+        <Suspense fallback={<OpenAlexResearchSkeleton />}>
+          <OpenAlexResearch trial={trial} />
+        </Suspense>
+      ) : null}
 
       <StickyAction>
         {enrollment?.status === "participating" ? (
@@ -232,12 +238,6 @@ async function Overview({
           </a>
         ) : null}
       </div>
-
-      {!t.isFictional ? (
-        <Suspense fallback={<OpenAlexResearchSkeleton />}>
-          <OpenAlexResearch trial={t} />
-        </Suspense>
-      ) : null}
     </section>
   );
 }

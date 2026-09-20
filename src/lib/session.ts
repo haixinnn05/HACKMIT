@@ -30,3 +30,34 @@ export async function setActiveParticipant(id: string) {
 }
 
 export const PERSONA_COOKIE = COOKIE;
+
+/**
+ * Which face of the app this browser is using. Like the persona, this is a demo
+ * affordance and not authentication: the research-team face is a simulated staff
+ * account and says so on every screen. A real deployment replaces it with
+ * server-side roles and site membership checks.
+ */
+export type Role = "participant" | "clinic";
+const ROLE_COOKIE = "mz_role";
+
+export async function getRole(): Promise<Role | null> {
+  const value = (await cookies()).get(ROLE_COOKIE)?.value;
+  return value === "participant" || value === "clinic" ? value : null;
+}
+
+export async function setRole(role: Role) {
+  (await cookies()).set(ROLE_COOKIE, role, { httpOnly: true, sameSite: "lax", path: "/" });
+}
+
+export async function hasChosenPersona(): Promise<boolean> {
+  return Boolean((await cookies()).get(COOKIE)?.value);
+}
+
+/** The simulated member of staff signed in to the research-team face. */
+export const STAFF = {
+  id: "coord-fixture-1",
+  name: "R. Alvarez",
+  title: "Research Coordinator",
+  site: "Harborview Cancer Center, Cambridge",
+  label: "R. Alvarez, Research Coordinator (simulated staff account)",
+};

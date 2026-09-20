@@ -3,14 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
-  audit, clearTodos, createGrant, deleteQuestionDraft, getQuestion, saveQuestionDraft, createInquiry, createQuestion, ensureTodo, getInquiryForTrial, getParticipant, getTrial,
+  addSavedReply, audit, clearTodos, createGrant, deleteSavedReply, findHandoffTokenByPassNumber, deleteQuestionDraft, getQuestion, saveQuestionDraft, createInquiry, createQuestion, ensureTodo, getInquiryForTrial, getParticipant, getTrial,
   listQuestions, recordMilestone, setPersonalNote, revokeGrant, saveTrial, setInquiryState, toggleTodo,
   unsaveTrial, updateParticipant, updateQuestion, upsertEnrollment,
 } from "@/lib/repo";
 import { assessTrial } from "@/lib/assess";
 import { computeBurden } from "@/lib/burden";
 import { draftInquiry } from "@/lib/ai";
-import { getActiveParticipant } from "@/lib/session";
+import { getActiveParticipant, setRole, STAFF } from "@/lib/session";
 import type { ClinicalFact } from "@/lib/types";
 
 /* Server actions. Every outbound or state-changing step is an explicit user
@@ -131,7 +131,7 @@ export async function shareInquiryAction(formData: FormData) {
   revalidatePath("/inbox");
   revalidatePath("/questions");
   revalidatePath("/passport");
-  revalidatePath("/coordinator");
+  revalidatePath("/clinic", "layout");
   revalidatePath(`/trial/${trialId}`);
   revalidatePath("/profile/saved");
   redirect(`/inquiry/${inquiry.id}`);
@@ -146,7 +146,7 @@ export async function revokeGrantAction(formData: FormData) {
   if (!grant || grant.participantId !== participant.id) return;
   revokeGrant(grantId);
   revalidatePath("/passport");
-  revalidatePath("/coordinator");
+  revalidatePath("/clinic", "layout");
 }
 
 export async function updateProfileAction(formData: FormData) {
@@ -189,16 +189,16 @@ export async function coordinatorAcknowledgeAction(formData: FormData) {
   // Acknowledging is not enrolment, and the participant-facing copy says so.
   setInquiryState(inquiryId, "acknowledged");
   audit("coord-fixture-1", "inquiry.acknowledged", inquiryId);
-  revalidatePath(`/coordinator/${inquiryId}`);
-  revalidatePath("/coordinator");
+  revalidatePath(`/clinic/inbox/${inquiryId}`);
+  revalidatePath("/clinic", "layout");
 }
 
 export async function coordinatorRequestInfoAction(formData: FormData) {
   const inquiryId = String(formData.get("inquiryId"));
   setInquiryState(inquiryId, "needs_information", String(formData.get("note") ?? ""));
   audit("coord-fixture-1", "inquiry.needs_information", inquiryId);
-  revalidatePath(`/coordinator/${inquiryId}`);
-  revalidatePath("/coordinator");
+  revalidatePath(`/clinic/inbox/${inquiryId}`);
+  revalidatePath("/clinic", "layout");
 }
 
 /**
@@ -226,9 +226,9 @@ export async function coordinatorAnswerAction(formData: FormData) {
     setInquiryState(inquiryId, "answered");
     audit("coord-fixture-1", "question.answered", questionId);
   }
-  revalidatePath(`/coordinator/${inquiryId}`);
+  revalidatePath(`/clinic/inbox/${inquiryId}`);
   revalidatePath(`/inquiry/${inquiryId}`);
-  revalidatePath("/coordinator");
+  revalidatePath("/clinic", "layout");
   revalidatePath("/inbox");
   revalidatePath("/questions");
   revalidatePath("/");
@@ -240,7 +240,7 @@ export async function coordinatorAssignAction(formData: FormData) {
   const assignee = String(formData.get("assignee") ?? "");
   updateQuestion(questionId, { state: "assigned", assignedTo: assignee });
   audit("coord-fixture-1", "question.assigned", questionId, assignee);
-  revalidatePath(`/coordinator/${inquiryId}`);
+  revalidatePath(`/clinic/inbox/${inquiryId}`);
 }
 
 /* ------------------------------------------------------- participant choices */
@@ -368,5 +368,42 @@ export async function questionFollowUpAction(formData: FormData) {
   if (question.inquiryId) revalidatePath(`/inquiry/${question.inquiryId}`);
   revalidatePath("/questions");
   revalidatePath("/inbox");
-  revalidatePath("/coordinator");
+  revalidatePath("/clinic", "layout");
+}
+
+/* ------------------------------------------------------------- the two faces */
+
+export async function chooseRoleAction(formData: FormData) {
+  const role = formData.get("role") === "clinic" ? "clinic" : "participant";
+  await setRole(role);
+  redirect(role === "clinic" ? "/clinic" : "/");
+}
+
+/**
+ * Opens a participant's in-person passport from the pass number on their ticket.
+ * A wrong, expired and revoked number all fail the same way, so the form cannot
+ * be used to learn which codes exist.
+ */
+export async function openPassAction(formData: FormData) {
+  const token = findHandoffTokenByPassNumber(String(formData.get("pass") ?? ""));
+  audit(STAFF.id, token ? "pass.opened" : "pass.not_found", "in-person passport");
+  redirect(token ? `/handoff/${token}?from=clinic` : "/clinic/scan?missed=1");
+}
+
+export async function addSavedReplyAction(formData: FormData) {
+  const answer = String(formData.get("answer") ?? "").trim();
+  const keywords = String(formData.get("keywords") ?? "").toLowerCase().split(",").map((k) => k.trim()).filter(Boolean);
+  if (!answer || keywords.length === 0) return;
+  addSavedReply({
+    trialId: String(formData.get("trialId")), keywords, answer,
+    citation: String(formData.get("citation") ?? "").trim() || null,
+  });
+  audit(STAFF.id, "reply.saved", keywords.join(", "));
+  revalidatePath("/clinic/studies");
+}
+
+export async function deleteSavedReplyAction(formData: FormData) {
+  deleteSavedReply(String(formData.get("replyId")));
+  audit(STAFF.id, "reply.deleted", String(formData.get("replyId")));
+  revalidatePath("/clinic/studies");
 }

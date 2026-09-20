@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CaretRight } from "@phosphor-icons/react/dist/ssr";
+import { CaretRight, ShieldCheck, Tray } from "@phosphor-icons/react/dist/ssr";
 import { Avatar, Card, Empty, Pill, ScreenHeader, Tabs } from "@/components/ui";
 import { getParticipant, getTrial, listInquiriesForCoordinator, listQuestions } from "@/lib/repo";
 import { isAnswered } from "@/lib/questions";
@@ -24,20 +24,20 @@ export default async function CoordinatorInbox({ searchParams }: { searchParams:
 
   return (
     <div className="space-y-4">
-      <ScreenHeader back="/inbox" title="Research Team Inbox" />
+      <ScreenHeader title="Research Team Inbox" sub="Organize patient inquiries and support your study team." />
 
       <Tabs
         current={tab}
         tabs={[
-          { id: "all", label: `All (${inquiries.length})`, href: "/coordinator" },
-          { id: "review", label: `Needs Review (${needsReview.length})`, href: "/coordinator?tab=review" },
-          { id: "replied", label: "Replied", href: "/coordinator?tab=replied" },
+          { id: "all", label: `All (${inquiries.length})`, href: "/clinic/inbox" },
+          { id: "review", label: `Needs Review (${needsReview.length})`, href: "/clinic/inbox?tab=review" },
+          { id: "replied", label: "Replied", href: "/clinic/inbox?tab=replied" },
         ]}
       />
 
       {shown.length === 0 ? (
-        <Empty title="Nothing waiting">
-          When someone shares an inquiry, it appears here.
+        <Empty title="Nothing waiting" icon={<Tray size={22} />}>
+          When someone shares an inquiry, it appears here with their evidence and what is missing.
         </Empty>
       ) : (
         <ul className="space-y-2.5">
@@ -47,7 +47,7 @@ export default async function CoordinatorInbox({ searchParams }: { searchParams:
             const open = listQuestions({ inquiryId: inquiry.id }).filter((q) => !isAnswered(q)).length;
             return (
               <Card as="li" key={inquiry.id}>
-                <Link href={`/coordinator/${inquiry.id}`} className="press flex items-center gap-3 p-4">
+                <Link href={`/clinic/inbox/${inquiry.id}`} className="press flex items-center gap-3 p-4">
                   <Avatar name={name} size="size-12 text-sm" />
                   <span className="min-w-0 flex-1">
                     <span className="flex items-baseline justify-between gap-2">
@@ -58,7 +58,8 @@ export default async function CoordinatorInbox({ searchParams }: { searchParams:
                     </span>
                     <span className="block truncate text-[12px] text-ink-soft">{getTrial(inquiry.trialId)?.briefTitle ?? inquiry.trialId}</span>
                     <span className="mt-1 flex flex-wrap items-center gap-1.5">
-                      {open ? <Pill>{open} open</Pill> : <Pill tone="mint">Replied</Pill>}
+                      <Pill tone="iris" icon={<ShieldCheck size={12} weight="fill" />}>Patient-authorized</Pill>
+                      {open ? <Pill tone="peach">{open} open {open === 1 ? "question" : "questions"}</Pill> : <Pill tone="mint">Replied</Pill>}
                     </span>
                   </span>
                   <CaretRight size={16} weight="bold" className="shrink-0 text-iris" />

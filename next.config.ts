@@ -6,6 +6,13 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["better-sqlite3"],
   // The dev badge sits on top of the bottom navigation during demos.
   devIndicators: false,
+  // The staff screens moved into the research-team face. Old links keep working.
+  async redirects() {
+    return [
+      { source: "/coordinator", destination: "/clinic/inbox", permanent: false },
+      { source: "/coordinator/:id", destination: "/clinic/inbox/:id", permanent: false },
+    ];
+  },
   // Lets a phone on the same network use the dev server. Next blocks its dev
   // scripts for any host but localhost, which leaves the page visible but
   // unresponsive. These cover private address ranges and Bonjour names only.

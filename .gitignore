@@ -54,3 +54,6 @@ tsconfig.tsbuildinfo
 
 # Review captures
 /.capture/
+
+# Written per machine by `npm run ios:sync`
+/native-shell/server-url.js
