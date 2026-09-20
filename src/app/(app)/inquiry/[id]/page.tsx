@@ -14,7 +14,8 @@ const STATE_COPY: Record<string, string> = {
   acknowledged: "Someone on the team has it",
   needs_information: "The team has asked for something",
   answered: "You have a reply",
-  closed: "Closed",
+  invited: "Invited to a screening call",
+  closed: "Closed by the study team",
 };
 
 /** One conversation with a study team: who owns it, and what state it is in. */
@@ -57,7 +58,14 @@ export default async function InquiryPage({ params }: { params: Promise<{ id: st
       </Card>
 
       {inquiry.coordinatorNote ? (
-        <Callout title="Note from the team">{inquiry.coordinatorNote}</Callout>
+        <Callout title={inquiry.state === "invited" ? "The team would like to talk with you" : inquiry.state === "closed" ? "Why this was closed" : "Note from the team"}>
+          {inquiry.coordinatorNote}
+          {inquiry.state === "invited" ? (
+            <span className="mt-1.5 block text-[12px] text-ink-faint">
+              This is an invitation to a conversation. It is not a decision about whether you can take part; screening with the study team decides that, and you can still say no.
+            </span>
+          ) : null}
+        </Callout>
       ) : null}
 
       {answered.length ? (

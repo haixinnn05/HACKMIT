@@ -319,17 +319,12 @@ function readJson<T>(relativePath: string): T | null {
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-/** Idempotent load of the snapshot and fixtures. Safe to call on every boot. */
-export function seedIfEmpty(db: Database.Database, force = false) {
-  const seeded = db.prepare("SELECT value FROM meta WHERE key = 'seeded_at'").get() as
-    | { value: string }
-    | undefined;
-  if (seeded && !force) return;
-
-  const snapshot = readJson<any[]>("snapshot/trials.json") ?? [];
-  const fixture = readJson<any>("fixtures/fictional-study.json");
-  const personaFile = readJson<any>("fixtures/personas.json");
-
+/**
+ * One writer for every study, whether it came from the registry snapshot, the
+ * fixture, or a research team posting it in the app. Sharing it means a posted
+ * study gets the same criteria splitting and the same search index as the rest.
+ */
+function makeTrialLoader(db: Database.Database) {
   const insertTrial = db.prepare(`
     INSERT OR REPLACE INTO trials (
       id, is_fictional, brief_title, official_title, acronym, lead_sponsor, sponsor_class,
@@ -448,6 +443,50 @@ export function seedIfEmpty(db: Database.Database, force = false) {
     );
   };
 
+  return loadTrial;
+}
+
+/**
+ * Saves a study a research team posted, replacing any earlier version of it.
+ * The old criteria, sites and index rows go first so an edit cannot leave
+ * stale requirements behind for the eligibility engine to read.
+ */
+export function saveSiteStudy(raw: Record<string, unknown> & { studyId: string }) {
+  const db = getDb();
+  db.transaction(() => {
+    removeStudyRows(db, raw.studyId);
+    makeTrialLoader(db)(raw, true);
+  })();
+}
+
+export function deleteSiteStudy(id: string) {
+  const db = getDb();
+  db.transaction(() => {
+    removeStudyRows(db, id);
+    db.prepare("DELETE FROM trials WHERE id = ? AND is_fictional = 1").run(id);
+  })();
+}
+
+function removeStudyRows(db: Database.Database, id: string) {
+  db.prepare("DELETE FROM criteria_fts WHERE trial_id = ?").run(id);
+  db.prepare("DELETE FROM trials_fts WHERE id = ?").run(id);
+  db.prepare("DELETE FROM criteria WHERE trial_id = ?").run(id);
+  db.prepare("DELETE FROM sites WHERE trial_id = ?").run(id);
+}
+
+/** Idempotent load of the snapshot and fixtures. Safe to call on every boot. */
+export function seedIfEmpty(db: Database.Database, force = false) {
+  const seeded = db.prepare("SELECT value FROM meta WHERE key = 'seeded_at'").get() as
+    | { value: string }
+    | undefined;
+  if (seeded && !force) return;
+
+  const snapshot = readJson<any[]>("snapshot/trials.json") ?? [];
+  const fixture = readJson<any>("fixtures/fictional-study.json");
+  const personaFile = readJson<any>("fixtures/personas.json");
+
+  const loadTrial = makeTrialLoader(db);
+
   const insertParticipant = db.prepare(`
     INSERT OR REPLACE INTO participants (
       id, display_name, summary, is_demo_persona, age_years, sex, city, state, country,
@@ -552,6 +591,7 @@ export function resetDemoData() {
       DELETE FROM todos; DELETE FROM inquiry_reads; DELETE FROM question_drafts; DELETE FROM saved_replies;
       DELETE FROM peer_messages; DELETE FROM peer_connections; DELETE FROM peer_optins;
       DELETE FROM audit_events; DELETE FROM participants;
+      DELETE FROM trials WHERE id LIKE 'MZ-%';
     `);
     db.prepare("DELETE FROM meta WHERE key = 'seeded_at'").run();
   })();

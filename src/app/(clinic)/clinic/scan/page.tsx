@@ -1,5 +1,6 @@
 import { Camera, Keyboard, QrCode } from "@phosphor-icons/react/dist/ssr";
 import { Callout, Card, ScreenHeader } from "@/components/ui";
+import { PassScanner } from "@/components/PassScanner";
 import { openPassAction } from "@/app/actions";
 
 export const dynamic = "force-dynamic";
@@ -19,15 +20,18 @@ export default async function ScanPage({ searchParams }: { searchParams: Promise
     <div className="space-y-4">
       <ScreenHeader title="Open a passport" sub="When a participant shows you their Mozaic ticket, open it one of two ways." />
 
-      <Card className="flex items-start gap-3.5 p-4">
-        <span className="grid size-11 shrink-0 place-items-center rounded-[12px] bg-lavender text-iris"><Camera size={22} /></span>
-        <div>
-          <p className="text-[14px] font-bold text-ink">Point your camera at the code</p>
-          <p className="text-[12.5px] leading-relaxed text-ink-soft">
-            Your phone&rsquo;s camera reads the QR on their ticket and opens their shared profile. The
-            code holds a link and nothing else.
-          </p>
+      <Card className="p-4">
+        <div className="flex items-start gap-3.5">
+          <span className="grid size-11 shrink-0 place-items-center rounded-[12px] bg-lavender text-iris"><Camera size={22} /></span>
+          <div>
+            <p className="text-[14px] font-bold text-ink">Point your camera at the code</p>
+            <p className="text-[12.5px] leading-relaxed text-ink-soft">
+              Scan the QR on their ticket to open their shared profile. The code holds a link and
+              nothing else, and it is read on this phone.
+            </p>
+          </div>
         </div>
+        <PassScanner />
       </Card>
 
       <Card className="p-4">

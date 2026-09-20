@@ -208,6 +208,10 @@ export type InquiryState =
   | "acknowledged"
   | "needs_information"
   | "answered"
+  // The site has invited the person to a screening conversation. This is a next
+  // step, not a verdict: screening is what decides eligibility, and it happens
+  // outside this app. There is deliberately no "accepted" or "enrolled" state.
+  | "invited"
   | "closed";
 
 export type QuestionState =

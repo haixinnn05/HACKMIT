@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:https": "next dev --experimental-https",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -19,7 +20,7 @@
     "ios:device": "node scripts/ios-device.mjs",
     "openalex:snapshot": "tsx scripts/openalex-snapshot.mts",
     "check:secrets": "node scripts/check-secrets.mjs --all",
-    "test:peers": "tsx scripts/peers-test.mts",
+    "test:peers": "MOZAIC_DB=/tmp/mozaic-peers-test.db tsx scripts/peers-test.mts",
     "ai:check": "node scripts/ai-check.mjs",
     "ai:warm": "tsx scripts/ai-warm.mts"
   },
@@ -29,6 +30,7 @@
     "@capacitor/ios": "^8.5.2",
     "@phosphor-icons/react": "^2.1.10",
     "better-sqlite3": "^13.0.3",
+    "jsqr": "^1.4.0",
     "next": "16.3.5",
     "qrcode": "^1.5.4",
     "react": "19.2.8",

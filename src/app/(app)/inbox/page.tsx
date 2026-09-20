@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { CaretRight } from "@phosphor-icons/react/dist/ssr";
-import { Card, Empty, Pill, ScreenHeader, Tabs } from "@/components/ui";
+import { Empty, Pill, ScreenHeader, Tabs } from "@/components/ui";
 import { getGrant, getTrial, isInquiryUnread, listInquiriesForParticipant, listQuestions } from "@/lib/repo";
 import { getActiveParticipant } from "@/lib/session";
-import { chooseRoleAction } from "@/app/actions";
 import type { InquiryState } from "@/lib/types";
 import { isAnswered } from "@/lib/questions";
 
@@ -15,6 +14,7 @@ const STATE: Record<InquiryState, { label: string; tone: "peach" | "mint" | "iri
   acknowledged: { label: "Opened", tone: "iris", preview: "A coordinator has opened this." },
   needs_information: { label: "Needs information", tone: "neutral", preview: "The team asked for something." },
   answered: { label: "Answered", tone: "mint", preview: "You have a reply." },
+  invited: { label: "Invited to a call", tone: "mint", preview: "The study team would like to talk with you. This is an invitation, not a decision about whether you can take part." },
   closed: { label: "Closed", tone: "neutral", preview: "Closed." },
 };
 
@@ -94,17 +94,6 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
         </ul>
       )}
 
-      <Card>
-        <form action={chooseRoleAction}>
-          <input type="hidden" name="role" value="clinic" />
-          <button type="submit" className="press flex w-full items-center gap-3.5 p-4 text-left">
-            <span className="min-w-0 flex-1">
-              <span className="block text-[14px] font-bold text-ink">Research team</span>
-            </span>
-            <CaretRight size={16} weight="bold" className="text-ink-faint" />
-          </button>
-        </form>
-      </Card>
     </div>
   );
 }

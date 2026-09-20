@@ -60,6 +60,11 @@ const CONTACT: FormField[] = [
 export interface ApplicationForm { title: string; notice: string | null; fields: FormField[] }
 
 export function formFor(trial: Trial, fixtureForm?: { title: string; notice?: string; siteFields?: Omit<FormField, "section">[] } | null): ApplicationForm {
+  // The fixture's form belongs to the fixture study. A study a team posted in
+  // the app has no form of its own yet, so it gets the general one.
+  if (trial.isFictional && !trial.id.startsWith("TP-FIX-")) {
+    return { title: "First-contact form", notice: "This study team has not added questions of their own, so this is a general form covering what sites usually ask first.", fields: [...COMMON, ...CONTACT] };
+  }
   const site = (trial.isFictional ? fixtureForm?.siteFields ?? [] : []).map((field) => ({ ...field, section: "For this site" as const }));
   return {
     title: trial.isFictional && fixtureForm ? fixtureForm.title : "First-contact form",

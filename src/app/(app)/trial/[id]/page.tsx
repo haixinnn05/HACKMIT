@@ -232,6 +232,8 @@ async function Overview({
           <a href={t.sourceUrl} target="_blank" rel="noreferrer" className="inline-flex min-h-11 items-center justify-center gap-1 text-[12.5px] font-bold text-iris hover:underline">
             ClinicalTrials.gov record <ArrowSquareOut size={14} />
           </a>
+        ) : t.isFictional && t.leadSponsor ? (
+          <span className="text-[12.5px] font-semibold text-ink-soft">Posted on Mozaic by {t.leadSponsor}</span>
         ) : null}
       </div>
     </section>

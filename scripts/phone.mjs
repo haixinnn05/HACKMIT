@@ -18,16 +18,23 @@ if (addresses.length === 0) {
   process.exit(1);
 }
 
-const url = `http://${addresses[0]}:${port}`;
-try {
-  const response = await fetch(url, { signal: AbortSignal.timeout(4000) });
-  console.log(`\n  The app is answering (${response.status}).`);
-} catch {
-  console.log("\n  The app is NOT answering. Start it with: npm run dev");
-}
+// `npm run dev:https` serves https with a local certificate; plain `npm run dev` serves http.
+// The certificate is self-signed, so this one probe does not verify it.
+const answers = async (scheme) => {
+  try {
+    if (scheme === "https") process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+    const response = await fetch(`${scheme}://localhost:${port}/welcome`, { signal: AbortSignal.timeout(4000), redirect: "manual" });
+    return response.status;
+  } catch { return null; } finally { delete process.env.NODE_TLS_REJECT_UNAUTHORIZED; }
+};
+const scheme = (await answers("http")) ? "http" : (await answers("https")) ? "https" : null;
+const url = `${scheme ?? "http"}://${addresses[0]}:${port}`;
+console.log(scheme ? `\n  The app is answering over ${scheme}.` : "\n  The app is NOT answering. Start it with: npm run dev");
+if (scheme === "http") console.log("  Live camera scanning needs https on a phone: stop the server and run  npm run dev:https\n  (over http, the Scan screen offers \"Take a photo of the code\" instead, which works).");
+if (scheme === "https") console.log("  The certificate is local, so Safari will warn once: Show Details, then visit this website.");
 
 console.log(`\n  Open on your phone:  ${url}`);
-if (hostname().endsWith(".local")) console.log(`  Or, stable across address changes:  http://${hostname()}:${port}`);
+if (hostname().endsWith(".local")) console.log(`  Or, stable across address changes:  ${scheme ?? "http"}://${hostname()}:${port}`);
 console.log("\n" + (await QRCode.toString(url, { type: "terminal", small: true })));
 console.log("  Phone and computer must be on the same Wi-Fi.");
 console.log("  If the page will not load, the network may block device-to-device");

@@ -77,6 +77,18 @@ export function getTrial(id: string): Trial | null {
   return rowToTrial(row, sites, criteria);
 }
 
+/**
+ * Studies that came from a research team on Mozaic rather than from the public
+ * registry: the demo fixture, and anything posted in the app. Newest first,
+ * with the fixture kept on top so the demo script never moves.
+ */
+export function listSiteStudies(): Trial[] {
+  const rows = getDb()
+    .prepare("SELECT id FROM trials WHERE is_fictional = 1 ORDER BY (id LIKE 'TP-FIX-%') DESC, study_first_post_date DESC, id DESC")
+    .all() as { id: string }[];
+  return rows.map((row) => getTrial(row.id)).filter((trial): trial is Trial => trial !== null);
+}
+
 export function getTrials(ids: string[]): Trial[] {
   if (ids.length === 0) return [];
   const db = getDb();

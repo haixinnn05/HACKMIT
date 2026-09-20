@@ -1,10 +1,21 @@
 import Link from "next/link";
 import { CaretRight, ShieldCheck, Tray } from "@phosphor-icons/react/dist/ssr";
+import type { InquiryState } from "@/lib/types";
 import { Avatar, Card, Empty, Pill, ScreenHeader, Tabs } from "@/components/ui";
 import { getParticipant, getTrial, listInquiriesForCoordinator, listQuestions } from "@/lib/repo";
 import { isAnswered } from "@/lib/questions";
 
 export const dynamic = "force-dynamic";
+
+const STATUS: Record<InquiryState, { label: string; tone: "iris" | "mint" | "peach" | "blush" | "neutral" }> = {
+  draft: { label: "Draft", tone: "neutral" },
+  shared: { label: "New", tone: "peach" },
+  acknowledged: { label: "Received", tone: "iris" },
+  needs_information: { label: "Waiting on them", tone: "peach" },
+  answered: { label: "In conversation", tone: "iris" },
+  invited: { label: "Invited to a call", tone: "mint" },
+  closed: { label: "Closed", tone: "neutral" },
+};
 
 /**
  * Research Team Inbox, for a simulated site account.
@@ -19,7 +30,7 @@ export default async function CoordinatorInbox({ searchParams }: { searchParams:
 
   const inquiries = listInquiriesForCoordinator();
   const needsReview = inquiries.filter((i) => ["shared", "acknowledged"].includes(i.state));
-  const replied = inquiries.filter((i) => ["answered", "needs_information", "closed"].includes(i.state));
+  const replied = inquiries.filter((i) => ["answered", "needs_information", "invited", "closed"].includes(i.state));
   const shown = tab === "review" ? needsReview : tab === "replied" ? replied : inquiries;
 
   return (
@@ -58,6 +69,7 @@ export default async function CoordinatorInbox({ searchParams }: { searchParams:
                     </span>
                     <span className="block truncate text-[12px] text-ink-soft">{getTrial(inquiry.trialId)?.briefTitle ?? inquiry.trialId}</span>
                     <span className="mt-1 flex flex-wrap items-center gap-1.5">
+                      <Pill tone={STATUS[inquiry.state].tone}>{STATUS[inquiry.state].label}</Pill>
                       <Pill tone="iris" icon={<ShieldCheck size={12} weight="fill" />}>Patient-authorized</Pill>
                       {open ? <Pill tone="peach">{open} open {open === 1 ? "question" : "questions"}</Pill> : <Pill tone="mint">Replied</Pill>}
                     </span>
