@@ -1,6 +1,9 @@
 import { randomUUID } from "node:crypto";
 import { getDb } from "./db";
-import { needsGentleReminder, scorePair, type PeerField, type PeerMatch, type PeerOptIn } from "./peers";
+import { modelLabel } from "./ai";
+import { mutualView, rankWithModel } from "./peer-ai";
+import { differentDiagnosis, needsGentleReminder, scorePair, type PeerField, type PeerMatch, type PeerOptIn } from "./peers";
+import type { ParticipantProfile } from "./types";
 import { getParticipant, listEnrollments, listInquiriesForParticipant, listSavedTrialIds } from "./repo";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -45,27 +48,70 @@ export type MatchOutcome =
  * handful, never a list to browse. Anyone taking part in the study in question
  * is left out, in both directions.
  */
-export function findPeerMatches(participantId: string, trialId: string | null): MatchOutcome {
+/** Everyone this person may be compared with, after the rules no model gets a say in. */
+function eligiblePairs(participantId: string, trialId: string | null) {
   const me = getParticipant(participantId);
   const mine = getPeerOptIn(participantId);
-  if (!me || !mine) return { status: "not_opted_in" };
-  if (trialId && takingPartIn(participantId, trialId)) return { status: "enrolled" };
+  if (!me || !mine) return { status: "not_opted_in" as const };
+  if (trialId && takingPartIn(participantId, trialId)) return { status: "enrolled" as const };
 
   const connected = new Set(listPeerConnections(participantId).filter((c) => c.state === "pending" || c.state === "accepted")
     .map((c) => (c.fromId === participantId ? c.toId : c.fromId)));
 
   const rows = getDb().prepare("SELECT * FROM peer_optins WHERE participant_id != ?").all(participantId) as any[];
-  const matches: PeerMatch[] = [];
+  const pairs: { them: ParticipantProfile; theirs: PeerOptIn; sameStudy: boolean }[] = [];
   for (const theirs of rows.map(rowToOptIn)) {
     if (connected.has(theirs.participantId)) continue;
     if (trialId && takingPartIn(theirs.participantId, trialId)) continue;
     const them = getParticipant(theirs.participantId);
-    if (!them) continue;
-    const match = scorePair(me, mine, them, theirs, trialId ? interestedIn(theirs.participantId, trialId) : false);
-    if (match) matches.push(match);
+    if (them) pairs.push({ them, theirs, sameStudy: trialId ? interestedIn(theirs.participantId, trialId) : false });
   }
-  const rank = (m: PeerMatch) => (m.sameStudy ? 2 : 0) + (m.strength === "strong" ? 1 : 0) + m.reasons.length / 10;
+  return { status: "ok" as const, me, mine, pairs };
+}
+
+const rank = (m: PeerMatch) => (m.sameStudy ? 2 : 0) + (m.strength === "strong" ? 1 : 0) + m.reasons.length / 10;
+
+export function findPeerMatches(participantId: string, trialId: string | null): MatchOutcome {
+  const found = eligiblePairs(participantId, trialId);
+  if (found.status !== "ok") return found;
+  const matches = found.pairs
+    .map(({ them, theirs, sameStudy }) => scorePair(found.me, found.mine, them, theirs, sameStudy))
+    .filter((match): match is PeerMatch => match !== null);
   return { status: "ok", matches: matches.sort((a, b) => rank(b) - rank(a)).slice(0, 3) };
+}
+
+export type SmartMatchOutcome =
+  | { status: "not_opted_in" } | { status: "enrolled" }
+  | { status: "ok"; matches: PeerMatch[]; matchedBy: { kind: "model"; model: string } | { kind: "rules"; why: string } };
+
+/**
+ * The matcher the app uses. The language model ranks and explains; the rules
+ * decide who may be compared and remain the fallback, and the screen says which
+ * one produced what is shown.
+ *
+ * Two rules stay in code even when the model is on. A different diagnosis is
+ * never a match, however much else two people share. And nobody the rules would
+ * refuse outright on diagnosis is ever sent to the model.
+ */
+export async function findPeerMatchesSmart(participantId: string, trialId: string | null): Promise<SmartMatchOutcome> {
+  const found = eligiblePairs(participantId, trialId);
+  if (found.status !== "ok") return found;
+
+  const candidates = found.pairs
+    .filter(({ them, theirs }) => !differentDiagnosis(found.me, found.mine, them, theirs))
+    .map(({ them, theirs, sameStudy }) => ({
+      participantId: them.id, alias: theirs.alias, about: theirs.about, sameStudy,
+      facts: mutualView(found.me, found.mine, them, theirs),
+    }));
+
+  const ranked = await rankWithModel(candidates);
+  if (ranked) {
+    return { status: "ok", matches: ranked.matches.sort((a, b) => rank(b) - rank(a)).slice(0, 3), matchedBy: { kind: "model", model: ranked.model } };
+  }
+  const rules = findPeerMatches(participantId, trialId);
+  return rules.status === "ok"
+    ? { ...rules, matchedBy: { kind: "rules", why: modelLabel() ? "The language model did not answer, so these come from the built-in rules." : "No language model is connected, so these come from the built-in rules." } }
+    : rules;
 }
 
 /* ------------------------------------------------------------- connections */

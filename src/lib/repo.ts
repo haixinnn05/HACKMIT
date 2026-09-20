@@ -306,6 +306,22 @@ export function getGrantByToken(token: string): SharingGrant | null {
   return isGrantActive(grant) ? grant : null;
 }
 
+/** Check-ins are audit events keyed by grant, so one scanned code checks a
+ *  person in once and the record survives the code expiring. */
+export function getCheckIn(grantId: string): string | null {
+  const row = getDb()
+    .prepare("SELECT created_at FROM audit_events WHERE action = 'pass.checked_in' AND subject = ? ORDER BY created_at LIMIT 1")
+    .get(grantId) as { created_at: string } | undefined;
+  return row?.created_at ?? null;
+}
+
+export function checkInByToken(token: string, actor: string): boolean {
+  const grant = getGrantByToken(token);
+  if (!grant) return false;
+  if (!getCheckIn(grant.id)) audit(actor, "pass.checked_in", grant.id, grant.participantId);
+  return true;
+}
+
 export function getGrant(id: string): SharingGrant | null {
   const row = getDb().prepare("SELECT * FROM grants WHERE id = ?").get(id);
   return row ? rowToGrant(row) : null;

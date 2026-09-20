@@ -9,7 +9,7 @@ const LABEL: Record<string, string> = {
   "inquiry.shared": "An inquiry arrived", "inquiry.acknowledged": "Inquiry acknowledged",
   "inquiry.needs_information": "Information requested from participant",
   "inquiry.approved": "Approved for this study", "inquiry.not_proceeding": "Inquiry closed with a reason",
-  "inquiry.reopened": "Inquiry reopened", "pass.scanned": "Passport opened by scanning its code",
+  "inquiry.reopened": "Inquiry reopened", "pass.scanned": "Passport opened by scanning its code", "pass.checked_in": "Participant checked in",
   "study.posted": "Study posted", "study.paused": "Recruiting paused", "study.resumed": "Recruiting resumed", "study.removed": "Study removed",
   "question.assigned": "Question assigned", "question.draft_saved": "Draft answer saved",
   "question.answered": "Answer sent", "question.reopened": "Participant reopened a question",

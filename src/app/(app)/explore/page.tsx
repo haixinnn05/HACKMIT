@@ -5,7 +5,7 @@ import { Card, Empty, Pill, ScreenHeader } from "@/components/ui";
 import { openedFromMap } from "@/lib/map-return";
 import { assessTrial, criteriaMatchCopy } from "@/lib/assess";
 import { getTrial, listConfirmedCriterionIdsByTrial } from "@/lib/repo";
-import { searchForProfile } from "@/lib/search";
+import { searchForProfileAsync } from "@/lib/search";
 import { getActiveParticipant } from "@/lib/session";
 import type { Trial, TrialAssessment } from "@/lib/types";
 
@@ -28,7 +28,7 @@ export default async function ExplorePage({
   // The condition chip is a real filter. Turning it off searches every record
   // in the snapshot rather than only the person's own condition.
   const anyCondition = params.cond === "any";
-  const result = searchForProfile(participant, {
+  const result = await searchForProfileAsync(participant, {
     text: params.q || null, limit: 40, ...(anyCondition ? { condition: null } : {}),
   });
 
@@ -66,9 +66,9 @@ export default async function ExplorePage({
   // When the person typed something, only their words are matched: their condition
   // is a ranking hint for the registry list, and on its own it would make every
   // posted study for that condition answer every search.
-  const posted = searchForProfile(participant, {
+  const posted = (await searchForProfileAsync(participant, {
     text: params.q || null, limit: 200, includeFictional: true, ...(anyCondition || params.q ? { condition: null } : {}),
-  }).hits
+  })).hits
     .filter((hit) => hit.trial.isFictional && hit.trial.id !== "TP-FIX-001")
     .filter((hit) => !params.phase || hit.trial.phases.includes(params.phase))
     .slice(0, 4);
@@ -150,6 +150,10 @@ export default async function ExplorePage({
         </ul>
       )}
 
+      {/* Which search engine answered, and how fast. If Elasticsearch is down this says SQLite, because that is what ran. */}
+      <p className="pt-1 text-center text-[11px] text-ink-faint">
+        Ranked {result.totalCandidates} matching records with {result.backend === "elasticsearch" ? "Elasticsearch" : "SQLite full-text search"} in {result.tookMs} ms
+      </p>
     </div>
   );
 }

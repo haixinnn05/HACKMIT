@@ -20,6 +20,7 @@
     "ios:device": "node scripts/ios-device.mjs",
     "openalex:snapshot": "tsx scripts/openalex-snapshot.mts",
     "check:secrets": "node scripts/check-secrets.mjs --all",
+    "es:index": "tsx scripts/es-index.mts",
     "test:peers": "MOZAIC_DB=/tmp/mozaic-peers-test.db tsx scripts/peers-test.mts",
     "ai:check": "node scripts/ai-check.mjs",
     "ai:warm": "tsx scripts/ai-warm.mts"

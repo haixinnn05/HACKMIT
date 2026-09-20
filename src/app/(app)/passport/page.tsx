@@ -3,7 +3,7 @@ import { GearSix } from "@phosphor-icons/react/dist/ssr";
 import { PassportSurface, type PassportSummary } from "@/components/PassportSurface";
 import { TrialStamps } from "@/components/TrialStamps";
 import { Card, Pill, ScreenHeader, SectionHeading } from "@/components/ui";
-import { getTrial, listEnrollments, listGrants, listQuestions } from "@/lib/repo";
+import { getCheckIn, getTrial, listEnrollments, listGrants, listQuestions } from "@/lib/repo";
 import { getActiveParticipant } from "@/lib/session";
 import { revokeGrantAction } from "@/app/actions";
 import { isAnswered } from "@/lib/questions";
@@ -82,6 +82,7 @@ export default async function PassportPage() {
               const active = grant.state === "active" && !expired;
               const groups = grant.allowedFields.filter((field) => !field.startsWith("fact:"));
               const factCount = grant.allowedFields.length - groups.length;
+              const checkedInAt = getCheckIn(grant.id);
               return (
                 <Card as="li" key={grant.id} className="p-4">
                   <div className="flex items-start justify-between gap-3">
@@ -94,6 +95,9 @@ export default async function PassportPage() {
                         Shared {new Date(grant.createdAt).toLocaleString()}
                         {grant.expiresAt ? `, expires ${new Date(grant.expiresAt).toLocaleTimeString()}` : ""}
                       </p>
+                      {checkedInAt ? (
+                        <p className="mt-1.5"><Pill tone="mint">Checked in at {new Date(checkedInAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</Pill></p>
+                      ) : null}
                     </div>
                     {active ? (
                       <form action={revokeGrantAction}>

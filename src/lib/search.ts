@@ -1,4 +1,5 @@
 import { getDb } from "./db";
+import { elasticConfigured, elasticRankings, elasticReady } from "./elastic";
 import { getTrials } from "./repo";
 import type { ParticipantProfile, Trial } from "./types";
 
@@ -57,13 +58,18 @@ export interface SearchResult {
   tookMs: number;
 }
 
-/** FTS5 MATCH syntax is not free text. Quote every term and OR them together. */
-function toMatchQuery(raw: string): string | null {
-  const terms = raw
+/** The words a query is actually searched by. Both backends use the same ones. */
+function queryTerms(raw: string): string[] {
+  return raw
     .toLowerCase()
     .replace(/[^\p{L}\p{N}\s-]/gu, " ")
     .split(/\s+/)
     .filter((term) => term.length > 2 && !STOPWORDS.has(term));
+}
+
+/** FTS5 MATCH syntax is not free text. Quote every term and OR them together. */
+function toMatchQuery(raw: string): string | null {
+  const terms = queryTerms(raw);
   if (terms.length === 0) return null;
   return terms.map((term) => `"${term.replace(/"/g, "")}"`).join(" OR ");
 }
@@ -206,13 +212,38 @@ function applyFilters(trial: Trial, filters: SearchFilters): { keep: boolean; re
   return { keep: true, reasons };
 }
 
-export function search(filters: SearchFilters): SearchResult {
-  const started = Date.now();
-  const limit = filters.limit ?? 10;
-  const queryText = [filters.condition, filters.text].filter(Boolean).join(" ").trim();
-  const match = toMatchQuery(queryText);
+const queryTextOf = (filters: SearchFilters) => [filters.condition, filters.text].filter(Boolean).join(" ").trim();
+const poolSizeOf = (filters: SearchFilters) => Math.max((filters.limit ?? 10) * 12, 120);
 
-  const poolSize = Math.max(limit * 12, 120);
+type Rankings = { trialRanking: { id: string; rank: number }[]; criterionRanking: any[] };
+
+/** SQLite FTS5. Synchronous, needs no service, and is what every fallback lands on. */
+export function search(filters: SearchFilters): SearchResult {
+  return assemble(filters, sqliteRankings(filters), "sqlite_fts5", Date.now());
+}
+
+/**
+ * The search the app uses. Elasticsearch answers when it is configured and
+ * reachable; otherwise SQLite does, and `backend` on the result says which one
+ * it was so the screen never claims a backend that did not answer.
+ */
+export async function searchAsync(filters: SearchFilters): Promise<SearchResult> {
+  const started = Date.now();
+  if (elasticConfigured() && elasticReady(getDb())) {
+    const terms = queryTerms(queryTextOf(filters));
+    try {
+      const rankings = terms.length ? await elasticRankings(terms, poolSizeOf(filters)) : { trialRanking: [], criterionRanking: [] };
+      return assemble(filters, rankings, "elasticsearch", started);
+    } catch (error) {
+      console.warn("[search] Elasticsearch did not answer; using SQLite FTS5:", error instanceof Error ? error.message : error);
+    }
+  }
+  return assemble(filters, sqliteRankings(filters), "sqlite_fts5", started);
+}
+
+function sqliteRankings(filters: SearchFilters): Rankings {
+  const match = toMatchQuery(queryTextOf(filters));
+  const poolSize = poolSizeOf(filters);
   let trialRanking: { id: string; rank: number }[] = [];
   let criterionRanking: any[] = [];
 
@@ -231,6 +262,15 @@ export function search(filters: SearchFilters): SearchResult {
       console.warn("[search] criterion-level ranking failed:", error);
     }
   }
+
+  return { trialRanking, criterionRanking };
+}
+
+/** Fusion, filtering and explanation. Identical whichever backend produced the rankings. */
+function assemble(filters: SearchFilters, { trialRanking, criterionRanking }: Rankings, backend: SearchBackend, started: number): SearchResult {
+  const limit = filters.limit ?? 10;
+  const queryText = queryTextOf(filters);
+  const poolSize = poolSizeOf(filters);
 
   const trialScores = normalizeRanking(trialRanking);
   const criterionScores = normalizeRanking(
@@ -301,7 +341,7 @@ export function search(filters: SearchFilters): SearchResult {
 
   return {
     hits: hits.slice(0, limit),
-    backend: "sqlite_fts5",
+    backend,
     lexicalOnly: true,
     totalCandidates: trials.length,
     queryText,
@@ -325,5 +365,14 @@ export function searchForProfile(
     includeFictional: false,
     limit: 10,
     ...overrides,
+  });
+}
+
+
+/** As searchForProfile, through whichever backend is configured. */
+export function searchForProfileAsync(profile: ParticipantProfile, overrides: Partial<SearchFilters> = {}): Promise<SearchResult> {
+  return searchAsync({
+    condition: profile.condition, ageYears: profile.ageYears, sex: profile.sex, country: profile.country, state: profile.state,
+    recruitingOnly: true, includeFictional: false, limit: 10, ...overrides,
   });
 }

@@ -141,10 +141,12 @@ LLM_MODEL_FAST=muse-spark-1.2            # used where someone is waiting on an a
 `npm run ai:check` reports exactly what is and is not working, without printing the
 key. `npm run ai:warm` pre-generates the summaries the demo visits.
 
-The model does three things: rewrites a study summary in plain language, answers a
-question from a study's own text, and suggests openers for two peers who have
-connected. It decides nothing. Eligibility, peer matching and the burden arithmetic
-are rules, because they have to be explainable and reproducible.
+The model does four things: rewrites a study summary in plain language, answers a
+question from a study's own text, matches two participants who might want to talk,
+and suggests openers once they have connected. Eligibility and the burden arithmetic
+stay rules, because they have to be explainable and reproducible. For peer matching
+the model ranks and explains, inside a boundary that code enforces on both sides
+(see "Talking with a peer").
 
 How it is kept honest and affordable:
 
@@ -186,14 +188,25 @@ is built around that document's own cautions:
   person kept back. An unknown fact never counts as something in common.
 - **Not while enrolled.** People are not paired about a study either has joined,
   because comparing experiences inside a trial can reveal treatment groups.
-- **Transparent scoring.** Pairing is done by rule and explained in plain words. A
-  language model (Meta Llama, when enabled) only suggests conversation starters for
-  two people who have already connected, from their shared overlaps and the study's
-  public title. It cannot send anything.
+- **Matched by Meta AI, inside a boundary it cannot cross.** Code decides who may be
+  compared at all (opted in, not enrolled, and a different diagnosis is never a
+  match). Code then builds a mutual view of each pair: only the fields both people
+  offered, only facts both actually know, age as a decade, and no names, aliases,
+  ids or contact details. The model sees nothing else. It ranks the pairs and says
+  what they share in plain words, which lets it read meaning a rule cannot (that a
+  lumpectomy is surgery, that two people both fit visits around work). Code then
+  checks the answer: a reason is kept only if it names a field in that pair's
+  mutual view. The guarantee does not depend on the model behaving, because it was
+  never given what a person held back. The screen says which matcher produced the
+  list, and the rule-based matcher in `peers.ts` takes over when no model answers.
+- **Openers after connecting.** Once two people have both agreed to talk, the model
+  suggests conversation starters from their shared overlaps and the study's public
+  title. It cannot send anything.
 - **Consent both ways, and a way out.** The other person must accept; either can end
   or report; a third person gets a 404.
 
-`npm run test:peers` checks these rules directly.
+`npm run test:peers` checks these rules directly, including what the model is allowed
+to see and what happens when a model answers with reasons it should not have.
 
 ### Insight, from OpenAlex
 
@@ -311,6 +324,38 @@ though the trial-level ranking placed it first every single time. Linear fusion
 of normalized scores gives **100% recall@10** on the same probes.
 `reciprocalRankFusion` remains exported for the day a genuinely incomparable
 semantic ranking is added.
+
+#### Elasticsearch
+
+Set `ELASTICSEARCH_URL` (with `ELASTICSEARCH_API_KEY`, or a username and password)
+and Elasticsearch produces those two rankings instead of SQLite. Fusion, filters
+and explanations are shared code, so results are judged the same way whichever
+backend answered. There is nothing to run: the first search after start checks the
+index and, if it is missing, empty or behind the database, loads it in the
+background. Until that finishes, searches run on SQLite, so nobody sees results from
+a half-filled index. `npm run es:index` rebuilds it by hand and verifies it.
+
+- **Two indices.** `mozaic-trials` holds one document per public registry record.
+  `mozaic-passages` holds one per eligibility criterion: a passage of the public
+  record, collapsed by study at query time with Elasticsearch's field collapsing.
+- **Source ids and version metadata sit next to the search text.** Every document
+  carries its registry id, source URL, the time the record was retrieved, the hash
+  of the record it came from and the registry's own last-update date. A passage also
+  carries the character offsets it was cut from, and the indexing command checks
+  that those offsets point at exactly that text in the stored record. So a hit can
+  be traced to the exact version of the exact record it quotes.
+- **Public text only.** Nothing about a participant is indexed, and a query carries
+  search words and nothing else. The indexing command asserts that no participant
+  field exists in either mapping.
+- **Kept in step.** A study a research team posts, pauses or removes is written to
+  the index in the same action.
+- **Fails safe.** If Elasticsearch does not answer within 2.5 seconds, the same
+  search runs on SQLite, and Find Clinical Trials says which backend answered. It
+  never claims a backend that did not run.
+
+Measured against a local Elasticsearch 8.15: 301 studies and 5,530 passages indexed
+in about 7 seconds; the right study in the top ten for 40 of 40 title searches, the
+same as SQLite; about 15 ms per query.
 
 Structured filters only remove a record when its own metadata *positively*
 conflicts. Missing metadata keeps the record and surfaces an unknown — dropping
