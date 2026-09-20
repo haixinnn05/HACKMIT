@@ -1,8 +1,9 @@
 import type { ReactNode } from "react";
-import { CaretRight } from "@phosphor-icons/react/dist/ssr";
+import { CaretRight, CheckCircle } from "@phosphor-icons/react/dist/ssr";
 import { Avatar, Callout, Card, DataRow } from "@/components/ui";
 import { requestNow } from "@/lib/clock";
-import { getGrantByToken, getParticipant, getPersonalNote, listQuestions } from "@/lib/repo";
+import { getCheckIn, getGrantByToken, getParticipant, getPersonalNote, listQuestions } from "@/lib/repo";
+import { checkInAction } from "@/app/actions";
 import { isAnswered } from "@/lib/questions";
 
 export const dynamic = "force-dynamic";
@@ -43,6 +44,7 @@ export default async function HandoffPage({ params }: { params: Promise<{ token:
   const sex = participant.sex ? participant.sex[0] + participant.sex.slice(1).toLowerCase() : null;
   const facts = participant.clinicalFacts.filter((fact) => allowed.has(`fact:${fact.key}`));
   const note = allowed.has("age") ? getPersonalNote(participant.id) : null;
+  const checkedInAt = getCheckIn(grant.id);
   const questions = allowed.has("questions")
     ? listQuestions({ participantId: participant.id }).filter((q) => !isAnswered(q)) : [];
 
@@ -141,7 +143,8 @@ export default async function HandoffPage({ params }: { params: Promise<{ token:
 
       <div className="space-y-2.5">
         {sections.map((section) => (
-          <Card key={section.id}><details className="group">
+          // Who they are and their history are what a check-in is verified against, so both start open.
+          <Card key={section.id}><details className="group" open={section.id === "personal" || section.id === "medical"}>
             <summary className="press flex min-h-16 cursor-pointer list-none items-center gap-3.5 px-4 py-3">
               <span className="min-w-0 flex-1">
                 <span className="block text-[14px] font-bold text-ink">{section.title}</span>
@@ -157,6 +160,19 @@ export default async function HandoffPage({ params }: { params: Promise<{ token:
       {!allowed.has("contact") ? (
         <Callout title="Contact details were not shared." />
       ) : null}
+
+      {checkedInAt ? (
+        <p role="status" className="flex min-h-13 items-center justify-center gap-2 rounded-full bg-mint-soft px-4 text-[14.5px] font-bold text-ink">
+          <CheckCircle size={20} weight="fill" /> Checked in at {new Date(checkedInAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}
+        </p>
+      ) : (
+        <form action={checkInAction}>
+          <input type="hidden" name="token" value={token} />
+          <button type="submit" className="cta inline-flex min-h-13 w-full items-center justify-center gap-2 rounded-full text-[15px] font-bold text-white">
+            <CheckCircle size={20} weight="bold" /> Check in {name.split(" ")[0]}
+          </button>
+        </form>
+      )}
     </div>
   );
 }

@@ -141,10 +141,12 @@ LLM_MODEL_FAST=muse-spark-1.2            # used where someone is waiting on an a
 `npm run ai:check` reports exactly what is and is not working, without printing the
 key. `npm run ai:warm` pre-generates the summaries the demo visits.
 
-The model does three things: rewrites a study summary in plain language, answers a
-question from a study's own text, and suggests openers for two peers who have
-connected. It decides nothing. Eligibility, peer matching and the burden arithmetic
-are rules, because they have to be explainable and reproducible.
+The model does four things: rewrites a study summary in plain language, answers a
+question from a study's own text, matches two participants who might want to talk,
+and suggests openers once they have connected. Eligibility and the burden arithmetic
+stay rules, because they have to be explainable and reproducible. For peer matching
+the model ranks and explains, inside a boundary that code enforces on both sides
+(see "Talking with a peer").
 
 How it is kept honest and affordable:
 
@@ -186,14 +188,25 @@ is built around that document's own cautions:
   person kept back. An unknown fact never counts as something in common.
 - **Not while enrolled.** People are not paired about a study either has joined,
   because comparing experiences inside a trial can reveal treatment groups.
-- **Transparent scoring.** Pairing is done by rule and explained in plain words. A
-  language model (Meta Llama, when enabled) only suggests conversation starters for
-  two people who have already connected, from their shared overlaps and the study's
-  public title. It cannot send anything.
+- **Matched by Meta AI, inside a boundary it cannot cross.** Code decides who may be
+  compared at all (opted in, not enrolled, and a different diagnosis is never a
+  match). Code then builds a mutual view of each pair: only the fields both people
+  offered, only facts both actually know, age as a decade, and no names, aliases,
+  ids or contact details. The model sees nothing else. It ranks the pairs and says
+  what they share in plain words, which lets it read meaning a rule cannot (that a
+  lumpectomy is surgery, that two people both fit visits around work). Code then
+  checks the answer: a reason is kept only if it names a field in that pair's
+  mutual view. The guarantee does not depend on the model behaving, because it was
+  never given what a person held back. The screen says which matcher produced the
+  list, and the rule-based matcher in `peers.ts` takes over when no model answers.
+- **Openers after connecting.** Once two people have both agreed to talk, the model
+  suggests conversation starters from their shared overlaps and the study's public
+  title. It cannot send anything.
 - **Consent both ways, and a way out.** The other person must accept; either can end
   or report; a third person gets a 404.
 
-`npm run test:peers` checks these rules directly.
+`npm run test:peers` checks these rules directly, including what the model is allowed
+to see and what happens when a model answers with reasons it should not have.
 
 ### Insight, from OpenAlex
 

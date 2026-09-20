@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
-  addSavedReply, audit, clearEnrollment, clearTodos, createGrant, deleteSavedReply, findHandoffTokenByPassNumber, deleteQuestionDraft, getQuestion, saveQuestionDraft, createInquiry, createQuestion, ensureTodo, getInquiry, getOpenInquiryForTrial, getParticipant, getParticipatingEnrollment, getTrial,
+  addSavedReply, audit, checkInByToken, clearEnrollment, clearTodos, createGrant, deleteSavedReply, findHandoffTokenByPassNumber, deleteQuestionDraft, getQuestion, saveQuestionDraft, createInquiry, createQuestion, ensureTodo, getInquiry, getOpenInquiryForTrial, getParticipant, getParticipatingEnrollment, getTrial,
   listConfirmedCriterionIds, listEnrollments, listQuestions, recordMilestone, setCriterionCheck, setPersonalNote, revokeGrant, saveTrial, setInquiryState, toggleTodo,
   unsaveTrial, updateParticipant, updateQuestion, upsertEnrollment,
 } from "@/lib/repo";
@@ -461,6 +461,20 @@ export async function openScannedPassAction(token: string) {
   redirect(safe ? `/handoff/${safe}?from=clinic` : "/clinic/scan?missed=1");
 }
 
+/**
+ * Checks the participant in from their scanned passport. The token is the only
+ * proof needed: holding it means they showed you their code. An expired or
+ * revoked code falls through to the same neutral screen as any dead token.
+ */
+export async function checkInAction(formData: FormData) {
+  const token = String(formData.get("token") ?? "");
+  const safe = /^[A-Za-z0-9_-]{8,128}$/.test(token) ? token : null;
+  if (!safe) redirect("/clinic/scan?missed=1");
+  checkInByToken(safe, STAFF.id);
+  revalidatePath(`/handoff/${safe}`);
+  revalidatePath("/passport");
+}
+
 export async function addSavedReplyAction(formData: FormData) {
   const answer = String(formData.get("answer") ?? "").trim();
   const keywords = String(formData.get("keywords") ?? "").toLowerCase().split(",").map((k) => k.trim()).filter(Boolean);
@@ -580,12 +594,13 @@ export async function savePeerOptInAction(formData: FormData) {
 
 export async function requestPeerAction(formData: FormData) {
   const participant = await getActiveParticipant();
-  const { createPeerConnection, findPeerMatches } = await import("@/lib/peer-repo");
+  const { createPeerConnection, findPeerMatchesSmart } = await import("@/lib/peer-repo");
   const trialId = String(formData.get("trialId") ?? "") || null;
   const toId = String(formData.get("toId"));
   // Re-run the match on the server. A request is only possible to someone the
   // matcher actually suggested, so the form cannot be used to reach anyone else.
-  const outcome = findPeerMatches(participant.id, trialId);
+  // The model's answer for the same inputs is cached, so this is the list they saw.
+  const outcome = await findPeerMatchesSmart(participant.id, trialId);
   const match = outcome.status === "ok" ? outcome.matches.find((m) => m.participantId === toId) : null;
   if (!match) return;
   const connection = createPeerConnection({

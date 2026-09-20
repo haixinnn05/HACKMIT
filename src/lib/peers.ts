@@ -3,11 +3,10 @@ import type { ParticipantProfile } from "./types";
 /**
  * Peer matching: finding someone in a similar situation to talk to about a study.
  *
- * The scoring is a transparent rule set, not a model. Pairing people by their
- * medical background is exactly the kind of decision that has to be explainable
- * to both of them, and a similarity score from a model would not be. A language
- * model is used one step later and only to suggest what two people who have
- * already connected might talk about.
+ * This file is the rule set. It decides who may be compared at all, and it is
+ * the fallback matcher when no language model is connected. When one is, the
+ * model ranks and explains matches (see peer-ai.ts), but only ever from the
+ * fields both people offered, and every reason it gives is checked against them.
  *
  * What keeps this safe:
  *  - Opt-in, and only offered fields are compared. A field takes part in matching
@@ -58,6 +57,17 @@ const stageNumber = (profile: ParticipantProfile) => {
   const roman = stage.match(/\b(iv|iii|ii|i)\b/)?.[1];
   return roman ? { i: 1, ii: 2, iii: 3, iv: 4 }[roman as "i"] : Number(stage.match(/\d/)?.[0]) || null;
 };
+
+/**
+ * True when both people offered their diagnosis and the two differ. This stays a
+ * rule in code whatever else does the matching: a different diagnosis is not a
+ * weaker match, it is not a match.
+ */
+export function differentDiagnosis(me: ParticipantProfile, mine: PeerOptIn, them: ParticipantProfile, theirs: PeerOptIn): boolean {
+  if (!mine.offers.includes("condition") || !theirs.offers.includes("condition")) return false;
+  const a = conditionFamily(me.condition), b = conditionFamily(them.condition);
+  return Boolean(a && b && a !== b);
+}
 
 export function scorePair(
   me: ParticipantProfile, mine: PeerOptIn, them: ParticipantProfile, theirs: PeerOptIn, sameStudy: boolean

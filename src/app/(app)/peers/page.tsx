@@ -1,8 +1,9 @@
+import { Suspense } from "react";
 import Link from "next/link";
-import { CaretLeft, CaretRight, GearSix, HandHeart, UsersThree } from "@phosphor-icons/react/dist/ssr";
+import { CaretLeft, CaretRight, GearSix, HandHeart, Sparkle, UsersThree } from "@phosphor-icons/react/dist/ssr";
 import { Hills } from "@/components/Brand";
 import { Avatar, Callout, Card, Empty, LinkButton, Pill, SectionHeading } from "@/components/ui";
-import { findPeerMatches, getPeerOptIn, listPeerConnections } from "@/lib/peer-repo";
+import { findPeerMatches, findPeerMatchesSmart, getPeerOptIn, listPeerConnections } from "@/lib/peer-repo";
 import { getTrial } from "@/lib/repo";
 import { getActiveParticipant } from "@/lib/session";
 import { requestPeerAction } from "@/app/actions";
@@ -124,10 +125,44 @@ export default async function PeersPage({ searchParams }: { searchParams: Promis
 
       {outcome.status === "ok" ? (
         <section aria-labelledby="matches-heading">
-          <SectionHeading id="matches-heading" hint="Chosen by rule from what you both offered to share. You see an alias and what you have in common, nothing more.">
-            Suggested for you
-          </SectionHeading>
-          {outcome.matches.length === 0 ? (
+          <h2 id="matches-heading" className="mb-2.5 text-[15px] font-bold tracking-[-0.01em] text-ink">Suggested for you</h2>
+          <Suspense fallback={
+            <Card className="flex items-center gap-3 p-4" >
+              <Sparkle size={20} weight="fill" className="shrink-0 animate-pulse text-iris" />
+              <p role="status" className="text-[13px] leading-relaxed text-ink-soft">
+                <span className="font-bold text-ink">Comparing what you both chose to share.</span> Only the fields you and the other person both offered are looked at. This can take a few seconds the first time.
+              </p>
+            </Card>
+          }>
+            <Matches participantId={participant.id} trialId={trial?.id ?? null} />
+          </Suspense>
+        </section>
+      ) : null}
+    </div>
+  );
+}
+
+/**
+ * The suggestions, streamed in because a language model may be ranking them.
+ * The line above the list says who did the matching, model or rules, and what
+ * it was allowed to look at.
+ */
+async function Matches({ participantId, trialId }: { participantId: string; trialId: string | null }) {
+  const outcome = await findPeerMatchesSmart(participantId, trialId);
+  if (outcome.status !== "ok") return null;
+  const trial = trialId ? { id: trialId } : null;
+  const byModel = outcome.matchedBy.kind === "model";
+  return (
+    <>
+      <p className="mb-2.5 flex items-start gap-2 text-[12px] leading-relaxed text-ink-faint">
+        {byModel ? <Sparkle size={15} weight="fill" className="mt-0.5 shrink-0 text-iris" /> : null}
+        <span>
+          {outcome.matchedBy.kind === "model"
+            ? <>Matched by Meta AI ({outcome.matchedBy.model}). It was shown only the fields you and the other person <span className="font-semibold text-ink-soft">both</span> offered, with no names or contact details, and every reason below was checked against them.</>
+            : <>{outcome.matchedBy.why} Only fields you both offered are compared.</>}
+        </span>
+      </p>
+      {outcome.matches.length === 0 ? (
             <Empty title="Nobody close enough right now" icon={<UsersThree size={22} />}>
               Offering a little more in your settings can help. We would rather suggest nobody than a poor match.
             </Empty>
@@ -164,8 +199,6 @@ export default async function PeersPage({ searchParams }: { searchParams: Promis
               ))}
             </ul>
           )}
-        </section>
-      ) : null}
-    </div>
+    </>
   );
 }
