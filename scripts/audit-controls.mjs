@@ -38,10 +38,10 @@ const coordinatorPath = await page.locator('#main a[href^="/clinic/inbox/"]').fi
 await go(coordinatorPath);
 await page.locator('button:has-text("Send this answer")').first().click();
 await page.waitForSelector("text=Sent by R. Alvarez");
+await page.click('button:has-text("Approve for this study")');
+await page.waitForSelector("text=Approved for this study");
 await page.request.post(`${BASE}/api/role`, { data: { role: "participant" } });
-await go(inquiryPath);
-await page.click('button:has-text("I have agreed to take part")');
-await page.waitForURL(/\/timeline/);
+await go("/timeline");
 
 const screens = [
   "/", "/explore", "/trial/TP-FIX-001", "/trial/TP-FIX-001?tab=eligibility", "/trial/TP-FIX-001?tab=expect", "/trial/TP-FIX-001?tab=insight",

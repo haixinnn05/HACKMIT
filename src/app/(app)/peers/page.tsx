@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { CaretRight, GearSix, HandHeart, UsersThree } from "@phosphor-icons/react/dist/ssr";
-import { Avatar, Callout, Card, Empty, LinkButton, Pill, ScreenHeader, SectionHeading } from "@/components/ui";
+import { CaretLeft, CaretRight, GearSix, HandHeart, UsersThree } from "@phosphor-icons/react/dist/ssr";
+import { Hills } from "@/components/Brand";
+import { Avatar, Callout, Card, Empty, LinkButton, Pill, SectionHeading } from "@/components/ui";
 import { findPeerMatches, getPeerOptIn, listPeerConnections } from "@/lib/peer-repo";
 import { getTrial } from "@/lib/repo";
 import { getActiveParticipant } from "@/lib/session";
@@ -45,16 +46,37 @@ export default async function PeersPage({ searchParams }: { searchParams: Promis
 
   return (
     <div className="space-y-4">
-      <ScreenHeader
-        back={trialBack}
-        title="Talk with someone like you"
-        sub={trial ? `About: ${trial.briefTitle}` : "People in a similar situation, who are also weighing a study."}
-        action={optIn ? (
-          <Link href={`/peers/settings?returnTo=${encodeURIComponent(here)}`} className="-mr-2 grid size-11 place-items-center rounded-full text-ink hover:bg-ink/5">
-            <GearSix size={22} /><span className="sr-only">Matching settings</span>
-          </Link>
-        ) : undefined}
-      />
+      <div>
+        <header className="relative -mx-5 -mt-5 overflow-hidden bg-lavender px-5 pb-9 pt-3">
+          <Hills />
+          <div className="relative flex min-h-11 items-center justify-between">
+            <Link href={trialBack} className="-ml-2.5 grid size-11 place-items-center rounded-full text-ink hover:bg-ink/5">
+              <CaretLeft size={20} weight="bold" />
+              <span className="sr-only">Back</span>
+            </Link>
+            {optIn ? (
+              <Link href={`/peers/settings?returnTo=${encodeURIComponent(here)}`} className="-mr-2 grid size-11 place-items-center rounded-full text-ink hover:bg-ink/5">
+                <GearSix size={22} /><span className="sr-only">Matching settings</span>
+              </Link>
+            ) : null}
+          </div>
+        </header>
+        <div className="relative z-10 -mt-8 flex items-center gap-3 rounded-[20px] border border-rule bg-surface px-3.5 py-3 shadow-[0_2px_10px_rgba(14,13,99,0.06)]">
+          <span className="grid size-11 shrink-0 place-items-center rounded-full bg-iris-soft text-iris">
+            <HandHeart size={22} weight="fill" />
+          </span>
+          <div className="min-w-0">
+            <h1 className="text-[15px] font-bold leading-snug tracking-[-0.01em] text-iris">Talk with someone like you</h1>
+            <p className="mt-0.5 text-[12px] leading-snug text-ink-soft">
+              {trial ? `About this study` : "Same boat, same questions."}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {trial ? (
+        <p className="px-0.5 text-[12.5px] leading-snug text-ink-soft">{trial.briefTitle}</p>
+      ) : null}
 
       {outcome.status === "not_opted_in" ? (
         <Card className="p-5 text-center">
@@ -74,6 +96,30 @@ export default async function PeersPage({ searchParams }: { searchParams: Promis
           a person is in and change what people report. So we don&rsquo;t pair people about a study they
           have joined. Your study team is the right place for questions now.
         </Callout>
+      ) : null}
+
+      {connections.length ? (
+        <section aria-labelledby="conversations-heading">
+          <SectionHeading id="conversations-heading">Your conversations</SectionHeading>
+          <Card className="overflow-hidden">
+            {connections.map((connection) => {
+              const otherId = connection.fromId === participant.id ? connection.toId : connection.fromId;
+              const other = getPeerOptIn(otherId);
+              const incoming = connection.state === "pending" && connection.toId === participant.id;
+              return (
+                <Link key={connection.id} href={`/peers/${connection.id}`} className="flex items-center gap-3 border-b border-rule px-4 py-3 last:border-0 hover:bg-sunken">
+                  <Avatar name={other?.alias ?? "?"} size="size-10 text-xs" />
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-[14px] font-bold text-ink">{other?.alias ?? "Someone who has left"}</span>
+                    <span className="block truncate text-[12px] text-ink-soft">{connection.trialId ? getTrial(connection.trialId)?.briefTitle : "General"}</span>
+                  </span>
+                  <Pill tone={incoming ? "blush" : STATE[connection.state].tone}>{incoming ? "Wants to talk" : STATE[connection.state].label}</Pill>
+                  <CaretRight size={15} weight="bold" className="shrink-0 text-ink-faint" />
+                </Link>
+              );
+            })}
+          </Card>
+        </section>
       ) : null}
 
       {outcome.status === "ok" ? (
@@ -118,30 +164,6 @@ export default async function PeersPage({ searchParams }: { searchParams: Promis
               ))}
             </ul>
           )}
-        </section>
-      ) : null}
-
-      {connections.length ? (
-        <section aria-labelledby="conversations-heading">
-          <SectionHeading id="conversations-heading">Your conversations</SectionHeading>
-          <Card className="overflow-hidden">
-            {connections.map((connection) => {
-              const otherId = connection.fromId === participant.id ? connection.toId : connection.fromId;
-              const other = getPeerOptIn(otherId);
-              const incoming = connection.state === "pending" && connection.toId === participant.id;
-              return (
-                <Link key={connection.id} href={`/peers/${connection.id}`} className="flex items-center gap-3 border-b border-rule px-4 py-3 last:border-0 hover:bg-sunken">
-                  <Avatar name={other?.alias ?? "?"} size="size-10 text-xs" />
-                  <span className="min-w-0 flex-1">
-                    <span className="block text-[14px] font-bold text-ink">{other?.alias ?? "Someone who has left"}</span>
-                    <span className="block truncate text-[12px] text-ink-soft">{connection.trialId ? getTrial(connection.trialId)?.briefTitle : "General"}</span>
-                  </span>
-                  <Pill tone={incoming ? "blush" : STATE[connection.state].tone}>{incoming ? "Wants to talk" : STATE[connection.state].label}</Pill>
-                  <CaretRight size={15} weight="bold" className="shrink-0 text-ink-faint" />
-                </Link>
-              );
-            })}
-          </Card>
         </section>
       ) : null}
     </div>

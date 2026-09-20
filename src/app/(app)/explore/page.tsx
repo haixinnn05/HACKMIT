@@ -3,8 +3,8 @@ import { CaretRight, MagnifyingGlass, X } from "@phosphor-icons/react/dist/ssr";
 import { AutoSubmitSelect } from "@/components/AutoSubmitSelect";
 import { Card, Empty, Pill, ScreenHeader } from "@/components/ui";
 import { openedFromMap } from "@/lib/map-return";
-import { assessTrial } from "@/lib/assess";
-import { getTrial } from "@/lib/repo";
+import { assessTrial, criteriaMatchCopy } from "@/lib/assess";
+import { getTrial, listConfirmedCriterionIdsByTrial } from "@/lib/repo";
 import { searchForProfile } from "@/lib/search";
 import { getActiveParticipant } from "@/lib/session";
 import type { Trial, TrialAssessment } from "@/lib/types";
@@ -15,9 +15,7 @@ const KM_PER_MILE = 1.609;
 
 /** The label on a card. None of these is a verdict, and none says "you qualify". */
 function cardStatus(assessment: TrialAssessment) {
-  if (assessment.overall === "likely_conflict") return { label: "Things to review", tone: "blush" as const };
-  if (assessment.overall === "needs_more_information") return { label: "Questions remain", tone: "peach" as const };
-  return { label: "Potential option", tone: "mint" as const };
+  return criteriaMatchCopy(assessment);
 }
 
 export default async function ExplorePage({
@@ -25,6 +23,7 @@ export default async function ExplorePage({
 }: { searchParams: Promise<{ q?: string; phase?: string; near?: string; sort?: string; cond?: string; from?: string }> }) {
   const params = await searchParams;
   const participant = await getActiveParticipant();
+  const confirmedByTrial = listConfirmedCriterionIdsByTrial(participant.id);
 
   // The condition chip is a real filter. Turning it off searches every record
   // in the snapshot rather than only the person's own condition.
@@ -33,7 +32,10 @@ export default async function ExplorePage({
     text: params.q || null, limit: 40, ...(anyCondition ? { condition: null } : {}),
   });
 
-  let rows = result.hits.map((hit) => ({ hit, assessment: assessTrial(hit.trial, participant) }));
+  let rows = result.hits.map((hit) => ({
+    hit,
+    assessment: assessTrial(hit.trial, participant, confirmedByTrial.get(hit.trial.id) ?? []),
+  }));
 
   if (params.phase) rows = rows.filter(({ hit }) => hit.trial.phases.includes(params.phase!));
 
@@ -116,7 +118,7 @@ export default async function ExplorePage({
 
       {demoStudy ? (
         <ul className="space-y-3">
-          <TrialCard trial={demoStudy} assessment={assessTrial(demoStudy, participant)} />
+          <TrialCard trial={demoStudy} assessment={assessTrial(demoStudy, participant, confirmedByTrial.get(demoStudy.id) ?? [])} />
         </ul>
       ) : null}
 
@@ -149,9 +151,10 @@ function TrialCard({
       <Link href={`/trial/${trial.id}`} className="press flex items-center gap-2 p-4">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-1.5">
-            <Pill tone={status.tone}>{status.label}</Pill>
+            <Pill tone={status.tone}>{status.title}</Pill>
           </div>
           <h3 className="mt-2 line-clamp-2 text-[14.5px] font-bold leading-snug text-ink">{trial.briefTitle ?? trial.id}</h3>
+          <p className="mt-1 text-[12px] leading-snug text-ink-soft">{status.body}</p>
           <p className="mt-1 flex flex-wrap gap-x-2 text-[12.5px] text-ink-soft">
             <span>{trial.phases.length ? trial.phases.join(", ").replace(/PHASE/g, "Phase ").replace(/\bNA\b/, "No phase (not a drug study)") : "Phase not stated"}</span>
             {condition ? <><span aria-hidden className="text-rule-strong">|</span><span className="truncate">{condition}</span></> : null}

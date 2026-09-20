@@ -16,7 +16,7 @@ const SIDE_DOODLES = ["tree", "birds", "bush", "flower", "tree"] as const;
  * A top-to-bottom board-game path. Stops alternate left and right, joined by a
  * dotted trail, so the next thing to do reads as a place on a map.
  */
-export function JourneyMap({ stops }: { stops: JourneyStop[] }) {
+export function JourneyMap({ stops, startAt = 1 }: { stops: JourneyStop[]; startAt?: number }) {
   const currentIndex = stops.findIndex((stop) => !stop.done);
 
   return (
@@ -56,7 +56,7 @@ export function JourneyMap({ stops }: { stops: JourneyStop[] }) {
                         : "border-2 border-dashed border-rule-strong bg-sunken text-ink-faint"
                   }`}
                 >
-                  {stop.done ? <Check size={15} weight="bold" /> : index + 1}
+                  {stop.done ? <Check size={15} weight="bold" /> : startAt + index}
                 </span>
                 <p className={`text-[15px] font-bold leading-snug ${current ? "text-iris-deep" : "text-ink"}`}>
                   {stop.title}

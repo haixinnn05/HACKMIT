@@ -19,7 +19,7 @@ export default async function CoordinatorInbox({ searchParams }: { searchParams:
 
   const inquiries = listInquiriesForCoordinator();
   const needsReview = inquiries.filter((i) => ["shared", "acknowledged"].includes(i.state));
-  const replied = inquiries.filter((i) => ["answered", "needs_information", "closed"].includes(i.state));
+  const replied = inquiries.filter((i) => ["answered", "needs_information", "approved", "closed"].includes(i.state));
   const shown = tab === "review" ? needsReview : tab === "replied" ? replied : inquiries;
 
   return (

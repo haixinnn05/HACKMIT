@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { GearSix } from "@phosphor-icons/react/dist/ssr";
 import { PassportSurface, type PassportSummary } from "@/components/PassportSurface";
+import { TrialStamps } from "@/components/TrialStamps";
 import { Card, Pill, ScreenHeader, SectionHeading } from "@/components/ui";
-import { listGrants, listMilestones, listQuestions } from "@/lib/repo";
+import { getTrial, listEnrollments, listGrants, listQuestions } from "@/lib/repo";
 import { getActiveParticipant } from "@/lib/session";
 import { revokeGrantAction } from "@/app/actions";
 import { isAnswered } from "@/lib/questions";
@@ -16,8 +17,23 @@ export const dynamic = "force-dynamic";
  */
 export default async function PassportPage() {
   const participant = await getActiveParticipant();
-  const grants = listGrants(participant.id);
-  const milestones = listMilestones(participant.id);
+  const grants = listGrants(participant.id).filter((grant) => grant.state !== "revoked");
+  const stamps = listEnrollments(participant.id)
+    .filter((entry) => entry.status === "completed")
+    .map((entry) => {
+      const trial = getTrial(entry.trialId);
+      const site = trial?.sites[0];
+      const place = site?.city ? `${site.city}${site.state ? `, ${site.state}` : ""}` : null;
+      const year = new Date(entry.createdAt).getFullYear();
+      return {
+        trialId: entry.trialId,
+        title: trial?.acronym || trial?.briefTitle || entry.trialId,
+        fullTitle: trial?.briefTitle || trial?.acronym || entry.trialId,
+        when: String(year),
+        place,
+        past: true,
+      };
+    });
   const openQuestions = listQuestions({ participantId: participant.id }).filter((q) => !isAnswered(q)).length;
 
   const practical = [
@@ -85,7 +101,7 @@ export default async function PassportPage() {
                         <button type="submit" className="press min-h-11 rounded-full bg-blush-soft px-4 text-[13px] font-bold text-blush">Revoke</button>
                       </form>
                     ) : (
-                      <Pill>{grant.state === "revoked" ? "Revoked" : "Expired"}</Pill>
+                      <Pill>Expired</Pill>
                     )}
                   </div>
                 </Card>
@@ -97,18 +113,7 @@ export default async function PassportPage() {
 
       <section aria-labelledby="stamps-heading">
         <SectionHeading id="stamps-heading">Stamps</SectionHeading>
-        {milestones.length === 0 ? (
-          <p className="text-[12.5px] text-ink-soft">None yet.</p>
-        ) : (
-          <div className="flex flex-wrap gap-2">
-            {milestones.map((milestone, index) => (
-              <span key={milestone.id} style={{ animationDelay: `${index * 55}ms` }}
-                className="animate-stamp inline-flex items-center rounded-full bg-iris-soft px-3 py-1.5 text-[12px] font-bold text-iris-deep">
-                {milestone.label}
-              </span>
-            ))}
-          </div>
-        )}
+        <TrialStamps stamps={stamps} />
       </section>
     </div>
   );

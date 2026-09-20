@@ -10,6 +10,7 @@ const DECISION = {
   participating: { label: "Taking part", tone: "mint" as const },
   considering: { label: "Thinking it over", tone: "iris" as const },
   declined: { label: "Decided against", tone: "neutral" as const },
+  completed: { label: "Took part", tone: "mint" as const },
 };
 
 export default async function SavedTrialsPage() {

@@ -45,6 +45,7 @@ const inquiryUrl = page.url();
 await ask("Can my family member come with me to visits?");
 await ask("What happens after the study ends?");
 
+await page.request.post(`${BASE}/api/role`, { data: { role: "clinic" } });
 await go("/clinic/inbox");
 await page.locator('#main a[href^="/clinic/inbox/"]').first().click();
 await page.waitForURL(/\/clinic\/inbox\/[0-9a-f-]{36}/);
@@ -56,14 +57,15 @@ for (const key of ["parking", "travel assistance"]) {
   await page.waitForLoadState("networkidle");
   await page.waitForTimeout(400);
 }
+await page.click('button:has-text("Approve for this study")');
+await page.waitForSelector("text=Approved for this study");
 
+await page.request.post(`${BASE}/api/role`, { data: { role: "participant" } });
 await go("/questions"); await snap(5);
 await go("/inbox"); await snap(9);
 await go("/profile"); await snap(10);
 
-await page.goto(inquiryUrl, { waitUntil: "domcontentloaded" });
-await page.click('button:has-text("I have agreed to take part")');
-await page.waitForURL(/\/timeline/);
+await go("/timeline");
 await page.waitForLoadState("networkidle");
 await snap(12);
 

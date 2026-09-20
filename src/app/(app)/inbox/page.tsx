@@ -14,6 +14,7 @@ const STATE: Record<InquiryState, { label: string; tone: "peach" | "mint" | "iri
   acknowledged: { label: "Opened", tone: "iris", preview: "A coordinator has opened this." },
   needs_information: { label: "Needs information", tone: "neutral", preview: "The team asked for something." },
   answered: { label: "Answered", tone: "mint", preview: "You have a reply." },
+  approved: { label: "Approved", tone: "mint", preview: "The study team approved this." },
   closed: { label: "Closed", tone: "neutral", preview: "Closed." },
 };
 

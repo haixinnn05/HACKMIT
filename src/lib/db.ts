@@ -189,6 +189,17 @@ CREATE TABLE IF NOT EXISTS todos (
   created_at TEXT NOT NULL
 );
 
+-- Requirements the person marked as matching after reading the study, so the
+-- match count can move without rewriting passport facts.
+CREATE TABLE IF NOT EXISTS criterion_checks (
+  participant_id TEXT NOT NULL REFERENCES participants(id) ON DELETE CASCADE,
+  trial_id TEXT NOT NULL,
+  criterion_id TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (participant_id, trial_id, criterion_id)
+);
+CREATE INDEX IF NOT EXISTS idx_criterion_checks_participant ON criterion_checks(participant_id);
+
 -- When the participant last opened an inquiry, so the inbox can show what is new
 -- to them without changing the inquiry's own state.
 CREATE TABLE IF NOT EXISTS inquiry_reads (
@@ -288,6 +299,16 @@ export function getDb(): Database.Database {
     instance = openDatabase();
     seedIfEmpty(instance);
   }
+  instance.exec(`
+    CREATE TABLE IF NOT EXISTS criterion_checks (
+      participant_id TEXT NOT NULL REFERENCES participants(id) ON DELETE CASCADE,
+      trial_id TEXT NOT NULL,
+      criterion_id TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      PRIMARY KEY (participant_id, trial_id, criterion_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_criterion_checks_participant ON criterion_checks(participant_id);
+  `);
   return instance;
 }
 
@@ -506,6 +527,19 @@ export function seedIfEmpty(db: Database.Database, force = false) {
     (fixture?.cannedAnswers ?? []).forEach((reply: any, index: number) => {
       insertReply.run(`seed-${index}`, fixture.studyId, JSON.stringify(reply.matches ?? []), reply.answer, reply.citation ?? null, new Date().toISOString());
     });
+
+    // Past studies Maria has already been to, so the passport has stamps to open.
+    const insertEnrollment = db.prepare(
+      "INSERT OR REPLACE INTO enrollments (id, participant_id, trial_id, status, visits, created_at) VALUES (?,?,?,?,?,?)"
+    );
+    for (const past of [
+      { id: "enroll-maria-ashby", trialId: "NCT06185205", at: "2023-04-12T12:00:00.000Z" },
+      { id: "enroll-maria-heat", trialId: "NCT06222957", at: "2024-09-03T12:00:00.000Z" },
+    ]) {
+      const exists = db.prepare("SELECT id FROM trials WHERE id = ?").get(past.trialId);
+      if (!exists) continue;
+      insertEnrollment.run(past.id, "p-maria", past.trialId, "completed", "[]", past.at);
+    }
 
     db.prepare("INSERT OR REPLACE INTO meta (key, value) VALUES ('seeded_at', ?)").run(
       new Date().toISOString()

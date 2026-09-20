@@ -208,6 +208,7 @@ export type InquiryState =
   | "acknowledged"
   | "needs_information"
   | "answered"
+  | "approved"
   | "closed";
 
 export type QuestionState =
@@ -277,7 +278,7 @@ export interface EnrollmentEntry {
   id: string;
   participantId: string;
   trialId: string;
-  status: "considering" | "participating" | "declined";
+  status: "considering" | "participating" | "declined" | "completed";
   visits: { name: string; date: string; onSiteHours: number; location: string | null }[];
   createdAt: string;
 }

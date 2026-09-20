@@ -498,6 +498,12 @@ export function listEnrollments(participantId: string): EnrollmentEntry[] {
     .all(participantId) as any[]).map(rowToEnrollment);
 }
 
+/** The study currently being taken. Only one is allowed at a time. */
+export function getParticipatingEnrollment(participantId: string): EnrollmentEntry | null {
+  const active = listEnrollments(participantId).filter((entry) => entry.status === "participating");
+  return active.at(-1) ?? null;
+}
+
 export function clearEnrollment(participantId: string, trialId: string) {
   getDb().prepare("DELETE FROM enrollments WHERE participant_id = ? AND trial_id = ?").run(participantId, trialId);
 }
@@ -540,6 +546,43 @@ export function toggleTodo(id: string, participantId: string) {
 export function clearTodos(participantId: string, trialId: string) {
   getDb().prepare("DELETE FROM todos WHERE participant_id = ? AND trial_id = ?")
     .run(participantId, trialId);
+}
+
+/* -------------------------------------------------------- criterion checks */
+
+export function listConfirmedCriterionIds(participantId: string, trialId: string): string[] {
+  return (getDb()
+    .prepare("SELECT criterion_id FROM criterion_checks WHERE participant_id = ? AND trial_id = ?")
+    .all(participantId, trialId) as { criterion_id: string }[])
+    .map((row) => row.criterion_id);
+}
+
+export function listConfirmedCriterionIdsByTrial(participantId: string): Map<string, string[]> {
+  const rows = getDb()
+    .prepare("SELECT trial_id, criterion_id FROM criterion_checks WHERE participant_id = ?")
+    .all(participantId) as { trial_id: string; criterion_id: string }[];
+  const byTrial = new Map<string, string[]>();
+  for (const row of rows) {
+    const list = byTrial.get(row.trial_id) ?? [];
+    list.push(row.criterion_id);
+    byTrial.set(row.trial_id, list);
+  }
+  return byTrial;
+}
+
+export function setCriterionCheck(
+  participantId: string, trialId: string, criterionId: string, met: boolean,
+) {
+  const db = getDb();
+  if (met) {
+    db.prepare(`
+      INSERT OR IGNORE INTO criterion_checks (participant_id, trial_id, criterion_id, created_at)
+      VALUES (?, ?, ?, ?)
+    `).run(participantId, trialId, criterionId, new Date().toISOString());
+    return;
+  }
+  db.prepare("DELETE FROM criterion_checks WHERE participant_id = ? AND trial_id = ? AND criterion_id = ?")
+    .run(participantId, trialId, criterionId);
 }
 
 /* -------------------------------------------------------------- inbox reads */

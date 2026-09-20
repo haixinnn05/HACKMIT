@@ -1,8 +1,8 @@
 import { notFound } from "next/navigation";
 import { Card, DataRow, Pill, ScreenHeader, SectionHeading, StickyAction } from "@/components/ui";
 import { assessTrial } from "@/lib/assess";
-import { getGrant, getInquiry, getParticipant, getQuestionDraft, getTrial, isGrantActive, listQuestions, listSavedReplies } from "@/lib/repo";
-import { coordinatorAcknowledgeAction, coordinatorAnswerAction, coordinatorAssignAction, coordinatorRequestInfoAction } from "@/app/actions";
+import { getGrant, getInquiry, getParticipant, getParticipatingEnrollment, getQuestionDraft, getTrial, isGrantActive, listConfirmedCriterionIds, listQuestions, listSavedReplies } from "@/lib/repo";
+import { coordinatorAcknowledgeAction, coordinatorAnswerAction, coordinatorApproveAction, coordinatorAssignAction, coordinatorRequestInfoAction } from "@/app/actions";
 import type { CriterionAssessment } from "@/lib/types";
 import { isAnswered, QUESTION_STATE_LABEL, SITE_STAFF } from "@/lib/questions";
 
@@ -45,11 +45,14 @@ export default async function CoordinatorInquiryPage({ params }: { params: Promi
   const shared = inquiry.sharedFields as Record<string, unknown>;
   const application = Array.isArray(shared.application) ? shared.application as { id: string; label: string; value: string; origin: string }[] : [];
   const name = allowed.has("basics") ? participant.displayName.replace(/\s*\(synthetic\)$/, "") : "Participant";
-  const assessment = assessTrial(trial, participant);
+  const assessment = assessTrial(trial, participant, listConfirmedCriterionIds(participant.id, trial.id));
   const questions = listQuestions({ inquiryId: inquiry.id });
   // The site's own reply library, managed under Studies.
   const canned = listSavedReplies(trial.id);
   const note = inquiry.message.split("\n\n")[0];
+  const underway = getParticipatingEnrollment(participant.id);
+  const otherStudy = Boolean(underway && underway.trialId !== trial.id);
+  const approved = inquiry.state === "approved";
 
   const by = (status: CriterionAssessment["status"]) => assessment.assessments.filter((a) => a.status === status);
   const considerations: { label: string; tone: "mint" | "iris" | "peach" | "blush"; items: CriterionAssessment[] }[] = [
@@ -229,6 +232,21 @@ export default async function CoordinatorInquiryPage({ params }: { params: Promi
 
       <section className="space-y-2.5">
         <SectionHeading>Move this along</SectionHeading>
+        {approved ? (
+          <Card className="bg-mint-soft p-4">
+            <p className="text-[14px] font-bold text-ink">Approved for this study</p>
+            <p className="mt-1 text-[12.5px] leading-relaxed text-ink-soft">This person can see their study path.</p>
+          </Card>
+        ) : otherStudy ? (
+          <Card className="p-4">
+            <p className="text-[13.5px] leading-relaxed text-ink-soft">Already taking part in another study. Approve after that one is finished.</p>
+          </Card>
+        ) : (
+          <form action={coordinatorApproveAction}>
+            <input type="hidden" name="inquiryId" value={inquiry.id} />
+            <button type="submit" className="press min-h-12 w-full rounded-full border border-iris bg-iris-soft text-[14px] font-bold text-iris-deep hover:bg-iris hover:text-white">Approve for this study</button>
+          </form>
+        )}
         <form action={coordinatorAcknowledgeAction}>
           <input type="hidden" name="inquiryId" value={inquiry.id} />
           <button type="submit" className="press min-h-12 w-full rounded-full border border-rule-strong bg-surface text-[14px] font-bold text-ink hover:bg-sunken">Acknowledge receipt</button>

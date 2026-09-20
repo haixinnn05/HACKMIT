@@ -59,8 +59,7 @@ await page.request.post(`${BASE}/api/role`, { data: { role: "participant" } });
 await go("/");
 let t = await text();
 assert("1 Home greets the participant by name", /Good (morning|afternoon|evening), Maria/.test(t));
-assert("1 Home shows journey progress out of five", /\d of 5 completed/.test(t));
-assert("1 Home offers exactly one next step", (await page.locator("text=Your next step").count()) === 1);
+assert("1 Home starts with finding a trial when none is underway", t.includes("Find a trial"));
 await shot("home");
 
 /* 2. Find Clinical Trials */
@@ -170,6 +169,8 @@ await page.click('button:has-text("Send application")');
 await page.waitForURL(/\/inquiry\/[0-9a-f-]{36}/, { timeout: 20000 });
 const inquiryUrl = page.url();
 assert("8 Sharing is not presented as enrolment", (await text()).includes("Shared, waiting to be picked up"));
+await go("/");
+assert("1 Home waits for the clinic before checking approval", (await text()).includes("Waiting for approval") && (await text()).includes(", up next"));
 
 /* 11. Research Team Inbox */
 await asRole("clinic");
@@ -219,12 +220,12 @@ t = await text();
 assert("9 Inbox shows the reply as unread", t.includes("Unread (1)") && t.includes("Answered"));
 await shot("inbox");
 await go("/");
-assert("1 Home surfaces the reply", (await text()).includes("You have a reply"));
+assert("1 Home waits for clinic approval after a reply", (await text()).includes("Waiting for approval") && (await text()).includes("up next"));
 await page.goto(inquiryUrl, { waitUntil: "domcontentloaded" });
 t = await text();
 assert("9 The thread shows the full answer and its author", t.includes("validated at the Harborview garage") && t.includes("R. Alvarez"));
-assert("9 Choices include taking part, declining, and asking for help",
-  ["I have agreed to take part", "Please help me contact the study team", "I am not interested"].every((l) => t.includes(l)));
+assert("9 Choices include asking for help or declining",
+  ["Please help me contact the study team", "I am not interested"].every((l) => t.includes(l)));
 await shot("thread");
 await page.click('button:has-text("I still have a question")');
 await page.waitForSelector("text=Reopened");
@@ -249,11 +250,17 @@ await go("/questions?tab=answered");
 assert("5 The answered question moves to Answered", (await text()).includes("Answered (1)"));
 
 /* 12. Visits & Timeline */
-await page.goto(inquiryUrl, { waitUntil: "domcontentloaded" });
-await page.click('button:has-text("I have agreed to take part")');
-await page.waitForURL(/\/timeline/, { timeout: 20000 });
+await asRole("clinic");
+await go("/clinic/inbox");
+await page.locator('#main a[href^="/clinic/inbox/"]').first().click();
+await page.waitForURL(/\/clinic\/inbox\/[0-9a-f-]{36}/);
+await settle(page);
+await page.click('button:has-text("Approve for this study")');
+await page.waitForSelector("text=Approved for this study");
+await asRole("participant");
+await go("/timeline");
 t = await text();
-assert("12 Agreeing leads to a timeline of confirmed visits", ["Screening visit", "Baseline visit", "Month 3 follow-up", "Month 6 follow-up"].every((l) => t.includes(l)));
+assert("12 Clinic approval leads to a timeline of confirmed visits", ["Screening visit", "Baseline visit", "Month 3 follow-up", "Month 6 follow-up"].every((l) => t.includes(l)));
 assert("12 Visit times are not invented", t.includes("Time to be confirmed"));
 assert("12 To-dos come from what the study left unstated", t.includes("Confirm parking details") && t.includes("Plan travel arrangements"));
 await shot("timeline");
@@ -265,7 +272,8 @@ assert("12 Calendar view renders month grids", (await page.locator("#main .grid-
 await shot("calendar");
 await go("/");
 assert("1 Home reminds of the next visit", (await text()).includes("Screening visit"));
-assert("1 The journey is complete after a decision", (await text()).includes("5 of 5 completed"));
+assert("1 Home keeps a path for the study being taken", (await text()).includes("Harborview"));
+assert("1 Home marks waiting for approval as done after clinic approval", (await text()).includes("Waiting for approval") && (await text()).includes(", done"));
 await shot("home-complete");
 
 /* 10. Profile */
@@ -327,7 +335,7 @@ assert("13 The right pass number opens the shared profile, with a way back", (aw
 await shot("clinic-scan-result", staff);
 
 await page.locator('button:has-text("Revoke")').first().click();
-await page.waitForSelector("text=Revoked");
+await page.waitForSelector("text=In-person sharing code", { state: "detached" });
 await staff.goto(`${BASE}/clinic/scan`, { waitUntil: "domcontentloaded" });
 await staff.fill('input[name="pass"]', tokenPrefix);
 await staff.click('button:has-text("Open passport")');

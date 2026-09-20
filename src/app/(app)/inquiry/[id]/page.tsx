@@ -6,7 +6,7 @@ import {
 import { Hills } from "@/components/Brand";
 import { PrintButton } from "@/components/CountedTextarea";
 import { Callout, Card, LinkButton, Pill, SectionHeading } from "@/components/ui";
-import { getGrant, getInquiry, getTrial, listQuestions, markInquirySeen } from "@/lib/repo";
+import { getGrant, getInquiry, getParticipatingEnrollment, getTrial, listQuestions, markInquirySeen } from "@/lib/repo";
 import { getActiveParticipant } from "@/lib/session";
 import { decideAction, questionFollowUpAction } from "@/app/actions";
 import { isAnswered, QUESTION_STATE_LABEL } from "@/lib/questions";
@@ -50,6 +50,12 @@ const STATE_FACE: Record<InquiryState, {
     iconClass: "text-mint",
     disc: "bg-mint-soft",
   },
+  approved: {
+    copy: "The study team approved this",
+    icon: SealCheck,
+    iconClass: "text-mint",
+    disc: "bg-mint-soft",
+  },
   closed: {
     copy: "Closed",
     icon: Archive,
@@ -75,9 +81,10 @@ export default async function InquiryPage({ params }: { params: Promise<{ id: st
   const StatusIcon = face.icon;
   const answered = questions.filter((q) => isAnswered(q));
   const open = questions.filter((q) => !isAnswered(q));
+  const underway = getParticipatingEnrollment(participant.id);
+  const otherStudy = Boolean(underway && underway.trialId !== inquiry.trialId);
 
   const choices = [
-    { value: "participating", label: "I have agreed to take part" },
     { value: "help", label: "Please help me contact the study team" },
     { value: "declined", label: "I am not interested" },
   ];
@@ -167,10 +174,17 @@ export default async function InquiryPage({ params }: { params: Promise<{ id: st
       </details>
 
       {inquiry.state === "closed" ? (
-        <LinkButton href={`/apply/${inquiry.trialId}`} className="w-full">Apply</LinkButton>
+        otherStudy ? (
+          <LinkButton href="/" className="w-full">Open your path</LinkButton>
+        ) : (
+          <LinkButton href={`/apply/${inquiry.trialId}`} className="w-full">Apply</LinkButton>
+        )
       ) : (
         <section className="no-print">
           <SectionHeading>Where you stand</SectionHeading>
+          {otherStudy ? (
+            <p className="mb-2.5 text-[12.5px] leading-snug text-ink-soft">You can take part in one study at a time.</p>
+          ) : null}
           <Card className="overflow-hidden">
             {choices.map((choice) => (
               <form key={choice.value} action={decideAction} className="border-b border-rule last:border-0">

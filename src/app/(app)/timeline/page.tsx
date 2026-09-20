@@ -2,7 +2,7 @@ import { Check } from "@phosphor-icons/react/dist/ssr";
 import { Card, Empty, LinkButton, ScreenHeader, SectionHeading, Tabs } from "@/components/ui";
 import { requestNow } from "@/lib/clock";
 import { openedFromMap } from "@/lib/map-return";
-import { listEnrollments, listTodos } from "@/lib/repo";
+import { getParticipatingEnrollment, listTodos } from "@/lib/repo";
 import { getActiveParticipant } from "@/lib/session";
 import { requestVisitHelpAction, toggleTodoAction } from "@/app/actions";
 
@@ -26,11 +26,13 @@ export default async function TimelinePage({ searchParams }: { searchParams: Pro
   const now = requestNow();
   const today = new Date(now).toISOString().slice(0, 10);
 
-  const active = listEnrollments(participant.id).filter((entry) => entry.status === "participating");
-  const visits = active
-    .flatMap((entry) => entry.visits.map((visit) => ({ ...visit, trialId: entry.trialId })))
+  const enrollment = getParticipatingEnrollment(participant.id);
+  const visits = (enrollment?.visits ?? [])
+    .map((visit) => ({ ...visit, trialId: enrollment!.trialId }))
     .sort((a, b) => a.date.localeCompare(b.date));
-  const todos = listTodos(participant.id);
+  const todos = enrollment
+    ? listTodos(participant.id).filter((todo) => todo.trialId === enrollment.trialId)
+    : [];
   const nextVisit = visits.find((visit) => visit.date >= today);
 
   return (

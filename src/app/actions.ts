@@ -3,8 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import {
-  addSavedReply, audit, clearEnrollment, clearTodos, createGrant, deleteSavedReply, findHandoffTokenByPassNumber, deleteQuestionDraft, getQuestion, saveQuestionDraft, createInquiry, createQuestion, ensureTodo, getInquiry, getOpenInquiryForTrial, getParticipant, getTrial,
-  listEnrollments, listQuestions, recordMilestone, setPersonalNote, revokeGrant, saveTrial, setInquiryState, toggleTodo,
+  addSavedReply, audit, clearEnrollment, clearTodos, createGrant, deleteSavedReply, findHandoffTokenByPassNumber, deleteQuestionDraft, getQuestion, saveQuestionDraft, createInquiry, createQuestion, ensureTodo, getInquiry, getOpenInquiryForTrial, getParticipant, getParticipatingEnrollment, getTrial,
+  listConfirmedCriterionIds, listEnrollments, listQuestions, recordMilestone, setCriterionCheck, setPersonalNote, revokeGrant, saveTrial, setInquiryState, toggleTodo,
   unsaveTrial, updateParticipant, updateQuestion, upsertEnrollment,
 } from "@/lib/repo";
 import { assessTrial } from "@/lib/assess";
@@ -83,6 +83,10 @@ export async function shareInquiryAction(formData: FormData) {
   const message = [note, packet].filter(Boolean).join("\n\n");
   const trial = getTrial(trialId);
   if (!trial) return;
+  const tookPart = listEnrollments(participant.id).some((entry) => entry.trialId === trialId && entry.status === "completed");
+  if (tookPart) redirect(`/trial/${trialId}`);
+  const underway = getParticipatingEnrollment(participant.id);
+  if (underway && underway.trialId !== trialId) redirect("/");
   const existing = getOpenInquiryForTrial(participant.id, trialId);
   if (existing) redirect(`/inquiry/${existing.id}`);
 
@@ -186,8 +190,37 @@ export async function updateProfileAction(formData: FormData) {
 
 /* ------------------------------------------------------------- coordinator */
 
+function enrollInStudy(participantId: string, trialId: string) {
+  const trial = getTrial(trialId);
+  if (!trial) return false;
+  const underway = getParticipatingEnrollment(participantId);
+  if (underway && underway.trialId !== trialId) return false;
+  if (underway?.trialId === trialId) return true;
+
+  const start = new Date();
+  const visits = (trial.visitSchedule?.visits ?? []).map((visit) => {
+    const date = new Date(start);
+    date.setDate(date.getDate() + visit.weekOffset * 7);
+    return {
+      name: visit.name,
+      date: date.toISOString().slice(0, 10),
+      onSiteHours: visit.onSiteHours,
+      location: trial.sites[0]?.facility ?? null,
+    };
+  });
+  upsertEnrollment({ participantId, trialId, status: "participating", visits });
+
+  const logistics = trial.knownLogistics;
+  if (!logistics?.parkingReimbursementStated) ensureTodo(participantId, trialId, "parking", "Confirm parking details");
+  ensureTodo(participantId, trialId, "travel", "Plan travel arrangements");
+  ensureTodo(participantId, trialId, "bring", "Ask what to bring");
+  return true;
+}
+
 export async function coordinatorAcknowledgeAction(formData: FormData) {
   const inquiryId = String(formData.get("inquiryId"));
+  const inquiry = getInquiry(inquiryId);
+  if (!inquiry || inquiry.state === "approved" || inquiry.state === "closed") return;
   // Acknowledging is not enrolment, and the participant-facing copy says so.
   setInquiryState(inquiryId, "acknowledged");
   audit("coord-fixture-1", "inquiry.acknowledged", inquiryId);
@@ -195,8 +228,27 @@ export async function coordinatorAcknowledgeAction(formData: FormData) {
   revalidatePath("/clinic", "layout");
 }
 
+export async function coordinatorApproveAction(formData: FormData) {
+  const inquiryId = String(formData.get("inquiryId"));
+  const inquiry = getInquiry(inquiryId);
+  if (!inquiry || inquiry.state === "closed" || inquiry.state === "draft") return;
+  if (!enrollInStudy(inquiry.participantId, inquiry.trialId)) return;
+  setInquiryState(inquiryId, "approved");
+  audit("coord-fixture-1", "inquiry.approved", inquiryId);
+  revalidatePath(`/clinic/inbox/${inquiryId}`);
+  revalidatePath(`/inquiry/${inquiryId}`);
+  revalidatePath("/clinic", "layout");
+  revalidatePath("/inbox");
+  revalidatePath("/");
+  revalidatePath("/timeline");
+  revalidatePath("/passport");
+  revalidatePath(`/trial/${inquiry.trialId}`);
+}
+
 export async function coordinatorRequestInfoAction(formData: FormData) {
   const inquiryId = String(formData.get("inquiryId"));
+  const inquiry = getInquiry(inquiryId);
+  if (!inquiry || inquiry.state === "approved" || inquiry.state === "closed") return;
   setInquiryState(inquiryId, "needs_information", String(formData.get("note") ?? ""));
   audit("coord-fixture-1", "inquiry.needs_information", inquiryId);
   revalidatePath(`/clinic/inbox/${inquiryId}`);
@@ -225,7 +277,8 @@ export async function coordinatorAnswerAction(formData: FormData) {
       answeredBy: "R. Alvarez, Research Coordinator",
     });
     deleteQuestionDraft(questionId);
-    setInquiryState(inquiryId, "answered");
+    const inquiry = getInquiry(inquiryId);
+    if (inquiry && inquiry.state !== "approved") setInquiryState(inquiryId, "answered");
     audit("coord-fixture-1", "question.answered", questionId);
   }
   revalidatePath(`/clinic/inbox/${inquiryId}`);
@@ -248,9 +301,8 @@ export async function coordinatorAssignAction(formData: FormData) {
 /* ------------------------------------------------------- participant choices */
 
 /**
- * Records what the person decided. Declining is a first-class outcome with the
- * same weight as accepting — it closes the loop rather than leaving the inquiry
- * open, and it never removes access to anything.
+ * Records what the person decided. Taking part is approved on the clinic side,
+ * not here. Declining closes the loop rather than leaving the inquiry open.
  */
 export async function decideAction(formData: FormData) {
   const participant = await getActiveParticipant();
@@ -260,37 +312,14 @@ export async function decideAction(formData: FormData) {
   if (!trial) return;
   const inquiryId = String(formData.get("inquiryId") ?? "");
   const inquiry = inquiryId ? getInquiry(inquiryId) : null;
-  // A closed inquiry is finished. Taking part or contacting the team again
-  // means sending a new application, not flipping this one back open.
+  // A closed inquiry is finished. Contacting the team again means sending a
+  // new application, not flipping this one back open.
   if (inquiry?.state === "closed") return;
 
   if (decision === "declined") {
     upsertEnrollment({ participantId: participant.id, trialId, status: "declined", visits: [] });
     clearTodos(participant.id, trialId);
     if (inquiryId) setInquiryState(inquiryId, "closed", "Participant decided not to continue.");
-  } else if (decision === "participating") {
-    // Visit dates come from the confirmed schedule only. Without one there is no
-    // calendar, because inventing dates would be inventing a commitment.
-    const schedule = trial.visitSchedule;
-    const start = new Date();
-    const visits = (schedule?.visits ?? []).map((visit) => {
-      const date = new Date(start);
-      date.setDate(date.getDate() + visit.weekOffset * 7);
-      return {
-        name: visit.name,
-        date: date.toISOString().slice(0, 10),
-        onSiteHours: visit.onSiteHours,
-        location: trial.sites[0]?.facility ?? null,
-      };
-    });
-    upsertEnrollment({ participantId: participant.id, trialId, status: "participating", visits });
-
-    // To-dos come from what the study's own material leaves unstated. They are
-    // prompts to ask, never claims about what the site provides.
-    const logistics = trial.knownLogistics;
-    if (!logistics?.parkingReimbursementStated) ensureTodo(participant.id, trialId, "parking", "Confirm parking details");
-    ensureTodo(participant.id, trialId, "travel", "Plan travel arrangements");
-    ensureTodo(participant.id, trialId, "bring", "Ask what to bring");
   } else if (decision === "help") {
     // "Please help me contact the study team": routed to staff as a question,
     // never answered by the app.
@@ -308,7 +337,6 @@ export async function decideAction(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/passport");
   revalidatePath(`/trial/${trialId}`);
-  if (decision === "participating") redirect("/");
   if (decision === "declined") redirect("/inbox?tab=archived");
 }
 
@@ -316,7 +344,7 @@ export async function decideAction(formData: FormData) {
 export async function buildDraft(trialId: string, participantId: string) {
   const participant = getParticipant(participantId)!;
   const trial = getTrial(trialId)!;
-  const assessment = assessTrial(trial, participant);
+  const assessment = assessTrial(trial, participant, listConfirmedCriterionIds(participant.id, trialId));
   const burden = computeBurden(trial, participant);
   const questions = listQuestions({ participantId, trialId })
     .filter((question) => question.state === "open")
@@ -329,6 +357,22 @@ export async function toggleTodoAction(formData: FormData) {
   toggleTodo(String(formData.get("todoId")), participant.id);
   revalidatePath("/timeline");
   revalidatePath("/");
+}
+
+export async function toggleCriterionCheckAction(formData: FormData) {
+  const participant = await getActiveParticipant();
+  const trialId = String(formData.get("trialId") ?? "");
+  const criterionId = String(formData.get("criterionId") ?? "");
+  const trial = getTrial(trialId);
+  if (!trial || !criterionId) return;
+
+  const allowed = new Set(assessTrial(trial, participant).assessments.map((item) => item.criterionId));
+  if (!allowed.has(criterionId)) return;
+
+  const already = listConfirmedCriterionIds(participant.id, trialId).includes(criterionId);
+  setCriterionCheck(participant.id, trialId, criterionId, !already);
+  revalidatePath(`/trial/${trialId}`);
+  revalidatePath("/explore");
 }
 
 /**
@@ -363,7 +407,10 @@ export async function questionFollowUpAction(formData: FormData) {
   if (formData.get("intent") === "reopen") {
     // The earlier answer stays as history; the question is simply open again.
     updateQuestion(question.id, { state: "open", assignedTo: null });
-    if (question.inquiryId) setInquiryState(question.inquiryId, "acknowledged");
+    if (question.inquiryId) {
+      const inquiry = getInquiry(question.inquiryId);
+      if (inquiry && inquiry.state !== "approved") setInquiryState(question.inquiryId, "acknowledged");
+    }
     audit(participant.id, "question.reopened", question.id);
   } else {
     updateQuestion(question.id, { state: "resolved" });
@@ -432,6 +479,10 @@ export async function submitApplicationAction(formData: FormData) {
   const trialId = String(formData.get("trialId"));
   const trial = getTrial(trialId);
   if (!trial) return;
+  const tookPart = listEnrollments(participant.id).some((entry) => entry.trialId === trialId && entry.status === "completed");
+  if (tookPart) redirect(`/trial/${trialId}`);
+  const underway = getParticipatingEnrollment(participant.id);
+  if (underway && underway.trialId !== trialId) redirect("/");
   const existing = getOpenInquiryForTrial(participant.id, trialId);
   if (existing) redirect(`/inquiry/${existing.id}`);
 

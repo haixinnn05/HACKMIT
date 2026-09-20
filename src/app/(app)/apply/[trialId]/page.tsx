@@ -4,7 +4,7 @@ import { PrintButton } from "@/components/CountedTextarea";
 import { Callout, Card, Pill, ScreenHeader, StickyAction } from "@/components/ui";
 import { autofill, formFor, type ResolvedField } from "@/lib/application";
 import { getFictionalFixture } from "@/lib/db";
-import { getOpenInquiryForTrial, getTrial } from "@/lib/repo";
+import { getOpenInquiryForTrial, getParticipatingEnrollment, getTrial, listEnrollments } from "@/lib/repo";
 import { getActiveParticipant } from "@/lib/session";
 import { submitApplicationAction } from "@/app/actions";
 
@@ -29,6 +29,10 @@ export default async function ApplyPage({ params }: { params: Promise<{ trialId:
   if (!trial) notFound();
 
   const participant = await getActiveParticipant();
+  const tookPart = listEnrollments(participant.id).some((entry) => entry.trialId === trial.id && entry.status === "completed");
+  if (tookPart) redirect(`/trial/${trial.id}`);
+  const underway = getParticipatingEnrollment(participant.id);
+  if (underway && underway.trialId !== trial.id) redirect("/");
   const existing = getOpenInquiryForTrial(participant.id, trial.id);
   if (existing) redirect(`/inquiry/${existing.id}`);
   const form = formFor(trial, getFictionalFixture()?.applicationForm);

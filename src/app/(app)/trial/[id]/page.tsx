@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import {
-  ArrowSquareOut, CaretLeft, CaretRight, Check, Heart, Minus, Sparkle,
+  ArrowSquareOut, CaretLeft, CaretRight, Check, Heart, Sparkle,
 } from "@phosphor-icons/react/dist/ssr";
 import { OpenAlexResearch, OpenAlexResearchSkeleton } from "@/components/OpenAlexResearch";
 import { Hills } from "@/components/Brand";
@@ -10,13 +10,13 @@ import {
   Card, DataAge, LinkButton, SectionHeading, StickyAction, Tabs,
 } from "@/components/ui";
 import { AI_METADATA, answerFromSources, cachedTrialBrief, composeOfflineBrief, generateTrialBrief, type TrialBrief } from "@/lib/ai";
-import { assessTrial } from "@/lib/assess";
+import { assessTrial, criteriaMatchCopy } from "@/lib/assess";
 import { computeBurden } from "@/lib/burden";
 import { requestNow } from "@/lib/clock";
-import { getOpenInquiryForTrial, getTrial, listEnrollments, listSavedTrialIds, recordMilestone } from "@/lib/repo";
+import { getOpenInquiryForTrial, getParticipatingEnrollment, getTrial, listConfirmedCriterionIds, listEnrollments, listSavedTrialIds, recordMilestone } from "@/lib/repo";
 import { getActiveParticipant } from "@/lib/session";
 import { openedFromMap } from "@/lib/map-return";
-import { addQuestionAction, toggleSaveAction } from "@/app/actions";
+import { addQuestionAction, toggleCriterionCheckAction, toggleSaveAction } from "@/app/actions";
 import type { CriterionAssessment, Trial, TrialAssessment } from "@/lib/types";
 import type { BurdenPreview } from "@/lib/burden";
 
@@ -39,7 +39,8 @@ export default async function TrialPage({
 
   const participant = await getActiveParticipant();
   const now = requestNow();
-  const assessment = assessTrial(trial, participant);
+  const confirmedIds = listConfirmedCriterionIds(participant.id, trial.id);
+  const assessment = assessTrial(trial, participant, confirmedIds);
   const burden = computeBurden(trial, participant, {
     oneWayTravelMinutes: participant.oneWayTravelMinutes,
     visitCountOverride: visits ? Number(visits) : null,
@@ -48,6 +49,8 @@ export default async function TrialPage({
   const saved = listSavedTrialIds(participant.id).includes(trial.id);
   const inquiry = getOpenInquiryForTrial(participant.id, trial.id);
   const enrollment = listEnrollments(participant.id).find((entry) => entry.trialId === trial.id);
+  const underway = getParticipatingEnrollment(participant.id);
+  const otherStudy = Boolean(underway && underway.trialId !== trial.id);
 
   // Going past the overview is what "reviewed" means. The stamp is earned once.
   if (tab !== "overview") {
@@ -74,12 +77,9 @@ export default async function TrialPage({
     return `/peers?${query}`;
   })();
 
-  const fit =
-    assessment.overall === "likely_conflict"
-      ? { title: "Things to review", body: "Some listed requirements don't match what you've recorded.", box: "bg-blush-soft", titleClass: "text-blush" }
-      : assessment.overall === "needs_more_information"
-        ? { title: "Questions remain", body: "More information is needed before this study can be checked.", box: "bg-peach-soft", titleClass: "text-peach" }
-        : { title: "Potential option", body: "What you've recorded so far lines up with the listed requirements.", box: "bg-mint-soft", titleClass: "text-mint" };
+  const fit = criteriaMatchCopy(assessment);
+  const alreadyTookPart = enrollment?.status === "completed";
+  const cannotApply = alreadyTookPart || otherStudy;
 
   return (
     <div className="space-y-4">
@@ -120,12 +120,18 @@ export default async function TrialPage({
       </Link>
 
       <Card className="overflow-hidden [&>a]:border-b [&>a]:border-rule [&>a:last-child]:border-0">
-        <Link href={`/apply/${trial.id}`} className="press flex min-h-11 items-center gap-2 px-3.5 py-2 hover:bg-sunken">
-          <span className="min-w-0 flex-1 text-[13px] font-bold text-ink">Application form</span>
-          <CaretRight size={14} weight="bold" className="shrink-0 text-ink-faint" />
-        </Link>
+        {alreadyTookPart ? (
+          <p className="px-3.5 py-2.5 text-[13px] leading-snug text-ink-soft">You already took part in this study.</p>
+        ) : otherStudy ? (
+          <p className="px-3.5 py-2.5 text-[13px] leading-snug text-ink-soft">You can take part in one study at a time.</p>
+        ) : (
+          <Link href={`/apply/${trial.id}`} className="press flex min-h-11 items-center gap-2 px-3.5 py-2 hover:bg-sunken">
+            <span className="min-w-0 flex-1 text-[13px] font-bold text-ink">Application form</span>
+            <CaretRight size={14} weight="bold" className="shrink-0 text-ink-faint" />
+          </Link>
+        )}
         <Link href={peersHref} className="press flex min-h-11 items-center gap-2 px-3.5 py-2 hover:bg-sunken">
-          <span className="min-w-0 flex-1 text-[13px] font-bold text-ink">Talk with someone weighing this too</span>
+          <span className="min-w-0 flex-1 text-[13px] font-bold text-ink">Talk with someone like you</span>
           <CaretRight size={14} weight="bold" className="shrink-0 text-ink-faint" />
         </Link>
       </Card>
@@ -141,7 +147,7 @@ export default async function TrialPage({
       />
 
       {tab === "overview" ? <Overview trial={trial} assessment={assessment} nearestCity={site?.city ?? null} now={now} ask={ask?.slice(0, 200) ?? null} plain={plain === "1"} /> : null}
-      {tab === "eligibility" ? <Eligibility assessment={assessment} /> : null}
+      {tab === "eligibility" ? <Eligibility trialId={trial.id} assessment={assessment} confirmedIds={confirmedIds} /> : null}
       {tab === "expect" ? <Expect trial={trial} burden={burden} miles={miles} /> : null}
       {tab === "insight" ? (
         <Suspense fallback={<OpenAlexResearchSkeleton />}>
@@ -149,25 +155,35 @@ export default async function TrialPage({
         </Suspense>
       ) : null}
 
-      <StickyAction>
-        {enrollment?.status === "participating" ? (
+      {enrollment?.status === "participating" ? (
+        <StickyAction>
           <LinkButton href="/" variant="registered" className="w-full">Open your path</LinkButton>
-        ) : inquiry ? (
-          <LinkButton href={`/inquiry/${inquiry.id}`} className="w-full">
-            {inquiry.state === "answered" ? "View reply" : "Open inquiry"}
-          </LinkButton>
-        ) : saved ? (
-          <LinkButton href={`/apply/${trial.id}`} className="w-full">Apply</LinkButton>
-        ) : (
-          <form action={toggleSaveAction}>
-            <input type="hidden" name="trialId" value={trial.id} />
-            <input type="hidden" name="saved" value="false" />
-            <button type="submit" className="press cta inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full px-5 text-[14px] font-bold text-white">
-              Save Trial
-            </button>
-          </form>
-        )}
-      </StickyAction>
+        </StickyAction>
+      ) : cannotApply ? (
+        otherStudy ? (
+          <StickyAction>
+            <LinkButton href="/" variant="registered" className="w-full">Open your path</LinkButton>
+          </StickyAction>
+        ) : null
+      ) : (
+        <StickyAction>
+          {inquiry ? (
+            <LinkButton href={`/inquiry/${inquiry.id}`} className="w-full">
+              {inquiry.state === "answered" ? "View reply" : "Open inquiry"}
+            </LinkButton>
+          ) : saved ? (
+            <LinkButton href={`/apply/${trial.id}`} className="w-full">Apply</LinkButton>
+          ) : (
+            <form action={toggleSaveAction}>
+              <input type="hidden" name="trialId" value={trial.id} />
+              <input type="hidden" name="saved" value="false" />
+              <button type="submit" className="press cta inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full px-5 text-[14px] font-bold text-white">
+                Save Trial
+              </button>
+            </form>
+          )}
+        </StickyAction>
+      )}
     </div>
   );
 
@@ -312,7 +328,14 @@ async function AskAnswer({ trial, ask }: { trial: Trial; ask: string }) {
   );
 }
 
-function Eligibility({ assessment }: { assessment: TrialAssessment }) {
+function Eligibility({
+  trialId, assessment, confirmedIds,
+}: {
+  trialId: string;
+  assessment: TrialAssessment;
+  confirmedIds: string[];
+}) {
+  const confirmed = new Set(confirmedIds);
   const group = (status: CriterionAssessment["status"]) => assessment.assessments.filter((a) => a.status === status);
   const groups = [
     { title: "To review", items: group("conflict") },
@@ -330,21 +353,41 @@ function Eligibility({ assessment }: { assessment: TrialAssessment }) {
               {g.title}
             </p>
             <ul>
-              {g.items.map((item) => (
+              {g.items.map((item) => {
+                const marked = confirmed.has(item.criterionId);
+                const matched = item.status === "supported";
+                const locked = matched && !marked;
+                return (
                 <li key={item.criterionId} className="border-t border-rule first:border-0">
-                  <details className="group">
-                    <summary className="press flex cursor-pointer list-none items-start gap-3 px-4 py-3">
-                      <StatusMark status={item.status} />
-                      <span className="min-w-0 flex-1 text-[13.5px] leading-snug text-ink group-open:font-semibold">
-                        {item.criterionText}
-                      </span>
-                    </summary>
-                    {item.evidenceSpan ? (
-                      <blockquote className="source-quote mx-4 mb-3">{item.evidenceSpan}</blockquote>
-                    ) : null}
-                  </details>
+                  <div className="flex items-start gap-3 px-4 py-3">
+                    <form action={toggleCriterionCheckAction}>
+                      <input type="hidden" name="trialId" value={trialId} />
+                      <input type="hidden" name="criterionId" value={item.criterionId} />
+                      <button
+                        type="submit"
+                        role="checkbox"
+                        aria-checked={matched}
+                        disabled={locked}
+                        aria-label={matched ? `Marked as matching: ${item.criterionText}` : `Mark as matching: ${item.criterionText}`}
+                        className="press mt-0.5 shrink-0 disabled:cursor-default"
+                      >
+                        <StatusMark matched={matched} />
+                      </button>
+                    </form>
+                    <details className="group min-w-0 flex-1">
+                      <summary className="press cursor-pointer list-none">
+                        <span className="text-[13.5px] leading-snug text-ink group-open:font-semibold">
+                          {item.criterionText}
+                        </span>
+                      </summary>
+                      {item.evidenceSpan ? (
+                        <blockquote className="source-quote mt-2">{item.evidenceSpan}</blockquote>
+                      ) : null}
+                    </details>
+                  </div>
                 </li>
-              ))}
+                );
+              })}
             </ul>
           </div>
         ))}
@@ -353,25 +396,15 @@ function Eligibility({ assessment }: { assessment: TrialAssessment }) {
   );
 }
 
-function StatusMark({ status }: { status: CriterionAssessment["status"] }) {
-  const label =
-    status === "supported" ? "Match"
-      : status === "conflict" ? "To review"
-      : status === "needs_clinical_review" ? "Staff"
-      : "Not checked";
-  const box =
-    status === "supported" ? "bg-mint text-white"
-      : status === "conflict" ? "bg-blush text-white"
-      : status === "needs_clinical_review" ? "bg-peach-soft text-peach"
-      : "border-[1.5px] border-rule-strong bg-surface text-ink-faint";
+function StatusMark({ matched }: { matched: boolean }) {
   return (
     <span
-      className={`mt-0.5 grid size-5 shrink-0 place-items-center rounded-[6px] ${box}`}
-      aria-label={label}
+      aria-hidden
+      className={`grid size-6 place-items-center rounded-[8px] ${
+        matched ? "border-2 border-mint bg-mint text-white" : "border-2 border-rule-strong bg-surface text-transparent"
+      }`}
     >
-      {status === "supported" ? <Check size={12} weight="bold" /> : null}
-      {status === "conflict" ? <span className="text-[11px] font-bold leading-none">!</span> : null}
-      {status === "needs_clinical_review" ? <Minus size={12} weight="bold" /> : null}
+      <Check size={14} weight="bold" />
     </span>
   );
 }

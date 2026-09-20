@@ -543,7 +543,11 @@ export function assessPracticalFit(trial: Trial, profile: ParticipantProfile): P
 
 /* ---------------------------------------------------------------- entrypoint */
 
-export function assessTrial(trial: Trial, profile: ParticipantProfile): TrialAssessment {
+export function assessTrial(
+  trial: Trial,
+  profile: ParticipantProfile,
+  confirmedCriterionIds: Iterable<string> = [],
+): TrialAssessment {
   const facts = new Map(profile.clinicalFacts.map((f) => [f.key, f]));
   const assessments: CriterionAssessment[] = [...structuralAssessments(trial, profile)];
 
@@ -582,6 +586,34 @@ export function assessTrial(trial: Trial, profile: ParticipantProfile): TrialAss
     });
   }
 
+  return summarizeTrial(
+    trial,
+    profile,
+    applyConfirmedCriteria(assessments, confirmedCriterionIds),
+  );
+}
+
+function applyConfirmedCriteria(
+  assessments: CriterionAssessment[],
+  confirmedCriterionIds: Iterable<string>,
+): CriterionAssessment[] {
+  const confirmed = new Set(confirmedCriterionIds);
+  if (confirmed.size === 0) return assessments;
+  return assessments.map((item) => {
+    if (!confirmed.has(item.criterionId) || item.status === "supported") return item;
+    return {
+      ...item,
+      status: "supported",
+      rationale: "You marked that this matches.",
+    };
+  });
+}
+
+function summarizeTrial(
+  trial: Trial,
+  profile: ParticipantProfile,
+  assessments: CriterionAssessment[],
+): TrialAssessment {
   const count = (status: AssessmentStatus) =>
     assessments.filter((a) => a.status === status).length;
   const supported = count("supported");
@@ -615,6 +647,40 @@ export function assessTrial(trial: Trial, profile: ParticipantProfile): TrialAss
     ),
     practicalFit: assessPracticalFit(trial, profile),
     generatedAt: new Date().toISOString(),
+  };
+}
+
+/** How the listed requirements line up — never a yes/no eligibility verdict. */
+export function criteriaMatchCopy(assessment: TrialAssessment) {
+  const total = assessment.supported + assessment.conflicts + assessment.unknowns + assessment.needsReview;
+  const verb = assessment.supported === 1 ? "matches" : "match";
+  const body = total
+    ? `${assessment.supported} of ${total} requirements ${verb}.`
+    : "This study's requirements could not be checked automatically.";
+  if (assessment.overall === "likely_conflict") {
+    return {
+      title: "Things to review",
+      body,
+      box: "bg-blush-soft",
+      titleClass: "text-blush",
+      tone: "blush" as const,
+    };
+  }
+  if (assessment.overall === "needs_more_information") {
+    return {
+      title: "Questions remain",
+      body,
+      box: "bg-peach-soft",
+      titleClass: "text-peach",
+      tone: "peach" as const,
+    };
+  }
+  return {
+    title: "Potential option",
+    body,
+    box: "bg-mint-soft",
+    titleClass: "text-mint",
+    tone: "mint" as const,
   };
 }
 
