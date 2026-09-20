@@ -101,7 +101,7 @@ export default async function PatientPage({ params }: { params: Promise<{ id: st
                   <span className="min-w-0 flex-1">
                     <span className="line-clamp-2 block text-[13.5px] font-bold leading-snug text-ink">{getTrial(inquiry.trialId)?.briefTitle ?? inquiry.trialId}</span>
                     <span className="mt-1 flex flex-wrap gap-1.5">
-                      <Pill tone={inquiry.state === "answered" ? "mint" : "iris"}>{inquiry.state.replace(/_/g, " ")}</Pill>
+                      <Pill tone={inquiry.state === "answered" || inquiry.state === "approved" ? "mint" : "iris"}>{inquiry.state.replace(/_/g, " ")}</Pill>
                       {open ? <Pill tone="peach">{open} open</Pill> : null}
                     </span>
                   </span>

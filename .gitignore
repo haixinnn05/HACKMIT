@@ -57,3 +57,6 @@ tsconfig.tsbuildinfo
 
 # Written per machine by `npm run ios:sync`
 /native-shell/server-url.js
+
+# local HTTPS certificate made by `npm run dev:https`
+/certificates

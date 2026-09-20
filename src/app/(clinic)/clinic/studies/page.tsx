@@ -1,7 +1,8 @@
-import { CalendarBlank, ChatCircleText, Trash, UsersThree } from "@phosphor-icons/react/dist/ssr";
+import Link from "next/link";
+import { CalendarBlank, CaretRight, ChatCircleText, CheckCircle, Pause, Play, Plus, Trash, UsersThree } from "@phosphor-icons/react/dist/ssr";
 import { Card, Pill, ScreenHeader, SectionHeading } from "@/components/ui";
-import { getTrial, listInquiriesForCoordinator, listSavedReplies } from "@/lib/repo";
-import { addSavedReplyAction, deleteSavedReplyAction } from "@/app/actions";
+import { getTrial, listInquiriesForCoordinator, listSavedReplies, listSiteStudies } from "@/lib/repo";
+import { addSavedReplyAction, deleteSavedReplyAction, removeStudyAction, setStudyRecruitingAction } from "@/app/actions";
 
 export const dynamic = "force-dynamic";
 
@@ -15,17 +16,87 @@ const SITE_STUDY = "TP-FIX-001";
  * inbox. A person still reads, edits and sends it, and it is never sent
  * automatically.
  */
-export default function StudiesPage() {
+export default async function StudiesPage({ searchParams }: { searchParams: Promise<{ posted?: string; kept?: string }> }) {
+  const { posted, kept } = await searchParams;
   const trial = getTrial(SITE_STUDY);
   if (!trial) return null;
+  const inquiries = listInquiriesForCoordinator();
+  const postedStudies = listSiteStudies().filter((study) => study.id !== SITE_STUDY);
+  const justPosted = posted ? postedStudies.find((study) => study.id === posted) : null;
   const replies = listSavedReplies(SITE_STUDY);
-  const interest = listInquiriesForCoordinator().filter((inquiry) => inquiry.trialId === SITE_STUDY).length;
+  const interest = inquiries.filter((inquiry) => inquiry.trialId === SITE_STUDY).length;
   const schedule = trial.visitSchedule;
   const input = "mt-1 w-full rounded-[14px] border border-rule bg-surface px-3.5 text-[13.5px] text-ink placeholder:text-ink-faint";
 
   return (
     <div className="space-y-4">
-      <ScreenHeader title="Studies" sub="The study your site runs, and the replies you reuse." />
+      <ScreenHeader title="Studies" sub="The studies your site runs, and the replies you reuse." />
+
+      {justPosted ? (
+        <p role="status" className="flex items-start gap-2.5 rounded-[16px] bg-mint-soft px-4 py-3 text-[13px] leading-relaxed text-ink">
+          <CheckCircle size={20} weight="fill" className="mt-0.5 shrink-0 text-mint" />
+          <span><span className="font-bold">Posted.</span> Participants can now find &ldquo;{justPosted.briefTitle}&rdquo; and send you an inquiry.{" "}
+            <Link href={`/trial/${justPosted.id}`} className="font-bold text-iris-deep underline">See it as they do</Link>
+          </span>
+        </p>
+      ) : null}
+      {kept ? (
+        <p role="alert" className="rounded-[16px] bg-peach-soft px-4 py-3 text-[13px] leading-relaxed text-ink">
+          <span className="font-bold">Not removed.</span> Someone has an inquiry on that study. Pause recruiting instead, so their conversation stays intact.
+        </p>
+      ) : null}
+
+      <Link href="/clinic/studies/new" className="cta press inline-flex min-h-13 w-full items-center justify-center gap-2 rounded-full text-[15px] font-bold text-white">
+        <Plus size={18} weight="bold" /> Post a study
+      </Link>
+
+      {postedStudies.length ? (
+        <section aria-labelledby="posted-heading">
+          <SectionHeading id="posted-heading" hint="Visible to participants in Find Clinical Trials. Pausing keeps the page readable but marks it as not recruiting.">
+            Posted by your team ({postedStudies.length})
+          </SectionHeading>
+          <ul className="space-y-2.5">
+            {postedStudies.map((study) => {
+              const count = inquiries.filter((inquiry) => inquiry.trialId === study.id).length;
+              const recruiting = study.overallStatus === "RECRUITING";
+              return (
+                <Card as="li" key={study.id} className="overflow-hidden">
+                  <Link href={`/trial/${study.id}`} className="press flex items-start gap-3 p-4">
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[14px] font-bold leading-snug text-ink">{study.briefTitle}</span>
+                      <span className="mt-0.5 block font-mono text-[11.5px] text-ink-faint">{study.id} · posted {study.studyFirstPostDate}</span>
+                      <span className="mt-2 flex flex-wrap gap-1.5">
+                        <Pill tone={recruiting ? "mint" : "peach"}>{study.overallStatus?.toLowerCase().replace(/_/g, " ")}</Pill>
+                        <Pill tone="iris" icon={<UsersThree size={12} weight="fill" />}>{count} {count === 1 ? "inquiry" : "inquiries"}</Pill>
+                        <Pill>{study.criteria.length} requirements</Pill>
+                        {study.visitSchedule ? <Pill>{study.visitSchedule.visits.length} visits</Pill> : <Pill>schedule not given</Pill>}
+                      </span>
+                    </span>
+                    <CaretRight size={16} weight="bold" className="mt-1 shrink-0 text-iris" />
+                  </Link>
+                  <div className="flex border-t border-rule">
+                    <form action={setStudyRecruitingAction} className="flex-1">
+                      <input type="hidden" name="studyId" value={study.id} />
+                      <input type="hidden" name="recruiting" value={recruiting ? "0" : "1"} />
+                      <button type="submit" className="flex min-h-12 w-full items-center justify-center gap-1.5 text-[13px] font-bold text-ink hover:bg-sunken">
+                        {recruiting ? <><Pause size={15} weight="bold" /> Pause recruiting</> : <><Play size={15} weight="bold" /> Resume recruiting</>}
+                      </button>
+                    </form>
+                    <form action={removeStudyAction} className="flex-1 border-l border-rule">
+                      <input type="hidden" name="studyId" value={study.id} />
+                      <button type="submit" className="flex min-h-12 w-full items-center justify-center gap-1.5 text-[13px] font-bold text-blush hover:bg-blush-soft">
+                        <Trash size={15} weight="bold" /> Remove
+                      </button>
+                    </form>
+                  </div>
+                </Card>
+              );
+            })}
+          </ul>
+        </section>
+      ) : null}
+
+      <SectionHeading>Your main study</SectionHeading>
 
       <Card className="p-4">
         <p className="text-[14.5px] font-bold leading-snug text-ink">{trial.briefTitle}</p>

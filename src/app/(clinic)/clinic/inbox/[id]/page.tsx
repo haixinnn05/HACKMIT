@@ -2,7 +2,8 @@ import { notFound } from "next/navigation";
 import { Card, DataRow, Pill, ScreenHeader, SectionHeading, StickyAction } from "@/components/ui";
 import { assessTrial } from "@/lib/assess";
 import { getGrant, getInquiry, getParticipant, getParticipatingEnrollment, getQuestionDraft, getTrial, isGrantActive, listConfirmedCriterionIds, listQuestions, listSavedReplies } from "@/lib/repo";
-import { coordinatorAcknowledgeAction, coordinatorAnswerAction, coordinatorApproveAction, coordinatorAssignAction, coordinatorRequestInfoAction } from "@/app/actions";
+import { InquiryStatusPanel } from "@/components/InquiryStatusPanel";
+import { coordinatorAnswerAction, coordinatorAssignAction } from "@/app/actions";
 import type { CriterionAssessment } from "@/lib/types";
 import { isAnswered, QUESTION_STATE_LABEL, SITE_STAFF } from "@/lib/questions";
 
@@ -52,7 +53,6 @@ export default async function CoordinatorInquiryPage({ params }: { params: Promi
   const note = inquiry.message.split("\n\n")[0];
   const underway = getParticipatingEnrollment(participant.id);
   const otherStudy = Boolean(underway && underway.trialId !== trial.id);
-  const approved = inquiry.state === "approved";
 
   const by = (status: CriterionAssessment["status"]) => assessment.assessments.filter((a) => a.status === status);
   const considerations: { label: string; tone: "mint" | "iris" | "peach" | "blush"; items: CriterionAssessment[] }[] = [
@@ -64,6 +64,8 @@ export default async function CoordinatorInquiryPage({ params }: { params: Promi
   return (
     <div className="space-y-4">
       <ScreenHeader back="/clinic/inbox" title={name} sub={trial.briefTitle ?? trial.id} />
+
+      <InquiryStatusPanel inquiry={inquiry} firstName={name.split(" ")[0]} replied={questions.some(isAnswered)} canApprove={!otherStudy} />
 
       <div>
         <p className="text-[13px] text-ink-soft">
@@ -230,37 +232,6 @@ export default async function CoordinatorInquiryPage({ params }: { params: Promi
         </StickyAction>
       ) : null}
 
-      <section className="space-y-2.5">
-        <SectionHeading>Move this along</SectionHeading>
-        {approved ? (
-          <Card className="bg-mint-soft p-4">
-            <p className="text-[14px] font-bold text-ink">Approved for this study</p>
-            <p className="mt-1 text-[12.5px] leading-relaxed text-ink-soft">This person can see their study path.</p>
-          </Card>
-        ) : otherStudy ? (
-          <Card className="p-4">
-            <p className="text-[13.5px] leading-relaxed text-ink-soft">Already taking part in another study. Approve after that one is finished.</p>
-          </Card>
-        ) : (
-          <form action={coordinatorApproveAction}>
-            <input type="hidden" name="inquiryId" value={inquiry.id} />
-            <button type="submit" className="press min-h-12 w-full rounded-full border border-iris bg-iris-soft text-[14px] font-bold text-iris-deep hover:bg-iris hover:text-white">Approve for this study</button>
-          </form>
-        )}
-        <form action={coordinatorAcknowledgeAction}>
-          <input type="hidden" name="inquiryId" value={inquiry.id} />
-          <button type="submit" className="press min-h-12 w-full rounded-full border border-rule-strong bg-surface text-[14px] font-bold text-ink hover:bg-sunken">Acknowledge receipt</button>
-        </form>
-        <form action={coordinatorRequestInfoAction} className="space-y-2">
-          <input type="hidden" name="inquiryId" value={inquiry.id} />
-          <label className="block text-[12px] font-semibold text-ink-soft">
-            Ask for something specific
-            <input name="note" required placeholder="e.g. We would need your HER2 result before screening."
-              className="mt-1 min-h-12 w-full rounded-[14px] border border-rule bg-surface px-3 text-[13.5px] text-ink placeholder:text-ink-faint" />
-          </label>
-          <button type="submit" className="press min-h-12 w-full rounded-full border border-rule-strong bg-surface text-[14px] font-bold text-ink hover:bg-sunken">Request information</button>
-        </form>
-      </section>
     </div>
   );
 }

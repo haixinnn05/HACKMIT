@@ -123,7 +123,9 @@ export default async function InquiryPage({ params }: { params: Promise<{ id: st
       </Card>
 
       {inquiry.coordinatorNote ? (
-        <Callout title="Note from the team">{inquiry.coordinatorNote}</Callout>
+        <Callout title={inquiry.state === "closed" ? "Why this was closed" : "Note from the team"}>
+          {inquiry.coordinatorNote}
+        </Callout>
       ) : null}
 
       {answered.length ? (

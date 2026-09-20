@@ -12,7 +12,8 @@ import { computeBurden } from "@/lib/burden";
 import { draftInquiry } from "@/lib/ai";
 import { getActiveParticipant, setRole, clearRole, STAFF } from "@/lib/session";
 import { autofill, formFor } from "@/lib/application";
-import { getFictionalFixture } from "@/lib/db";
+import { randomBytes } from "node:crypto";
+import { deleteSiteStudy, getDb, getFictionalFixture, saveSiteStudy } from "@/lib/db";
 import type { ClinicalFact } from "@/lib/types";
 
 /* Server actions. Every outbound or state-changing step is an explicit user
@@ -222,6 +223,9 @@ export async function coordinatorAcknowledgeAction(formData: FormData) {
   const inquiry = getInquiry(inquiryId);
   if (!inquiry || inquiry.state === "approved" || inquiry.state === "closed") return;
   // Acknowledging is not enrolment, and the participant-facing copy says so.
+  // It only ever moves a new inquiry forward. Without this guard, acknowledging an
+  // inquiry that was already answered would knock it back a step.
+  if (getInquiry(inquiryId)?.state !== "shared") return;
   setInquiryState(inquiryId, "acknowledged");
   audit("coord-fixture-1", "inquiry.acknowledged", inquiryId);
   revalidatePath(`/clinic/inbox/${inquiryId}`);
@@ -446,6 +450,17 @@ export async function openPassAction(formData: FormData) {
   redirect(token ? `/handoff/${token}?from=clinic` : "/clinic/scan?missed=1");
 }
 
+/**
+ * Opens a passport from a scanned code. Only the token is taken from the QR;
+ * the address is always this app's own. An unknown, expired or revoked token
+ * lands on the same neutral screen the handoff page shows for all three.
+ */
+export async function openScannedPassAction(token: string) {
+  const safe = /^[A-Za-z0-9_-]{8,128}$/.test(token) ? token : null;
+  audit(STAFF.id, safe ? "pass.scanned" : "pass.not_found", "in-person passport");
+  redirect(safe ? `/handoff/${safe}?from=clinic` : "/clinic/scan?missed=1");
+}
+
 export async function addSavedReplyAction(formData: FormData) {
   const answer = String(formData.get("answer") ?? "").trim();
   const keywords = String(formData.get("keywords") ?? "").toLowerCase().split(",").map((k) => k.trim()).filter(Boolean);
@@ -613,4 +628,162 @@ export async function sendPeerMessageAction(formData: FormData) {
   revalidatePath(`/peers/${connection.id}`);
   // Back to the bare URL, so a suggested starter does not linger in the box and get sent twice.
   redirect(`/peers/${connection.id}#compose`);
+}
+
+/* ------------------------------------------------ the coordinator's next step */
+
+const NOT_PROCEEDING: Record<string, string> = {
+  not_enrolling: "This study is not taking new participants at our site right now. That can change, so it is worth checking back.",
+  outside_criteria: "From what you shared, this study's requirements look like they may not fit your situation. This is not a judgement about your care. Your own care team can help you look at other studies.",
+  logistics: "We are not able to make the visits or travel work for this study at the moment.",
+  other: "We are not able to take this inquiry further right now.",
+};
+
+/**
+ * Closes an inquiry from the site's side, always with a reason the person can
+ * read. Nobody should be left wondering why a conversation stopped. Their saved
+ * studies, questions and passport are untouched.
+ */
+export async function coordinatorNotProceedingAction(formData: FormData) {
+  const inquiryId = String(formData.get("inquiryId"));
+  if (!getInquiry(inquiryId)) return;
+  const reason = String(formData.get("reason") ?? "other");
+  const extra = String(formData.get("note") ?? "").trim().slice(0, 300);
+  setInquiryState(inquiryId, "closed", [NOT_PROCEEDING[reason] ?? NOT_PROCEEDING.other, extra].filter(Boolean).join(" "));
+  audit(STAFF.id, "inquiry.not_proceeding", inquiryId, reason);
+  revalidatePath(`/clinic/inbox/${inquiryId}`);
+  revalidatePath(`/inquiry/${inquiryId}`);
+  revalidatePath("/clinic", "layout");
+  revalidatePath("/inbox");
+  revalidatePath("/");
+}
+
+/**
+ * Undoes an invitation or a closure. A mis-tap should not be permanent, and the
+ * participant is told, so a closed thread never silently comes back to life.
+ */
+export async function coordinatorReopenAction(formData: FormData) {
+  const inquiryId = String(formData.get("inquiryId"));
+  const inquiry = getInquiry(inquiryId);
+  if (!inquiry || (inquiry.state !== "closed" && inquiry.state !== "approved")) return;
+  setInquiryState(inquiryId, "acknowledged", "The study team has reopened this conversation.");
+  audit(STAFF.id, "inquiry.reopened", inquiryId);
+  revalidatePath(`/clinic/inbox/${inquiryId}`);
+  revalidatePath(`/inquiry/${inquiryId}`);
+  revalidatePath("/clinic", "layout");
+  revalidatePath("/inbox");
+  revalidatePath("/");
+}
+
+/* ------------------------------------------------------- posting a study */
+
+const lines = (value: FormDataEntryValue | null, max = 12) =>
+  String(value ?? "").split("\n").map((line) => line.replace(/^\s*(?:[-*•]|\d+[.)])\s*/, "").trim()).filter((line) => line.length >= 4).slice(0, max);
+const wholeNumber = (value: FormDataEntryValue | null, min: number, max: number): number | null => {
+  const n = Number.parseInt(String(value ?? ""), 10);
+  return Number.isFinite(n) && n >= min && n <= max ? n : null;
+};
+const SITE_STUDY_ID = /^MZ-HCC-[0-9A-F]{6}$/;
+
+/**
+ * A research team posts a study so participants can find it and ask about it.
+ *
+ * It is written through the same loader as registry records, so the criteria
+ * the coordinator types are split, indexed and assessed exactly like any other
+ * study's. Nothing is filled in on their behalf: a visit schedule exists only
+ * if they gave one, and an unticked logistics box stays "not stated".
+ */
+export async function postStudyAction(formData: FormData) {
+  const title = String(formData.get("title") ?? "").trim().slice(0, 160);
+  const summary = String(formData.get("summary") ?? "").trim().slice(0, 1200);
+  const conditions = String(formData.get("conditions") ?? "").split(",").map((c) => c.trim()).filter(Boolean).slice(0, 6);
+  if (title.length < 8 || summary.length < 20 || conditions.length === 0) redirect("/clinic/studies/new?error=1");
+
+  const inclusion = lines(formData.get("inclusion"));
+  const exclusion = lines(formData.get("exclusion"));
+  const eligibilityText = [
+    inclusion.length ? `Inclusion Criteria:\n${inclusion.map((line) => `- ${line}`).join("\n")}` : "",
+    exclusion.length ? `Exclusion Criteria:\n${exclusion.map((line) => `- ${line}`).join("\n")}` : "",
+  ].filter(Boolean).join("\n\n");
+
+  const visits = wholeNumber(formData.get("visits"), 1, 40);
+  const hours = Number.parseFloat(String(formData.get("visitHours") ?? ""));
+  const gap = wholeNumber(formData.get("visitGapWeeks"), 1, 52) ?? 4;
+  const calls = wholeNumber(formData.get("remoteCalls"), 0, 40) ?? 0;
+  const callMinutes = wholeNumber(formData.get("remoteMinutes"), 5, 180) ?? 15;
+  const today = new Date().toLocaleDateString("en-CA");
+  const visitSchedule = visits && Number.isFinite(hours) && hours > 0 && hours <= 12 ? {
+    provenance: "site_confirmed_fictional",
+    confirmedOn: today,
+    notes: "Entered by the study team when posting. Durations are scheduled clinic time only.",
+    visits: Array.from({ length: visits }, (_, i) => ({
+      name: i === 0 ? "Screening visit" : `Study visit ${i}`, weekOffset: i * gap, onSiteHours: hours, procedures: [] as string[],
+    })),
+    remoteContacts: Array.from({ length: calls }, (_, i) => ({ name: `Check-in call ${i + 1}`, weekOffset: (i + 1) * gap, minutes: callMinutes })),
+  } : null;
+
+  const ticked = (name: string) => formData.get(name) === "on";
+  const compensation = String(formData.get("compensationText") ?? "").trim().slice(0, 160);
+  const minAge = wholeNumber(formData.get("minAge"), 0, 120);
+  const maxAge = wholeNumber(formData.get("maxAge"), 0, 120);
+  const phase = String(formData.get("phase") ?? "NA");
+  const intervention = String(formData.get("intervention") ?? "").trim().slice(0, 120);
+  const sex = String(formData.get("sex") ?? "ALL");
+  const site = getTrial("TP-FIX-001")?.sites[0];
+  const studyId = `MZ-HCC-${randomBytes(3).toString("hex").toUpperCase()}`;
+
+  saveSiteStudy({
+    studyId,
+    briefTitle: title,
+    leadSponsor: STAFF.site,
+    sponsorClass: "OTHER",
+    overallStatus: formData.get("status") === "NOT_YET_RECRUITING" ? "NOT_YET_RECRUITING" : "RECRUITING",
+    studyFirstPostDate: today,
+    lastUpdatePostDate: today,
+    briefSummary: summary,
+    conditions,
+    studyType: formData.get("studyType") === "OBSERVATIONAL" ? "OBSERVATIONAL" : "INTERVENTIONAL",
+    phases: ["PHASE1", "PHASE2", "PHASE3", "PHASE4"].includes(phase) ? [phase] : [],
+    enrollmentCount: wholeNumber(formData.get("enrollment"), 1, 100000),
+    interventions: intervention ? [{ type: null, name: intervention }] : [],
+    eligibilityText,
+    minAgeYears: minAge, maxAgeYears: maxAge && minAge && maxAge < minAge ? null : maxAge,
+    minAgeRaw: minAge != null ? `${minAge} Years` : null, maxAgeRaw: maxAge != null ? `${maxAge} Years` : null,
+    sex: ["ALL", "FEMALE", "MALE"].includes(sex) ? sex : "ALL",
+    retrievedAt: new Date().toISOString(),
+    sites: [{ ...(site ?? { facility: STAFF.site, city: "Cambridge", state: "Massachusetts", country: "United States", hasContact: true }), id: `${studyId}-site-1`, siteStatus: "RECRUITING" }],
+    visitSchedule,
+    knownLogistics: {
+      travelReimbursementStated: ticked("travelReimbursed"), parkingReimbursementStated: ticked("parkingReimbursed"),
+      compensationStated: Boolean(compensation), compensationText: compensation || null,
+      caregiverAccommodationStated: ticked("caregiverWelcome"), remoteVisitOptionStated: ticked("remoteOption"),
+    },
+  });
+  audit(STAFF.id, "study.posted", studyId, title);
+  revalidatePath("/clinic/studies");
+  revalidatePath("/explore");
+  redirect(`/clinic/studies?posted=${studyId}`);
+}
+
+/** Pauses or resumes recruiting. A paused study stays readable but stops taking new inquiries in search. */
+export async function setStudyRecruitingAction(formData: FormData) {
+  const id = String(formData.get("studyId"));
+  if (!SITE_STUDY_ID.test(id)) return;
+  const recruiting = formData.get("recruiting") === "1";
+  getDb().prepare("UPDATE trials SET overall_status = ?, last_update_post_date = ? WHERE id = ? AND is_fictional = 1")
+    .run(recruiting ? "RECRUITING" : "ACTIVE_NOT_RECRUITING", new Date().toLocaleDateString("en-CA"), id);
+  audit(STAFF.id, recruiting ? "study.resumed" : "study.paused", id);
+  revalidatePath("/clinic/studies"); revalidatePath("/explore"); revalidatePath(`/trial/${id}`);
+}
+
+/** Removes a posted study. Refused while anyone has an inquiry open on it, so no conversation is orphaned. */
+export async function removeStudyAction(formData: FormData) {
+  const id = String(formData.get("studyId"));
+  if (!SITE_STUDY_ID.test(id)) return;
+  const inUse = getDb().prepare("SELECT COUNT(*) c FROM inquiries WHERE trial_id = ?").get(id) as { c: number };
+  if (inUse.c > 0) redirect("/clinic/studies?kept=1");
+  deleteSiteStudy(id);
+  audit(STAFF.id, "study.removed", id);
+  revalidatePath("/clinic/studies"); revalidatePath("/explore");
+  redirect("/clinic/studies");
 }

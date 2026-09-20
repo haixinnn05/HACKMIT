@@ -60,6 +60,19 @@ export default async function ExplorePage({
   rows = rows.slice(0, 12);
   const demoStudy = !params.q && !params.phase && !anyCondition ? getTrial("TP-FIX-001") : null;
 
+  // Studies a research team posted on Mozaic. They go through the same search
+  // and the same filters as registry records, so a posted study is found by the
+  // words and condition a person actually uses, and a paused one drops out.
+  // When the person typed something, only their words are matched: their condition
+  // is a ranking hint for the registry list, and on its own it would make every
+  // posted study for that condition answer every search.
+  const posted = searchForProfile(participant, {
+    text: params.q || null, limit: 200, includeFictional: true, ...(anyCondition || params.q ? { condition: null } : {}),
+  }).hits
+    .filter((hit) => hit.trial.isFictional && hit.trial.id !== "TP-FIX-001")
+    .filter((hit) => !params.phase || hit.trial.phases.includes(params.phase))
+    .slice(0, 4);
+
   const keep = (extra: Record<string, string>) => {
     const next = new URLSearchParams();
     for (const [key, value] of Object.entries({ q: params.q, phase: params.phase, near: params.near, sort: params.sort, cond: params.cond, from: params.from, ...extra })) {
@@ -116,10 +129,15 @@ export default async function ExplorePage({
         </Link>
       </div>
 
-      {demoStudy ? (
-        <ul className="space-y-3">
-          <TrialCard trial={demoStudy} assessment={assessTrial(demoStudy, participant, confirmedByTrial.get(demoStudy.id) ?? [])} />
-        </ul>
+      {demoStudy || posted.length ? (
+        <section aria-labelledby="posted-on-mozaic">
+          <h2 id="posted-on-mozaic" className="mb-2 text-[12.5px] font-bold uppercase tracking-[0.06em] text-ink-faint">Posted by research teams on Mozaic</h2>
+          <ul className="space-y-3">
+            {demoStudy ? <TrialCard trial={demoStudy} assessment={assessTrial(demoStudy, participant, confirmedByTrial.get(demoStudy.id) ?? [])} /> : null}
+            {posted.map((hit) => <TrialCard key={hit.trial.id} trial={hit.trial} assessment={assessTrial(hit.trial, participant, confirmedByTrial.get(hit.trial.id) ?? [])} />)}
+          </ul>
+          <h2 className="mb-2 mt-5 text-[12.5px] font-bold uppercase tracking-[0.06em] text-ink-faint">From ClinicalTrials.gov</h2>
+        </section>
       ) : null}
 
       {rows.length === 0 ? (
