@@ -7,6 +7,8 @@ scoped profile, fill in-person visit forms, and check people in.
 
 Mozaic does **not** decide eligibility. Only a study's investigators can do that.
 
+**[Watch the 3-minute demo](https://youtu.be/mqtkLYHioBQ)** · **[Try the live app](https://hackmit-production-bf7d.up.railway.app/login)** · MIT licensed
+
 ---
 
 ## Problem
@@ -268,4 +270,4 @@ research consent, live hospital systems, emergency monitoring.
 ## License
 
 MIT for original code. Registry records are ClinicalTrials.gov data. OpenAlex
-snapshots are CC0. See [LICENSE](LICENSE).
+snapshots are CC0. See [LICENSE](LICENSE) and, for data and third-party terms, [NOTICE.md](NOTICE.md).

@@ -19,18 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-This license covers the original project code only.
-
-Third-party dependencies retain their own licenses; see node_modules and
-package-lock.json.
-
-Data in data/snapshot/ consists of public records retrieved from
-ClinicalTrials.gov and is subject to that service's terms of use. It is
-redistributed here unmodified in substance, with a manifest recording the
-exact query, retrieval time and content hashes.
-
-Data in data/fixtures/ is entirely invented by this project and carries no
-third-party rights. It describes no real person, site, staff member or study.
