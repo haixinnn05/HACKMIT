@@ -1,16 +1,222 @@
 # Mozaic
 
-A navigation tool for adults considering a clinical trials. It helps someone
-understand what a study would actually ask of them, see which requirements can
-and cannot be checked against what they know, and prepare a first conversation
-with a research coordinator.
+A two-sided companion for adults considering a cancer clinical trial, and for the
+research team who meets them in person.
 
 The question it answers is **"could this study fit my medical circumstances and
-my life, and what must I clarify before deciding?"** Clinical suitability,
-practical feasibility and personal preference stay separate throughout. They are
-never collapsed into a single score.
+my life, and what must I still clarify before deciding?"** Clinical suitability,
+practical feasibility, and personal preference stay separate. They are never
+collapsed into a single score.
 
-It does not decide eligibility. Only a study's investigators can do that.
+Mozaic does **not** decide eligibility. Only a study's investigators can do that.
+
+---
+
+## Problem
+
+A trial listing is a legal document, not a decision. People are asked to retype
+the same history for every site, then fill it again on paper at screening, while
+the coordinator still cannot see what the person already chose to share.
+
+Search tools make this worse when they pretend to know more than the record
+does: inventing visit counts, scoring "fit," or treating a missing lab value as
+a no. A QR that encodes a diagnosis is a health disclosure to anyone in the
+waiting room, and it cannot be taken back.
+
+## Purpose
+
+Give someone a **passport** of what they already know, then reuse it everywhere
+a form would otherwise start from zero — applying, talking to a coordinator, and
+signing packets at the visit — without ever claiming they are eligible.
+
+On the clinic side, staff scan that passport, see only the grant the person
+scoped, fill consent / screening / this-visit forms from it, collect a
+signature, and cannot finish check-in until the required packets for that
+appointment are on file.
+
+---
+
+## What you can do
+
+**Patient**
+
+- Search 300 real [ClinicalTrials.gov](https://clinicaltrials.gov) studies
+- See *N of T requirements match*, check off criteria you confirm, and keep
+  unknowns visible
+- Tap the Mozaic passport to fill an application (Apple Pay–style)
+- Follow one approved study path: waiting for approval → get ready → visits
+- Show a ten-minute QR that carries **no health data**
+- Collect postage-stamp records of studies you have completed
+- Opt in to talk with someone weighing the same study
+
+**Clinic / researcher**
+
+- Inbox of applications, ordered by what was asked and how long it waited
+- Scan the ticket or type the pass number
+- Open only the sections they shared; revoke removes them
+- Fill in-person packets from the passport, then a signature
+- Check-in stays locked until that visit's required forms are saved
+
+---
+
+## Architecture
+
+How a fact moves through the product:
+
+```mermaid
+flowchart LR
+  subgraph sources [Public data]
+    CTG[ClinicalTrials.gov snapshot]
+    OA[OpenAlex papers]
+  end
+
+  subgraph store [App]
+    DB[(SQLite)]
+    ES[Elasticsearch]
+    Rules[assess / burden]
+    Meta[Meta Model API]
+  end
+
+  subgraph patient [Patient]
+    Explore[Find a trial]
+    Apply[Application]
+    Pass[Mozaic passport]
+    QR[10-min token]
+  end
+
+  subgraph clinic [Clinic]
+    Scan[Scan]
+    Profile[Shared profile]
+    Forms[Visit forms + signature]
+    Checkin[Check-in]
+  end
+
+  CTG --> DB
+  CTG --> ES
+  OA --> Insight[Insight tab]
+  DB --> Rules
+  ES --> Explore
+  DB --> Explore
+  Rules --> Explore
+  Meta --> Explore
+  Pass --> Apply
+  Pass --> QR
+  QR --> Scan --> Profile
+  Profile --> Forms --> Checkin
+  Pass -.->|grant-scoped fill| Forms
+```
+
+1. Registry records are ingested into SQLite. Elasticsearch, when configured,
+   holds the same public text for search. Nothing about a person is indexed.
+2. Eligibility and visit-burden arithmetic are **rules**. Meta only rewrites
+   source-grounded text, answers from the record, and explains peer overlaps.
+3. Insight quotes review papers from OpenAlex. A paper cannot establish
+   eligibility, so it stays on its own tab.
+4. The passport is the source of truth the person controls. Apply and visit
+   forms start empty; a tap fills only what that grant allowed.
+5. The QR is a random token. The grant lives on the server, lasts ten minutes,
+   and can be revoked. Unknown, expired, and revoked codes look the same.
+
+```
+data/snapshot/      300 ClinicalTrials.gov records
+data/fixtures/      synthetic personas + one labelled fictional study
+data/openalex/      cached papers for Insight
+
+src/lib/
+  db.ts / repo.ts   schema, grants, inquiries, visit forms, audit
+  search.ts         fuse two rankings; Elastic or SQLite FTS5
+  elastic.ts        mozaic-trials + mozaic-passages
+  assess.ts         invariants I1–I5 (unknown ≠ match)
+  burden.ts         hours only when the study published a schedule
+  ai.ts             Meta adapter, span checks, offline fallback
+  openalex.ts       papers from public trial topics only
+  visit-forms.ts    consent / screening / this-visit packets
+```
+
+---
+
+## Tech stack
+
+| Layer | What we use |
+|---|---|
+| App | Next.js 16, React 19, TypeScript, Tailwind |
+| Store | SQLite (`better-sqlite3`), FTS5 by default |
+| Search | **Elasticsearch** when `ELASTICSEARCH_URL` is set; same fusion and filters as SQLite |
+| Models | **Meta Model API** (`muse-spark`) for briefs, record Q&A, peer ranking, conversation openers |
+| Papers | **OpenAlex** CC0 scholarly graph — review articles and topic text on Insight |
+| Registry | ClinicalTrials.gov snapshot (300 adult breast-cancer records) |
+| In person | QR (`qrcode`) + camera scan (`jsqr`); canvas signatures on visit packets |
+| iOS | Capacitor shell over the same server |
+| Checks | `evaluate` (43), `journey` (131), peer-boundary tests |
+
+Optional env (`.env.local`):
+
+```
+LLM_API_KEY="..."
+LLM_BASE_URL=https://api.meta.ai/v1
+LLM_MODEL=muse-spark-1.3
+LLM_MODEL_FAST=muse-spark-1.2
+
+ELASTICSEARCH_URL="..."
+ELASTICSEARCH_API_KEY="..."
+```
+
+The core journey runs with neither key. Briefs fall back to the record itself;
+search falls back to SQLite.
+
+### Meta
+
+The model does four things: a plain-language study brief, an answer from the
+study's own text, ranking two people who opted in to talk, and suggested
+openers after both accept.
+
+It cannot change a verdict, see contact details, or send anything. Every claim
+must carry a verbatim span from the source; paraphrased "quotes" are dropped
+before render. Peer matching only sees fields **both** people offered — names,
+ids, and held-back facts never enter the prompt. If Meta is down, rules take over
+and the UI says which path produced the text.
+
+### Papers (OpenAlex)
+
+Insight is for someone who does not yet understand what the trial is for. It
+shows OpenAlex's description of the research area, terms a patient will hear,
+and review papers with the opening of each abstract.
+
+Lookups use public trial fields only (NCT id, condition, intervention). Passport
+data never reaches OpenAlex. Results are cached in `data/openalex/` so the demo
+works offline. Nothing is rewritten; a paper is background, not eligibility.
+
+### Elastic
+
+Two indices, public text only:
+
+- `mozaic-trials` — one document per registry record
+- `mozaic-passages` — one document per eligibility criterion, collapsed by study
+  at query time
+
+Title/condition ranking and criterion ranking are min–max normalized and fused
+(not RRF: both rankings are bm25 over the same corpus). On 40 title probes,
+normalized fusion keeps **100% recall@10**; RRF lost the right record for 22.5%
+of those queries.
+
+If Elasticsearch is missing, empty, or slower than 2.5s, the same search runs on
+SQLite and Find a trial says which backend answered.
+
+---
+
+## Design rules we did not break
+
+1. **Unknown is first-class.** A missing fact can never produce a match.
+2. **We do not invent schedules.** None of the 300 real records publish visits.
+   Only the labelled fictional study has dates.
+3. **Every claim resolves to its source.** 5,530 / 5,530 criterion citations
+   re-read the registry text at render time.
+4. **No score about a person.** Queues are "what was asked" and "how long it
+   waited," not dropout risk.
+5. **The QR is not the data.** Revoke stops further reads in the app. It cannot
+   recall what someone already saw, and the UI says so.
+
+This prototype is **not HIPAA compliant**. Synthetic personas only.
 
 ---
 
@@ -21,462 +227,45 @@ npm install
 npm run dev          # http://localhost:3000
 ```
 
-The database is created and seeded on first request from `data/snapshot/`
-(300 real ClinicalTrials.gov records) and `data/fixtures/` (synthetic personas
-and one clearly-labelled fictional study). No API key is required. The core
-journey runs locally; when a network is available, trial pages add related
-scholarly works from the CC0 [OpenAlex open dataset](https://registry.opendata.aws/openalex/).
+First request seeds SQLite from `data/snapshot/` and `data/fixtures/`. Log in as
+**Patient** or **Clinic / researcher** (no password).
 
 ```bash
-npm run evaluate     # 43 checks: invariants, citations, burden, permissions
-npm run journey      # 131 checks: both faces in a real browser
-npm run audit        # every button and link on every screen: reachable, uncovered, resolving
-npm run phone        # current address and a scannable code, to open the app on a phone
-npm run capture      # phone-size screenshots of all twelve screens, to .capture/
-npm run ingest       # refresh the registry snapshot from ClinicalTrials.gov
-npm run reset        # drop the local database; it reseeds on next request
+npm run evaluate     # invariants, citations, burden, permissions
+npm run journey      # both faces in a real browser (needs the dev server)
+npm run es:index     # rebuild Elastic by hand
+npm run ai:check     # Meta configured? does not print the key
+npm run reset        # drop the local database
 ```
 
-`npm run journey` needs `npm run dev` running in another terminal. It writes
-screenshots of every step to `.journey/`.
-
-Optionally set `ANTHROPIC_API_KEY` in `.env.local` to enable model-written study
-briefs. Without it the app works end to end — briefs are assembled
-deterministically from the records themselves, and the interface says which path
-produced the text.
+iOS (same server, Capacitor): `npm run ios:device` on a plugged-in phone.
 
 ---
 
-## iPhone app
+## Screens
 
-Mozaic is a web app, and that is what judges open. For a demo there is also a
-native iOS shell built with Capacitor. It loads the running server by URL, so
-every screen, test and line of logic is shared with the web version.
-
-```bash
-npm run dev            # the server the app loads from
-npm run ios:device     # build, sign and install on a plugged-in, unlocked iPhone
-```
-
-`ios:device` finds the phone, points the app at this computer's current Wi-Fi
-address, signs with the team Xcode is signed in to, and installs. Other commands:
-`npm run ios:sync -- https://your-deployment` to target a deployed server, and
-`npm run ios:open` to open the project in Xcode.
-
-The shell cannot work without a reachable server, because the database, search
-and eligibility rules all run there. If the server is unreachable the app shows a
-plain explanation and a retry button. iOS is granted local-network loading only,
-not a blanket exception for insecure traffic. A free Apple ID signs apps for seven
-days, so re-run `ios:device` to renew.
-
-## Two faces
-
-Mozaic is one app with two sides, chosen at `/welcome` and switchable from inside
-either one. They are separate route groups with separate navigation, and the
-research-team header is dark where the participant app is lavender, so the two
-cannot be confused on a shared demo phone.
-
-**Participant** (`/`): the twelve screens below.
-
-**Research team** (`/clinic`), a simulated staff account labelled as such on every screen:
-
-| Screen | Route | What it does |
-|---|---|---|
-| Today | `/clinic` | What is waiting, ordered by what was asked and how long it has waited; open questions by owner; visits this week; measured time to first reply |
-| Inbox | `/clinic/inbox` | Inquiries people shared: considerations (not a decision), missing information, assign, draft, send |
-| Scan | `/clinic/scan` | Open a participant's ticket by camera or by its eight-character pass number |
-| Patients | `/clinic/patients` | People currently sharing with the site, and exactly what each shared |
-| Studies | `/clinic/studies` | The site's study, its confirmed visit schedule, and the saved-reply library |
-| Activity | `/clinic/activity` | Who shared, opened, answered and revoked, without any private text |
-
-Rules the research-team side is built around:
-
-- **Not a directory.** Patients lists people who started the relationship by sharing.
-  There is no patient search, and revoking access removes the person at once. A kept
-  link to a revoked patient shows nothing.
-- **Snapshots, not live profiles.** A patient page shows what was shared with each
-  inquiry. A fact added later and not shared is not visible.
-- **No predictions about people.** The queue is ordered by what was asked and how long
-  it has waited. There is no dropout-risk or likelihood-to-enrol score.
-- **Pass numbers leak nothing.** A wrong, expired and revoked number all fail the same way.
-- **A person sends every answer.** Saved replies are offered as drafts only.
-
-## The twelve screens
-
-| # | Screen | Route | What it does |
-|---|---|---|---|
-| 1 | Home / Journey | `/` | Greeting, five-step progress derived from real activity, one next step, replies and the next visit |
-| 2 | Find Clinical Trials | `/explore` | Search, location and phase filters, sort, provisional status on every card |
-| 3 | Trial Detail | `/trial/[id]` | Overview, Eligibility, What to Expect and Insight tabs, save, ask the record |
-| 4 | Participation Preview | `/trial/[id]/preview` | Six sourced rows, total hours with arithmetic, what-if, suggested questions |
-| 5 | Saved Questions | `/questions` | All / Need to ask / Answered, add, remove, answers with their author |
-| 6 | Mozaic Passport | `/passport` | Passport card, scoped ten-minute QR, who can see what, revoke, stamps |
-| 7 | Shared Patient Profile | `/handoff/[token]` | Read-only researcher view of only the chosen sections |
-| 8 | Inquiry Preview | `/inquiry/new/[trialId]` | Tick what to share, personal note, editable and printable packet |
-| 9 | Inbox | `/inbox`, `/inquiry/[id]` | All / Unread / Archived, thread, four choices including declining |
-| 10 | My Profile | `/profile` | Section menu, edit information, saved trials, demo controls |
-| 11 | Research Team Inbox | `/coordinator` | Simulated site: considerations (not a decision), missing info, human-written reply |
-| 12 | Visits & Timeline | `/timeline` | Timeline and calendar of confirmed visits, to-dos, logistics check-in |
-
-Where the mockups and the design document disagreed, the document won:
-
-- Cards say "Potential option", never "Potential fit" or anything implying eligibility.
-- The passport shows no QR until the person chooses what to share. The code holds a random
-  ten-minute link, never profile data, and the scanned view renders without the app's navigation.
-- A real registry record shows "Not published" for visits and duration. Only the labelled
-  fictional study has a schedule, and timeline entries show no invented clock times.
-- Personas are synthetic, so avatars are monograms rather than photographs.
-
-### The language model
-
-Optional, and off unless configured. Set these in `.env.local` (gitignored):
-
-```
-LLM_API_KEY="..."
-LLM_BASE_URL=https://api.meta.ai/v1      # Meta Model API; any OpenAI-compatible endpoint works
-LLM_MODEL=muse-spark-1.3                 # used for study summaries
-LLM_MODEL_FAST=muse-spark-1.2            # used where someone is waiting on an answer
-```
-
-`npm run ai:check` reports exactly what is and is not working, without printing the
-key. `npm run ai:warm` pre-generates the summaries the demo visits.
-
-The model does four things: rewrites a study summary in plain language, answers a
-question from a study's own text, matches two participants who might want to talk,
-and suggests openers once they have connected. Eligibility and the burden arithmetic
-stay rules, because they have to be explainable and reproducible. For peer matching
-the model ranks and explains, inside a boundary that code enforces on both sides
-(see "Talking with a peer").
-
-How it is kept honest and affordable:
-
-- **Every quote is verified.** A model-written claim must carry a verbatim span from
-  the source. Spans that cannot be found are dropped before rendering, and the screen
-  says how many. In testing this catches a paraphrased "quote" every few summaries.
-- **It can say no.** Asked something the record does not cover, the correct answer is
-  that it is not stated, plus an offer to save the question for the study team.
-- **Nothing is generated unless someone asks.** A summary appears by itself only when
-  it is already cached. Otherwise the rule-built summary is shown with a button. A
-  summary takes 30 to 60 seconds, so page views, tests and crawlers never trigger one.
-- **Generated once.** Results are cached by model, prompt version and the full prompt,
-  which contains the source text, so a changed record regenerates by itself.
-- **Bounded and degradable.** Calls time out, and any failure falls back to the
-  rule-built text. The page never waits on the model: AI sections stream in.
-- **No secrets in the repo.** A pre-commit check reads the real values from
-  `.env.local` and blocks any commit containing them. Prompts and replies are never
-  logged, only the model, the latency and whether the reply parsed.
-
-### Application autofill
-
-`/apply/[trialId]` fills a study's application form from the passport, so nobody
-retypes the same answers for every site. Each field says where its value came from
-(from the passport, marked unknown, or only the person can answer), everything is
-editable, blanks are not sent, and contact details wait for an explicit tick. A
-fact marked unknown is left blank rather than guessed. New answers can be saved
-back to the passport, so the next form starts fuller. The coordinator sees each
-answer with whether it came from the passport or was typed on the form.
-
-### Talking with a peer
-
-`/peers` suggests someone in a similar situation to talk to about a study. This
-goes beyond the original design document, which deferred stranger matching, so it
-is built around that document's own cautions:
-
-- **Opt-in, by alias.** Off until switched on. Nobody can browse people.
-- **Only mutually offered fields are compared.** A kind of information takes part in
-  matching only when both people ticked it, so no reason can reveal something a
-  person kept back. An unknown fact never counts as something in common.
-- **Not while enrolled.** People are not paired about a study either has joined,
-  because comparing experiences inside a trial can reveal treatment groups.
-- **Matched by Meta AI, inside a boundary it cannot cross.** Code decides who may be
-  compared at all (opted in, not enrolled, and a different diagnosis is never a
-  match). Code then builds a mutual view of each pair: only the fields both people
-  offered, only facts both actually know, age as a decade, and no names, aliases,
-  ids or contact details. The model sees nothing else. It ranks the pairs and says
-  what they share in plain words, which lets it read meaning a rule cannot (that a
-  lumpectomy is surgery, that two people both fit visits around work). Code then
-  checks the answer: a reason is kept only if it names a field in that pair's
-  mutual view. The guarantee does not depend on the model behaving, because it was
-  never given what a person held back. The screen says which matcher produced the
-  list, and the rule-based matcher in `peers.ts` takes over when no model answers.
-- **Openers after connecting.** Once two people have both agreed to talk, the model
-  suggests conversation starters from their shared overlaps and the study's public
-  title. It cannot send anything.
-- **Consent both ways, and a way out.** The other person must accept; either can end
-  or report; a third person gets a 404.
-
-`npm run test:peers` checks these rules directly, including what the model is allowed
-to see and what happens when a model answers with reasons it should not have.
-
-### Insight, from OpenAlex
-
-Every study, including the demonstration one, has an Insight tab for someone who
-does not yet understand what the trial is for. It shows OpenAlex's own description
-of the research area, the terms a patient is likely to hear, and review articles
-with the opening of each abstract. Reviews are preferred because they are the
-papers written to explain a field.
-
-All of it is quoted from OpenAlex and labelled as background. Nothing is reworded
-or generated, and it is kept apart from the study's requirements, because a paper
-cannot establish anyone's eligibility. The search uses public trial fields only,
-so no passport data reaches OpenAlex. Each lookup is saved to `data/openalex/`;
-if OpenAlex is unreachable the saved copy is shown with its date.
-`npm run openalex:snapshot` saves the studies the demo visits.
-
-## The three design commitments
-
-### 1. Unknown is a first-class value
-
-A fact the person did not give can never produce a positive verdict. `assess.ts`
-enforces five invariants, each tested in `scripts/evaluate.mts`:
-
-| | |
+| Patient | Clinic |
 |---|---|
-| **I1** | A fact we do not have can never produce `supported`. Absence is `unknown`. |
-| **I2** | An exclusion criterion that applies is a `conflict`, never a match. |
-| **I3** | A criterion joined by "or" cannot yield a conflict from one failing branch. |
-| **I4** | Nothing is inferred from context — not sex, not a biomarker, not organ function, not prior treatment. |
-| **I5** | No study ever reaches an "eligible" state. The ceiling is "possible option to discuss". |
-
-Criteria that depend on laboratory results or organ function always route to
-staff review. The matcher that recognises them runs first, deliberately, so a
-criterion like *"adequate organ function and no evidence of metastatic disease"*
-cannot produce a confident-looking verdict on the half a later matcher
-understands.
-
-### 2. The product will not invent what it does not have
-
-**None of the 300 real registry records publish a visit schedule.** The obvious
-move — estimate visit count from study duration — is a fabrication, so the
-product refuses it. A real study shows *"this is not published; here is what to
-ask"* and offers the questions. Only the fictional fixture, labelled as fictional
-everywhere it appears, has a schedule.
-
-That refusal is tested: `no visit schedule is invented for any of the 300 real
-registry records`.
-
-The fictional study's identifier is deliberately not an NCT number, and it is
-never mixed into the ranked results — it is shown under its own heading, because
-an invented study has no honest relevance score against real ones.
-
-### 3. Every claim resolves to its source
-
-Each criterion carries character offsets into the original eligibility text, and
-the quoted span is re-read from the source at render time rather than stored
-alongside it — so a citation cannot drift from what it claims to quote. All
-**5,530** citations in the corpus are verified to resolve exactly.
-
-Model-written text is held to the same rule. Any span the model produces that
-cannot be found verbatim in the source is discarded before rendering, and the
-interface reports how many statements were dropped. If nothing survives
-validation, the deterministic brief is shown instead of unsourced prose.
+| Home journey after approval | Today |
+| Find a trial | Inbox |
+| Trial: Overview / Eligibility / Expect / Insight | Scan |
+| Apply (tap passport) | Patients |
+| Mozaic passport + QR | Studies |
+| Inbox / peers | Activity |
+| Timeline | Visit forms after a scan |
 
 ---
-
-## Architecture
-
-```
-data/snapshot/     300 ClinicalTrials.gov records + manifest (query, time, hashes)
-data/fixtures/     synthetic personas; one fictional study with a visit schedule
-scripts/ingest.mjs registry fetch, normalization, criterion splitting
-scripts/evaluate.mts  acceptance checks
-scripts/journey.mjs   browser end-to-end walk
-
-src/lib/
-  db.ts       SQLite schema, idempotent seed, FTS5 indexes
-  repo.ts     typed data access; grants, inquiries, questions, milestones, audit
-  search.ts   retrieval: two bm25 rankings, normalized and fused
-  assess.ts   the rule engine — invariants I1–I5
-  burden.ts   participation preview arithmetic
-  ai.ts       model adapter with span validation and offline fallback
-  openalex.ts OpenAlex lookup using only public trial topics, with offline fallback
-  clock.ts    one timestamp per request
-```
-
-### OpenAlex open data
-
-Each real trial page queries the OpenAlex Works API. It first looks for works
-indexed with the public NCT identifier; if none exist, it shows clearly-labelled
-background research matched from the trial's public condition and intervention.
-Results include their OpenAlex record, authors, venue, publication year,
-citation count and open-access state. Passport, contact and other participant
-data never enter the query. OpenAlex failure is non-blocking, so it cannot stop
-someone from reading the registry record or preparing questions.
-
-One Next.js app and one ingestion job. SQLite is both the relational store and,
-by default, the search backend, so the whole demonstration runs offline and
-reproducibly.
-
-### Retrieval
-
-Two rankings — one over titles and conditions, one over individual eligibility
-criteria — are combined. Criterion hits are collapsed by trial first, so a study
-with a sixty-item eligibility section cannot flood the results through
-repetition.
-
-They are fused by **min–max normalized bm25**, not reciprocal rank fusion. RRF is
-the documented approach for combining *incomparable* rankings, and it is the
-wrong tool here: both rankings are bm25 over the same index, so their scores are
-directly comparable, and RRF's rank-only view discards exactly what distinguishes
-an exact title match from a merely plausible one. Measured on 40 title probes,
-RRF put the correct record outside the top 10 for **22.5%** of queries even
-though the trial-level ranking placed it first every single time. Linear fusion
-of normalized scores gives **100% recall@10** on the same probes.
-`reciprocalRankFusion` remains exported for the day a genuinely incomparable
-semantic ranking is added.
-
-#### Elasticsearch
-
-Set `ELASTICSEARCH_URL` (with `ELASTICSEARCH_API_KEY`, or a username and password)
-and Elasticsearch produces those two rankings instead of SQLite. Fusion, filters
-and explanations are shared code, so results are judged the same way whichever
-backend answered. There is nothing to run: the first search after start checks the
-index and, if it is missing, empty or behind the database, loads it in the
-background. Until that finishes, searches run on SQLite, so nobody sees results from
-a half-filled index. `npm run es:index` rebuilds it by hand and verifies it.
-
-- **Two indices.** `mozaic-trials` holds one document per public registry record.
-  `mozaic-passages` holds one per eligibility criterion: a passage of the public
-  record, collapsed by study at query time with Elasticsearch's field collapsing.
-- **Source ids and version metadata sit next to the search text.** Every document
-  carries its registry id, source URL, the time the record was retrieved, the hash
-  of the record it came from and the registry's own last-update date. A passage also
-  carries the character offsets it was cut from, and the indexing command checks
-  that those offsets point at exactly that text in the stored record. So a hit can
-  be traced to the exact version of the exact record it quotes.
-- **Public text only.** Nothing about a participant is indexed, and a query carries
-  search words and nothing else. The indexing command asserts that no participant
-  field exists in either mapping.
-- **Kept in step.** A study a research team posts, pauses or removes is written to
-  the index in the same action.
-- **Fails safe.** If Elasticsearch does not answer within 2.5 seconds, the same
-  search runs on SQLite, and Find Clinical Trials says which backend answered. It
-  never claims a backend that did not run.
-
-Measured against a local Elasticsearch 8.15: 301 studies and 5,530 passages indexed
-in about 7 seconds; the right study in the top ten for 40 of 40 title searches, the
-same as SQLite; about 15 ms per query.
-
-Structured filters only remove a record when its own metadata *positively*
-conflicts. Missing metadata keeps the record and surfaces an unknown — dropping
-it would hide an option the person then cannot ask about.
-
-### The model's authority
-
-The model cannot change a verdict, see contact details, or send anything. It has
-no tools, so every outbound action is an explicit click. Retrieved registry text
-is untrusted data: instructions embedded in a study record carry no authority and
-have no tool to reach.
-
----
-
-## Measured results
-
-Both suites run against the real 300-record snapshot.
-
-```
-npm run evaluate    43 passed, 0 failed
-npm run journey     131 passed, 0 failed
-```
-
-Selected results:
-
-- **recall@10** 100% over 40 title probes; **precision@5** 1.00 for an
-  on-condition query; warm search **~40ms**
-- **5,530 / 5,530** citations resolve to their exact source span
-- **0** invented visit schedules across 300 real records
-- Participation preview reproduces the worked example exactly:
-  `4 × (2h on site + 2 × 45min travel) + 0.3h remote contact = 14.3h`
-- Permission isolation: participant A cannot read B; a revoked grant removes the
-  inquiry from the coordinator inbox rather than hiding a field
-- Degraded modes: nonsense, empty and stopword-only queries all return options;
-  a record with no listed sites reports unknown distance rather than zero
-- Accessibility: one `h1` per page, every control labelled, every image has alt
-  text, all tap targets ≥ 44px, reduced-motion honoured, status carried by word
-  and glyph as well as colour
-
-### What the public data does not say
-
-Measured across the 300 records, with denominators, and surfaced in-product:
-
-| Gap | Share |
-|---|---|
-| No published visit schedule | 300/300 (100%) |
-| Record not updated in over a year | 95/300 (31.7%) |
-| No site contact listed anywhere | 72/300 (24.0%) |
-| No study locations listed at all | 47/300 (15.7%) |
-| No site-level recruiting status | 36/253 (12.0%) |
-
-These describe gaps in *published information*. They are not evidence that any
-site turns anyone away, and they do not generalise beyond this snapshot of one
-condition area.
-
----
-
-## Privacy
-
-Synthetic personas only. There is no real patient data and no way to enter a
-free-form medical history, so nothing anyone types becomes a health record.
-
-Profiles never enter the search index. Contact details are held separately from
-everything used to search and are released only through an explicit sharing
-grant.
-
-**The in-person handoff code.** The passport's centre button produces a QR code.
-The obvious implementation — encode the profile in the code — is the wrong one: a
-code carrying a diagnosis is a health disclosure visible to anyone within camera
-range, and it cannot be revoked once scanned. So the code carries only a random,
-15-minute, revocable link. The data stays server-side behind a grant the person
-scopes beforehand. Unknown, expired and revoked tokens render identically, so
-nobody can probe which codes were once valid.
-
-Revocation blocks further access inside the app. It cannot recall what a
-recipient already read or exported, and the interface says so rather than
-implying otherwise.
-
-**This prototype is not HIPAA compliant**, and encryption would not make it so.
-Whether those obligations apply depends on who operates a service and what their
-relationships are. A real deployment needs institutional review, server-side role
-checks, study and tenant isolation, documented retention, tested deletion and
-export, vendor review and incident procedures.
-
-## Participant agency
-
-Stamps record actions — reviewed an overview, prepared questions, received a
-reply. They are private, earned once, and carry no points or streaks. Nothing
-rewards enrolling, staying enrolled, or accumulating studies, and nothing
-penalises withdrawal. Only a study's own reviewed compensation terms are ever
-displayed; the product invents no incentives of its own.
-
-"I am not interested" sits alongside "I have agreed to take part" with equal
-weight. An informed decision to decline is a successful outcome, and it costs the
-person nothing they saved.
-
-Leaving Mozaic is not withdrawing from a study, and the interface never
-suggests it is.
 
 ## Limitations
 
-This is a 24-hour prototype. It demonstrates feasibility and a workflow.
+A weekend prototype. It has not been validated with real participants or
+coordinators, and it does not claim to improve enrolment or any clinical
+outcome. The corpus is one condition area, 300 records, one retrieval date.
 
-It has **not** been validated with real participants or coordinators. It has not
-shown that it improves enrolment, retention, diversity or any clinical outcome,
-and no such claim should be made on its behalf. The evaluation results above are
-engineering checks against synthetic personas and a public registry snapshot;
-they carry limited clinical authority.
-
-The corpus is one condition area (adult breast cancer), 300 records, one
-retrieval date. It is not a census of clinical research.
-
-Deliberately out of scope: diagnosis, treatment recommendation, eligibility
-determination, formal research consent, submission to real hospital systems, and
-emergency monitoring. Public forums and stranger matching are deferred —
-same-trial conversations can reveal assignment clues and affect self-reported
-outcomes, which needs study-specific review and trained moderation rather than
-automated moderation alone.
+Out of scope: diagnosis, treatment advice, eligibility determination, formal
+research consent, live hospital systems, emergency monitoring.
 
 ## License
 
-MIT for the original project code. Dependencies retain their own licenses.
-Registry records in `data/snapshot/` are public ClinicalTrials.gov data subject
-to that service's terms. See [LICENSE](LICENSE).
+MIT for original code. Registry records are ClinicalTrials.gov data. OpenAlex
+snapshots are CC0. See [LICENSE](LICENSE).
