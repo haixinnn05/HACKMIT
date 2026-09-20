@@ -20,7 +20,7 @@ RUN npm run build && npm prune --omit=dev
 
 FROM node:22-bookworm-slim
 WORKDIR /app
-ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0
+ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000
 # The database lives on the mounted disk so it survives a redeploy. The registry
 # snapshot and fixtures it is seeded from stay in the image under /app/data.
 ENV MOZAIC_DB=/data/mozaic.db
@@ -29,9 +29,11 @@ COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/.next ./.next
 COPY --from=build /app/public ./public
 COPY --from=build /app/data ./data
+COPY deploy/entrypoint.sh /entrypoint.sh
 RUN mkdir -p /data && chown -R node:node /data /app/data /app/.next
-USER node
-VOLUME /data
+# No VOLUME line: Railway refuses images that declare one. Mount a disk at /data on the host.
 EXPOSE 3000
-HEALTHCHECK --interval=30s --timeout=5s --start-period=20s CMD node -e "fetch('http://127.0.0.1:3000/welcome').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
-CMD ["node_modules/.bin/next", "start"]
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/welcome').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+# Starts as root only long enough to own the mounted disk, then drops to the node user.
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["node_modules/.bin/next", "start", "-H", "0.0.0.0"]
