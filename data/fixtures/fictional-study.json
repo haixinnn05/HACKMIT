@@ -141,7 +141,7 @@
   ],
   "applicationForm": {
     "title": "Harborview pre-screening form",
-    "notice": "A fictional site form, modelled on what a research site asks before a first call.",
+    "notice": "Harborview asks these questions before a first call.",
     "siteFields": [
       {
         "id": "oncologist",
